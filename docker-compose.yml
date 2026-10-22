@@ -1,0 +1,42 @@
+name: guide-touristique-team
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-guide_touristique}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      GUIDE_DB_PASSWORD: ${GUIDE_DB_PASSWORD:?Set GUIDE_DB_PASSWORD in .env}
+      CIRCUIT_DB_PASSWORD: ${CIRCUIT_DB_PASSWORD:?Set CIRCUIT_DB_PASSWORD in .env}
+      RESERVATION_DB_PASSWORD: ${RESERVATION_DB_PASSWORD:?Set RESERVATION_DB_PASSWORD in .env}
+      AVIS_DB_PASSWORD: ${AVIS_DB_PASSWORD:?Set AVIS_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${DB_HOST_PORT:-15432}:5432"
+    volumes:
+      - team-postgres-data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  circuit-service:
+    build: ./circuit-service
+    ports:
+      - "127.0.0.1:8002:8002"
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-guide_touristique}
+      DB_USERNAME: circuit
+      DB_PASSWORD: ${CIRCUIT_DB_PASSWORD:?Set CIRCUIT_DB_PASSWORD in .env}
+      GUIDE_SERVICE_URL: ${GUIDE_SERVICE_URL:-http://guide-service:8001}
+      TZ: Africa/Casablanca
+    depends_on:
+      db:
+        condition: service_healthy
+
+# Add the real Guide, Reservation and Avis services here when their code exists.
+# Containers use db:5432 and their own database user; never the postgres admin.
+volumes:
+  team-postgres-data:

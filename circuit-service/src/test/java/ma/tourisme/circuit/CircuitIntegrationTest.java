@@ -10,6 +10,7 @@ import java.net.http.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,10 +19,19 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.MountableFile;
 
 /** Actual HTTP, PostgreSQL and Flyway. Guide has no shared Java DTO. Requires Docker. */
 class CircuitIntegrationTest {
-  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+  static final PostgreSQLContainer<?> POSTGRES =
+      new PostgreSQLContainer<>("postgres:16-alpine")
+          .withEnv("GUIDE_DB_PASSWORD", "test-guide-only")
+          .withEnv("CIRCUIT_DB_PASSWORD", "test-circuit-only")
+          .withEnv("RESERVATION_DB_PASSWORD", "test-reservation-only")
+          .withEnv("AVIS_DB_PASSWORD", "test-avis-only")
+          .withCopyFileToContainer(
+              MountableFile.forHostPath(Path.of("../db/init.sql").toAbsolutePath()),
+              "/docker-entrypoint-initdb.d/01-init.sql");
   static final ObjectMapper JSON = new ObjectMapper();
   static final HttpClient HTTP = HttpClient.newHttpClient();
   static final AtomicBoolean ACTIVE = new AtomicBoolean(true);
@@ -29,6 +39,62 @@ class CircuitIntegrationTest {
   static HttpServer guide;
   static ExecutorService workers;
   static int port;
+
+  @Test
+  void teamUsersCanMigrateOnlyTheirOwnSchema() throws Exception {
+    for (String role : new String[] {"guide", "circuit", "reservation", "avis"}) {
+      try (var connection =
+              DriverManager.getConnection(POSTGRES.getJdbcUrl(), role, "test-" + role + "-only");
+          var statement = connection.createStatement()) {
+        try (var row = statement.executeQuery("SELECT current_user, current_schema()")) {
+          assertTrue(row.next());
+          assertEquals(role, row.getString(1));
+          assertEquals(role, row.getString(2));
+        }
+        try (var row =
+            statement.executeQuery(
+                "SELECT rolsuper, rolcreatedb, rolcreaterole FROM pg_roles WHERE"
+                    + " rolname=current_user")) {
+          assertTrue(row.next());
+          assertFalse(row.getBoolean(1));
+          assertFalse(row.getBoolean(2));
+          assertFalse(row.getBoolean(3));
+        }
+        // A migration can create/read/write its own tables. Roll back the probe.
+        connection.setAutoCommit(false);
+        statement.execute("CREATE TABLE migration_access_probe (id integer PRIMARY KEY)");
+        statement.executeUpdate("INSERT INTO migration_access_probe VALUES (1)");
+        try (var row = statement.executeQuery("SELECT id FROM migration_access_probe")) {
+          assertTrue(row.next());
+          assertEquals(1, row.getInt(1));
+        }
+        connection.rollback();
+        connection.setAutoCommit(true);
+        for (String other : new String[] {"guide", "circuit", "reservation", "avis", "public"}) {
+          if (role.equals(other)) continue;
+          try (var query =
+              connection.prepareStatement(
+                  "SELECT has_schema_privilege(current_user, ?, 'USAGE'), "
+                      + "has_schema_privilege(current_user, ?, 'CREATE')")) {
+            query.setString(1, other);
+            query.setString(2, other);
+            try (var row = query.executeQuery()) {
+              assertTrue(row.next());
+              assertFalse(row.getBoolean(1), role + " must not read schema " + other);
+              assertFalse(row.getBoolean(2), role + " must not write schema " + other);
+            }
+          }
+          SQLException denied =
+              assertThrows(
+                  SQLException.class,
+                  () ->
+                      statement.execute(
+                          "CREATE TABLE " + other + ".migration_access_probe(id integer)"));
+          assertEquals("42501", denied.getSQLState());
+        }
+      }
+    }
+  }
 
   @BeforeAll
   static void start() throws Exception {
@@ -101,8 +167,8 @@ class CircuitIntegrationTest {
                 "--server.port=0",
                 "--server.address=127.0.0.1",
                 "--spring.datasource.url=" + POSTGRES.getJdbcUrl(),
-                "--spring.datasource.username=" + POSTGRES.getUsername(),
-                "--spring.datasource.password=" + POSTGRES.getPassword(),
+                "--spring.datasource.username=circuit",
+                "--spring.datasource.password=test-circuit-only",
                 "--services.guide-url=http://127.0.0.1:" + guide.getAddress().getPort(),
                 "--spring.main.banner-mode=off",
                 "--logging.level.root=WARN");

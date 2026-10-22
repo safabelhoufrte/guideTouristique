@@ -15,6 +15,10 @@ jobs:
           cache: maven
           cache-dependency-path: circuit-service/pom.xml
       - run: mvn -B -ntp verify
-      - run: docker compose -f compose.yaml -f compose.demo.yaml config --quiet
+      - run: docker compose -f ../docker-compose.yml -f ../compose.demo.yaml config --quiet
         env:
-          DB_PASSWORD: ci-config-validation-only
+          POSTGRES_PASSWORD: ci-admin-only
+          GUIDE_DB_PASSWORD: ci-guide-only
+          CIRCUIT_DB_PASSWORD: ci-circuit-only
+          RESERVATION_DB_PASSWORD: ci-reservation-only
+          AVIS_DB_PASSWORD: ci-avis-only
