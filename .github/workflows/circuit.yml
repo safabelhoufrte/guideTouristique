@@ -1,0 +1,18 @@
+name: Verify Circuit
+on: [push, pull_request]
+defaults:
+  run:
+    working-directory: circuit-service
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: circuit-service/pom.xml
+      - run: mvn -B -ntp verify
+      - run: docker compose -f compose.yaml -f compose.demo.yaml config --quiet

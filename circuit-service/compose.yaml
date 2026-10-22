@@ -1,0 +1,12 @@
+name: circuit-standalone
+services:
+  circuit:
+    build: .
+    ports: ["127.0.0.1:${CIRCUIT_HOST_PORT:-18092}:8082"]
+    environment:
+      GUIDE_SERVICE_URL: ${GUIDE_SERVICE_URL:-http://host.docker.internal:18081}
+      TZ: Africa/Casablanca
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes: ["circuit-data:/data"]
+volumes:
+  circuit-data:

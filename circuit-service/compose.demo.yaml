@@ -1,0 +1,8 @@
+# Optional development companion, not a production Guide implementation.
+services:
+  circuit:
+    environment:
+      GUIDE_SERVICE_URL: http://guide-stub:8081
+  guide-stub:
+    build: ./tools/guide-stub
+    ports: ["127.0.0.1:18091:8081"]
