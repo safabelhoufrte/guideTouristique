@@ -1,12 +1,29 @@
-name: circuit-standalone
+name: circuit-nada
 services:
   circuit:
     build: .
-    ports: ["127.0.0.1:${CIRCUIT_HOST_PORT:-18092}:8082"]
+    ports: ["127.0.0.1:8002:8002"]
     environment:
-      GUIDE_SERVICE_URL: ${GUIDE_SERVICE_URL:-http://host.docker.internal:18081}
+      GUIDE_SERVICE_URL: ${GUIDE_SERVICE_URL:-http://host.docker.internal:8001}
+      DB_URL: ${DB_URL:-jdbc:postgresql://db:5432/guide_touristique}
+      DB_USERNAME: ${DB_USERNAME:-circuit}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       TZ: Africa/Casablanca
     extra_hosts: ["host.docker.internal:host-gateway"]
-    volumes: ["circuit-data:/data"]
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: guide_touristique
+      POSTGRES_USER: circuit
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U circuit -d guide_touristique"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
 volumes:
-  circuit-data:
+  postgres-data:

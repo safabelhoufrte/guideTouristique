@@ -4,10 +4,10 @@ import json
 from urllib.request import Request, urlopen
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--url', default='http://localhost:18092')
+parser.add_argument('--url', default='http://localhost:8002')
 args = parser.parse_args()
 base = args.url.rstrip('/')
-body = json.dumps({'titre': 'Tour Agadir', 'prix': 300.50, 'guideId': 1, 'disponible': True}).encode()
+body = json.dumps({'titre': 'Tour Agadir', 'prix': 300.50, 'guide_id': 1, 'disponible': True}).encode()
 request = Request(base + '/circuits', data=body, headers={'Content-Type': 'application/json'}, method='POST')
 with urlopen(request, timeout=10) as response:
     circuit = json.load(response)
@@ -15,6 +15,6 @@ with urlopen(request, timeout=10) as response:
 print('Created circuit:', circuit['id'])
 with urlopen(base + '/circuits/' + str(circuit['id']) + '/reservation-details', timeout=10) as response:
     details = json.load(response)
-assert details['disponible'] is True and details['guideId'] == 1
+assert details['disponible'] is True and details['guide_id'] == 1
 print(json.dumps(details, ensure_ascii=False, indent=2))
 print('Success: Python client -> Spring Boot Circuit -> Python Guide fixture')

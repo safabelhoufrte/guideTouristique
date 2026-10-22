@@ -16,3 +16,5 @@ jobs:
           cache-dependency-path: circuit-service/pom.xml
       - run: mvn -B -ntp verify
       - run: docker compose -f compose.yaml -f compose.demo.yaml config --quiet
+        env:
+          DB_PASSWORD: ci-config-validation-only
