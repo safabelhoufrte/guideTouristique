@@ -1,0 +1,4 @@
+CREATE DATABASE guide_db;
+CREATE DATABASE circuit_db;
+CREATE DATABASE reservation_db;
+CREATE DATABASE avis_db;
