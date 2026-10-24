@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("/api/circuits")
 public class CircuitController {
   private final CircuitService service;
 
@@ -16,41 +17,31 @@ public class CircuitController {
     this.service = service;
   }
 
-  @GetMapping("/circuits")
+  @GetMapping
   public List<CircuitResponse> list(
-      @RequestParam(name = "guide_id", required = false) Long guideId) {
-    return service.list(guideId);
+      @RequestParam(required = false) String ville, @RequestParam(required = false) Long guideId) {
+    return service.list(ville, guideId);
   }
 
-  @GetMapping("/guides/{guideId}/circuits")
-  public List<CircuitResponse> byGuide(@PathVariable long guideId) {
-    return service.list(guideId);
-  }
-
-  @GetMapping("/circuits/{id}")
+  @GetMapping("/{id}")
   public CircuitResponse get(@PathVariable long id) {
     return service.get(id);
   }
 
-  @PostMapping("/circuits")
+  @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public CircuitResponse create(@Valid @RequestBody CircuitRequest request) {
     return service.create(request);
   }
 
-  @PutMapping("/circuits/{id}")
+  @PutMapping("/{id}")
   public CircuitResponse update(@PathVariable long id, @Valid @RequestBody CircuitRequest request) {
     return service.update(id, request);
   }
 
-  @DeleteMapping("/circuits/{id}")
+  @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void archive(@PathVariable long id) {
     service.archive(id);
-  }
-
-  @GetMapping("/circuits/{id}/reservation-details")
-  public CircuitResponse bookable(@PathVariable long id) {
-    return service.bookable(id);
   }
 }

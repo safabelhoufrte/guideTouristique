@@ -2,5 +2,11 @@ package ma.tourisme.circuit.model;
 
 import java.math.BigDecimal;
 
-/** Internal model; HTTP serialization belongs to the DTOs. */
-public record Circuit(long id, String titre, BigDecimal prix, long guideId, boolean disponible) {}
+public record Circuit(
+    long id,
+    String titre,
+    String description,
+    String ville,
+    Integer dureeHeures,
+    BigDecimal prix,
+    long guideId) {}

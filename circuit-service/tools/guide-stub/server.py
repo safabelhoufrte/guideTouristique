@@ -6,11 +6,11 @@ import re
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        match = re.fullmatch(r'/guides/(\d+)', self.path)
+        match = re.fullmatch(r'/api/guides/(\d+)', self.path)
         guide_id = int(match.group(1)) if match else None
         if guide_id in (1, 2):
             status = 200
-            body = {'id': guide_id, 'actif': guide_id == 1,
+            body = {'id': guide_id, 'disponible': guide_id == 1,
                     'nom': 'Guide de démonstration', 'ville': 'Agadir', 'langues': ['Français']}
         else:
             status, body = 404, {'detail': 'Guide introuvable'}
@@ -24,6 +24,6 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--host', default='127.0.0.1')
-    parser.add_argument('--port', type=int, default=8001)
+    parser.add_argument('--port', type=int, default=8081)
     args = parser.parse_args()
     ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()

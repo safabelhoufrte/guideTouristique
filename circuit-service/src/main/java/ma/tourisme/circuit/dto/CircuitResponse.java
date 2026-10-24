@@ -1,17 +1,24 @@
 package ma.tourisme.circuit.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import ma.tourisme.circuit.model.Circuit;
 
 public record CircuitResponse(
     long id,
     String titre,
+    String description,
+    String ville,
+    Integer dureeHeures,
     BigDecimal prix,
-    @JsonProperty("guide_id") long guideId,
-    boolean disponible) {
+    long guideId) {
   public static CircuitResponse from(Circuit circuit) {
     return new CircuitResponse(
-        circuit.id(), circuit.titre(), circuit.prix(), circuit.guideId(), circuit.disponible());
+        circuit.id(),
+        circuit.titre(),
+        circuit.description(),
+        circuit.ville(),
+        circuit.dureeHeures(),
+        circuit.prix(),
+        circuit.guideId());
   }
 }

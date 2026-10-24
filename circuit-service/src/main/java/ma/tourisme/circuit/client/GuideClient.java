@@ -23,13 +23,13 @@ public class GuideClient {
   }
 
   // Read only required wire fields; extra teammate fields are harmless.
-  public void requireActive(long guideId) {
+  public void requireExisting(long guideId) {
     JsonNode guide;
     try {
-      guide = http.get().uri("/guides/{id}", guideId).retrieve().body(JsonNode.class);
+      guide = http.get().uri("/api/guides/{id}", guideId).retrieve().body(JsonNode.class);
     } catch (RestClientResponseException error) {
       if (error.getStatusCode().value() == 404) {
-        throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Guide introuvable");
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Guide introuvable");
       }
       throw unavailable();
     } catch (RestClientException error) {
@@ -40,12 +40,10 @@ public class GuideClient {
         || !guide.path("id").isIntegralNumber()
         || !guide.path("id").canConvertToLong()
         || guide.path("id").longValue() != guideId
-        || !guide.path("actif").isBoolean()) {
+        || !guide.path("disponible").isBoolean()) {
       throw unavailable();
     }
-    if (!guide.path("actif").booleanValue()) {
-      throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Guide archivé");
-    }
+    // An unavailable guide still exists; Reservation checks booking availability.
   }
 
   private ResponseStatusException unavailable() {

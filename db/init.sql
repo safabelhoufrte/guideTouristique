@@ -1,36 +1,23 @@
 \set ON_ERROR_STOP on
-\getenv db_name POSTGRES_DB
 \getenv guide_password GUIDE_DB_PASSWORD
 \getenv circuit_password CIRCUIT_DB_PASSWORD
 \getenv reservation_password RESERVATION_DB_PASSWORD
 \getenv avis_password AVIS_DB_PASSWORD
 
--- First-time provisioning only. Each service owns its schema and migrations.
--- psql quotes the password variables as SQL literals; no shell substitution.
-BEGIN;
-
-CREATE ROLE guide LOGIN PASSWORD :'guide_password'
-    NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
-CREATE ROLE circuit LOGIN PASSWORD :'circuit_password'
-    NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
-CREATE ROLE reservation LOGIN PASSWORD :'reservation_password'
-    NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
-CREATE ROLE avis LOGIN PASSWORD :'avis_password'
-    NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
-
-REVOKE ALL ON DATABASE :"db_name" FROM PUBLIC;
-GRANT CONNECT ON DATABASE :"db_name" TO guide, circuit, reservation, avis;
-REVOKE ALL ON SCHEMA public FROM PUBLIC;
-
-CREATE SCHEMA guide AUTHORIZATION guide;
-CREATE SCHEMA circuit AUTHORIZATION circuit;
-CREATE SCHEMA reservation AUTHORIZATION reservation;
-CREATE SCHEMA avis AUTHORIZATION avis;
-
-ALTER ROLE guide IN DATABASE :"db_name" SET search_path = guide;
-ALTER ROLE circuit IN DATABASE :"db_name" SET search_path = circuit;
-ALTER ROLE reservation IN DATABASE :"db_name" SET search_path = reservation;
-ALTER ROLE avis IN DATABASE :"db_name" SET search_path = avis;
-
--- No business tables or cross-schema grants: service migrations create tables.
-COMMIT;
+-- First-time provisioning only; business tables belong to service migrations.
+CREATE ROLE guide LOGIN PASSWORD :'guide_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
+CREATE ROLE circuit LOGIN PASSWORD :'circuit_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
+CREATE ROLE reservation LOGIN PASSWORD :'reservation_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
+CREATE ROLE avis LOGIN PASSWORD :'avis_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
+CREATE DATABASE guide_db OWNER guide;
+CREATE DATABASE circuit_db OWNER circuit;
+CREATE DATABASE reservation_db OWNER reservation;
+CREATE DATABASE avis_db OWNER avis;
+REVOKE ALL ON DATABASE guide_db FROM PUBLIC;
+REVOKE ALL ON DATABASE circuit_db FROM PUBLIC;
+REVOKE ALL ON DATABASE reservation_db FROM PUBLIC;
+REVOKE ALL ON DATABASE avis_db FROM PUBLIC;
+GRANT CONNECT ON DATABASE guide_db TO guide;
+GRANT CONNECT ON DATABASE circuit_db TO circuit;
+GRANT CONNECT ON DATABASE reservation_db TO reservation;
+GRANT CONNECT ON DATABASE avis_db TO avis;

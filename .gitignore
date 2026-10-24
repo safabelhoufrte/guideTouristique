@@ -1,8 +1,10 @@
 .env
-**/.env
-**/target/
+target/
+node_modules/
+dist/
+.idea/
+.vscode/
+*.log
 **/data/
 **/__pycache__/
-*.log
-.idea/
 *.iml

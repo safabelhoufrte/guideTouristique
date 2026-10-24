@@ -1,9 +1,4 @@
-# Optional Guide simulator for developing Circuit before Guide is available.
+# Temporary Guide simulator; the guide branch has no Java implementation yet.
 services:
-  circuit-service:
-    environment:
-      GUIDE_SERVICE_URL: http://guide-stub:8001
-  guide-stub:
+  guide-service:
     build: ./circuit-service/tools/guide-stub
-    ports:
-      - "127.0.0.1:8001:8001"
