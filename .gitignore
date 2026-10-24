@@ -5,3 +5,6 @@ dist/
 .idea/
 .vscode/
 *.log
+**/data/
+**/__pycache__/
+*.iml

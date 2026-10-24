@@ -159,7 +159,7 @@ docker compose up -d --build
 | Réservation service | http://localhost:8083 |
 | Avis service | http://localhost:8084 |
 | Frontend | http://localhost:4200 |
-| PostgreSQL | `localhost:5432` |
+| PostgreSQL | `localhost:15433` (configurable) |
 
 ### Tester uniquement la base de données
 
@@ -181,8 +181,8 @@ Chaque développeuse ajoute **son bloc** en s'inspirant de `guide-service`. Exem
     environment:
       SERVER_PORT: 8082
       DB_URL: jdbc:postgresql://postgres:5432/circuit_db
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
+      DB_USER: circuit
+      DB_PASSWORD: ${CIRCUIT_DB_PASSWORD}
       GUIDE_SERVICE_URL: http://guide-service:8081
     depends_on:
       postgres:
@@ -206,6 +206,17 @@ Les URLs des autres services se lisent aussi via une variable, par exemple :
 ```properties
 guide.service.url=${GUIDE_SERVICE_URL:http://localhost:8081}
 ```
+
+### État vérifié de Circuit sur cette branche
+
+- Circuit respecte `docs/api-contracts.md` : Java 21, port 8082, `/api/circuits`, JSON camelCase et base `circuit_db`. Le dépôt JDBC conserve la séparation contrôleur/service/repository et utilise Flyway.
+- La branche `guide` contient actuellement le squelette Docker et les contrats, sans `pom.xml` ni code Guide. Un test avec le vrai Guide reste à effectuer après son implémentation.
+- Pour tester maintenant : `docker compose -f docker-compose.yml -f compose.demo.yaml up --build -d`, puis `python circuit-service/scripts/demo-client.py`. Le mode démo remplace seulement le build Guide par un simulateur Python.
+- Dans `.env`, définir `DB_USER`, `DB_PASSWORD` administrateur et les quatre mots de passe `GUIDE_DB_PASSWORD`, `CIRCUIT_DB_PASSWORD`, `RESERVATION_DB_PASSWORD`, `AVIS_DB_PASSWORD`. Chaque application reçoit uniquement son propre compte limité.
+- PostgreSQL est accessible localement sur `localhost:15433` par défaut (`DB_HOST_PORT`), et sur `postgres:5432` entre conteneurs. Les anciennes bases et volumes locaux ne sont pas supprimés ni importés automatiquement.
+- Si le port local 8082 est occupé, régler `CIRCUIT_HOST_PORT` dans `.env` (par exemple 18092). Le port interne reste 8082 ; utiliser alors `python circuit-service/scripts/demo-client.py --url http://localhost:18092` et Swagger sur ce même port local.
+- `init.sql` crée les quatre bases et comptes uniquement pour un volume neuf. Les évolutions des tables Circuit passent par de nouvelles migrations Flyway, sans modifier V1 déjà appliquée ni utiliser `down -v`. Pour un volume existant provenant de main2, un administrateur doit créer les comptes et attribuer les bases avant de lancer cette configuration.
+- Les champs ajoutés par V2 restent null pour les anciens enregistrements dont ces informations sont inconnues ; ils deviennent obligatoires dans les nouvelles requêtes.
 
 ## 8. Stratégie de branches Git
 
@@ -452,7 +463,7 @@ Noms des services : `postgres`, `guide-service`, `circuit-service`, `reservation
 | `Cannot connect to the Docker daemon` | Lancer Docker Desktop et attendre qu'il soit prêt |
 | `port is already allocated` | Un autre programme utilise le port : changer le port de gauche (ex. `"5433:5432"`) |
 | `Connection refused` vers PostgreSQL | Utiliser `postgres` et non `localhost` dans `DB_URL` |
-| `database "xxx_db" does not exist` | `docker compose down -v` puis relancer (le script `init.sql` ne s'exécute qu'à la première création) |
+| `database "xxx_db" does not exist` | Créer la base explicitement avec le compte administrateur, sans supprimer le volume existant |
 | `pom.xml not found` au build | Le projet Spring Boot doit être à la racine du dossier du service |
 | `Your local changes would be overwritten` | Commiter (`git add .` puis `git commit`) ou `git stash` avant de changer de branche |
 | Erreur CORS dans le navigateur | Autoriser `http://localhost:4200` dans le service Java |

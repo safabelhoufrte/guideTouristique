@@ -1,0 +1,25 @@
+name: Verify Circuit
+on: [push, pull_request]
+defaults:
+  run:
+    working-directory: circuit-service
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: circuit-service/pom.xml
+      - run: mvn -B -ntp verify
+      - run: docker compose -f ../docker-compose.yml -f ../compose.demo.yaml config --quiet
+        env:
+          DB_USER: postgres
+          DB_PASSWORD: ci-admin-only
+          GUIDE_DB_PASSWORD: ci-guide-only
+          CIRCUIT_DB_PASSWORD: ci-circuit-only
+          RESERVATION_DB_PASSWORD: ci-reservation-only
+          AVIS_DB_PASSWORD: ci-avis-only

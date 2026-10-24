@@ -1,4 +1,9 @@
-target/
+target
+data
 .git
-.idea/
-.vscode/
+.env
+*.log
+tmp
+docs
+tools
+__pycache__
