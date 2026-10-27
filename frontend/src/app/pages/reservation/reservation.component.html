@@ -1,0 +1,115 @@
+<section class="banner">
+  <div class="container banner-inner">
+    <span class="banner-icon">📅</span>
+    <div>
+      <h1>Réserver un circuit</h1>
+      <p>Choisissez votre circuit, votre date et le nombre de participants.</p>
+    </div>
+  </div>
+</section>
+
+<main class="container grid">
+  <!-- Formulaire -->
+  <form class="panel" [formGroup]="form" (ngSubmit)="confirmer()">
+    <h2 class="panel-title">👤 Votre réservation</h2>
+
+    <div class="panel-body">
+      <label>Circuit</label>
+      <div class="field">
+        <span class="icon">🗺️</span>
+        <select formControlName="circuitId">
+          @for (c of circuits; track c.id) {
+            <option [ngValue]="c.id">{{ c.titre }}</option>
+          }
+        </select>
+      </div>
+
+      <label>Guide touristique</label>
+      <div class="field">
+        <span class="icon">👤</span>
+        <select disabled>
+          <option>{{ guideNom }}</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Date de la visite</label>
+          <div class="field">
+            <span class="icon">📅</span>
+            <input type="date" formControlName="dateVisite" />
+          </div>
+        </div>
+        <div>
+          <label>Nombre de personnes</label>
+          <div class="field">
+            <span class="icon">👥</span>
+            <select formControlName="nbPersonnes">
+              @for (n of nbOptions; track n) {
+                <option [ngValue]="n">{{ n }} {{ n > 1 ? 'personnes' : 'personne' }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <label>Nom complet</label>
+      <div class="field">
+        <span class="icon">👤</span>
+        <input type="text" placeholder="Votre nom" formControlName="nom" />
+      </div>
+
+      <label>Adresse e-mail</label>
+      <div class="field">
+        <span class="icon">✉️</span>
+        <input type="email" placeholder="exemple@email.com" formControlName="email" />
+      </div>
+
+      <label>🎟️ Code promo <small>(optionnel)</small></label>
+      <div class="promo">
+        <input type="text" placeholder="Saisir un code promo" formControlName="codePromo" />
+        <button type="button" class="btn-outline" (click)="appliquerPromo()">Appliquer</button>
+      </div>
+      @if (promoMessage) {
+        <p [class.ok]="promoOk" [class.err]="!promoOk">{{ promoMessage }}</p>
+      }
+    </div>
+  </form>
+
+  <!-- Récapitulatif -->
+  <aside class="panel">
+    <h2 class="panel-title plain">📅 Récapitulatif</h2>
+
+    <div class="panel-body">
+      <div class="photo" style="background-image: url('/images/medina.jpg')"></div>
+
+      @if (circuitChoisi; as c) {
+        <h3>{{ c.titre }}</h3>
+        <p class="info">👤 Guide : {{ guideNom }}</p>
+        <p class="info">🕒 Durée : {{ c.dureeHeures }} heures</p>
+
+        <hr />
+        <div class="line"><span>Prix par personne</span><span>{{ c.prix }} MAD</span></div>
+        <div class="line"><span>Participants</span><span>{{ nbPersonnes }}</span></div>
+        @if (reduction > 0) {
+          <div class="line"><span>Réduction</span><span>-{{ reduction }} %</span></div>
+        }
+        <hr />
+      }
+
+      <div class="total"><span>Total estimé</span><strong>{{ total }} MAD</strong></div>
+
+      <span class="badge">{{ statut }}</span>
+
+      <button type="button" class="btn-confirm" (click)="confirmer()">
+        📅 Confirmer la réservation
+      </button>
+
+      @if (soumis && form.invalid) {
+        <p class="err">Veuillez remplir tous les champs correctement.</p>
+      }
+      @if (message) { <p class="ok">{{ message }}</p> }
+      @if (erreur) { <p class="err">{{ erreur }}</p> }
+    </div>
+  </aside>
+</main>
