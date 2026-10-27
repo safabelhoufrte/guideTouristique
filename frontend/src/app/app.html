@@ -1,0 +1,20 @@
+<header class="nav">
+  <div class="brand">
+    <span class="pin">📍</span>
+    <span class="logo">Guide Touristique</span>
+  </div>
+
+  <nav>
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Accueil</a>
+    <a routerLink="/guides" routerLinkActive="active">Guides</a>
+    <a routerLink="/circuits" routerLinkActive="active">Circuits</a>
+    <a routerLink="/reservations" routerLinkActive="active">Réservations</a>
+    <a routerLink="/avis" routerLinkActive="active">Avis</a>
+  </nav>
+
+  <span class="avatar">👤</span>
+</header>
+
+<router-outlet />
+
+<footer class="footer">Guide Touristique · Projet Web Services 2026</footer>
