@@ -27,5 +27,19 @@ services:
       postgres:
         condition: service_healthy
 
+  reservation-service:
+    build: ./reservation-service
+    ports:
+      - "8083:8083"
+    environment:
+      SERVER_PORT: 8083
+      DB_URL: jdbc:postgresql://postgres:5432/reservation_db
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      GUIDE_SERVICE_URL: http://guide-service:8081
+      CIRCUIT_SERVICE_URL: http://circuit-service:8082
+    depends_on:
+      postgres:
+        condition: service_healthy
 volumes:
   pgdata:
