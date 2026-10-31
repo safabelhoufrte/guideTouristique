@@ -1,0 +1,110 @@
+<header class="page-heading">
+  <div class="heading-inner">
+    <h1>Nos circuits</h1>
+    <p>Une ville, un guide local et de belles découvertes. Trouvez la visite qui vous ressemble.</p>
+  </div>
+</header>
+<main class="circuit-page">
+  <form
+    class="filters surface"
+    [formGroup]="form"
+    (ngSubmit)="filter()"
+    aria-label="Filtrer les circuits"
+  >
+    <div>
+      <label for="circuit-ville">Ville</label>
+      <input id="circuit-ville" formControlName="ville" placeholder="Ex. Agadir" maxlength="120" />
+    </div>
+    <div>
+      <label for="circuit-guide">Guide</label>
+      <select
+        id="circuit-guide"
+        formControlName="guideId"
+        [attr.aria-describedby]="vm().guideError ? 'guide-warning' : null"
+      >
+        <option value="">Tous les guides</option>
+        @for (guide of vm().guides; track guide.id) {
+          <option [value]="guide.id">{{ guide.nom }}</option>
+        }
+      </select>
+    </div>
+    <button class="action primary" type="submit">Filtrer</button>
+    @if (filterParams['ville'] || filterParams['guideId']) {
+      <button class="action subtle" type="button" (click)="reset()">Réinitialiser</button>
+    }
+  </form>
+
+  @if (vm().loading) {
+    <div class="state surface" role="status">
+      <span class="loader" aria-hidden="true"></span>Chargement des circuits…
+    </div>
+  } @else if (vm().error) {
+    <section class="state surface" role="alert">
+      <h2>Les circuits sont momentanément indisponibles</h2>
+      <p>Votre recherche est conservée. Réessayez dans quelques instants.</p>
+      <button class="action primary" type="button" (click)="retry()">Réessayer</button>
+    </section>
+  } @else {
+    @if (vm().guideError) {
+      <p id="guide-warning" class="notice" role="status">
+        Les informations des guides sont momentanément indisponibles. Vous pouvez consulter les
+        circuits et filtrer par ville.
+      </p>
+    }
+    <p class="result-count" role="status">
+      {{ vm().circuits.length }} circuit{{ vm().circuits.length > 1 ? 's' : '' }} trouvé{{
+        vm().circuits.length > 1 ? 's' : ''
+      }}
+    </p>
+    @if (!vm().circuits.length) {
+      <section class="state surface">
+        <h2>Aucun circuit pour cette recherche</h2>
+        <p>Essayez une autre ville ou consultez tous nos circuits.</p>
+        <button class="action primary" type="button" (click)="reset()">
+          Voir tous les circuits
+        </button>
+      </section>
+    } @else {
+      <div class="circuit-grid">
+        @for (circuit of vm().circuits; track circuit.id) {
+          <article class="circuit-card surface">
+            <div class="circuit-cover" aria-hidden="true">
+              <img src="/images/circuit-landscape.svg" alt="" width="640" height="360" />
+              @if (circuit.ville) {
+                <span class="city-tag">{{ circuit.ville }}</span>
+              }
+            </div>
+            <div class="card-content">
+              <p class="card-meta">
+                {{
+                  circuit.dureeHeures === null
+                    ? 'Durée à confirmer'
+                    : circuit.dureeHeures + ' h de découverte'
+                }}
+              </p>
+              <h2>{{ circuit.titre }}</h2>
+              <p class="description">
+                {{
+                  circuit.description || 'Découvrez ce circuit et les informations de votre visite.'
+                }}
+              </p>
+              <p class="guide-name">
+                <span class="guide-dot" aria-hidden="true"></span>{{ guideName(circuit.guideId) }}
+              </p>
+              <p class="price">
+                {{ circuit.prix | currency: 'MAD' : 'code' : '1.0-2' }} <span>/ personne</span>
+              </p>
+              <a
+                class="action primary wide"
+                [routerLink]="['/circuits', circuit.id]"
+                [queryParams]="filterParams"
+                [attr.aria-label]="'Voir le circuit ' + circuit.titre"
+                >Voir le circuit <span aria-hidden="true">→</span></a
+              >
+            </div>
+          </article>
+        }
+      </div>
+    }
+  }
+</main>

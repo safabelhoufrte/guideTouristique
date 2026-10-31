@@ -39,5 +39,10 @@ services:
       GUIDE_SERVICE_URL: http://guide-service:8081
     depends_on:
       postgres: {condition: service_healthy}
+  frontend:
+    build: ./frontend
+    ports: ["127.0.0.1:${FRONTEND_HOST_PORT:-4200}:80"]
+    depends_on:
+      - circuit-service
 volumes:
   pgdata:

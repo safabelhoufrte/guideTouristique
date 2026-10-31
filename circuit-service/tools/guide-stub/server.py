@@ -6,12 +6,19 @@ import re
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        guides = [
+            {'id': 1, 'nom': 'Youssef Benali (démo)', 'ville': 'Agadir',
+             'langues': ['Arabe', 'Français', 'Anglais'], 'disponible': True},
+            {'id': 2, 'nom': 'Salma Amrani (démo)', 'ville': 'Marrakech',
+             'langues': ['Arabe', 'Français'], 'disponible': False},
+        ]
         match = re.fullmatch(r'/api/guides/(\d+)', self.path)
         guide_id = int(match.group(1)) if match else None
-        if guide_id in (1, 2):
+        if self.path == '/api/guides':
+            status, body = 200, guides
+        elif guide_id in (1, 2):
             status = 200
-            body = {'id': guide_id, 'disponible': guide_id == 1,
-                    'nom': 'Guide de démonstration', 'ville': 'Agadir', 'langues': ['Français']}
+            body = next(guide for guide in guides if guide['id'] == guide_id)
         else:
             status, body = 404, {'detail': 'Guide introuvable'}
         payload = json.dumps(body, ensure_ascii=False).encode('utf-8')

@@ -1,0 +1,135 @@
+@use 'circuit-base';
+.filters {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  padding: 26px;
+  margin-bottom: 24px;
+}
+.filters > div {
+  flex: 1;
+  min-width: 0;
+}
+label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+input,
+select {
+  min-height: 44px;
+  border-color: var(--panel-border);
+  border-radius: 10px;
+  padding: 13px 14px;
+  color: #3a6ea5;
+}
+.result-count {
+  font-size: 15px;
+  color: var(--muted);
+  margin: 0 0 18px;
+}
+.circuit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+}
+.circuit-card {
+  overflow: hidden;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+}
+.circuit-cover {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #cffafe;
+  height: 170px;
+}
+.city-tag {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  border-radius: 5px;
+  padding: 5px 10px;
+  background: white;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 12px;
+}
+.card-content {
+  padding-top: 18px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.card-meta {
+  color: var(--primary);
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.circuit-card h2 {
+  font-size: 22px;
+  color: var(--primary-hover);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.description {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 10px 0 16px;
+}
+.guide-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  margin: auto 0 0;
+  padding-top: 4px;
+}
+.guide-dot {
+  background: #d2edf0;
+  border: 5px solid #eaf6f7;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.price {
+  font-weight: 700;
+  font-size: 26px;
+  color: var(--primary);
+  margin: 18px 0;
+}
+.price span {
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 400;
+}
+
+@media (max-width: 960px) {
+  .circuit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .filters {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 600px) {
+  .circuit-grid {
+    grid-template-columns: 1fr;
+  }
+  .filters > div {
+    flex-basis: 100%;
+  }
+  .filters .action {
+    flex: 1;
+  }
+}
