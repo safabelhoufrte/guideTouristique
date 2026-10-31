@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap');
+
+:root {
+  --primary: #0e7490;
+  --primary-hover: #095d73;
+  --panel-tint: #eef8fa;
+  --panel-border: #d5e4e8;
+  --accent: #f59e0b;
+  --bg: #f8f9fb;
+  --text: #1e293b;
+  --muted: #64748b;
+  --border: #cbd5e1;
+  --radius: 12px;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+}
+
+.card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  background: #fff;
+}
+
+.btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 13px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-accent {
+  background: var(--accent);
+  color: var(--text);
+  width: 100%;
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #0e7490;
+  outline-offset: 3px;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

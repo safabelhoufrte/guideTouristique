@@ -1,0 +1,109 @@
+<main class="circuit-page">
+  <a class="back-link" routerLink="/circuits" [queryParams]="filterParams">← Retour aux circuits</a>
+  @if (vm().loading) {
+    <div class="state surface" role="status">Chargement du circuit…</div>
+  } @else if (vm().error) {
+    <section class="state surface" role="alert">
+      <h1>
+        {{
+          vm().error === 'missing'
+            ? 'Ce circuit n’est plus disponible'
+            : 'Impossible de charger ce circuit'
+        }}
+      </h1>
+      <p>
+        {{
+          vm().error === 'missing'
+            ? 'Découvrez les autres visites proposées par nos guides.'
+            : 'Réessayez dans quelques instants.'
+        }}
+      </p>
+      @if (vm().error === 'unavailable') {
+        <button class="action primary" (click)="retry()">Réessayer</button>
+      } @else {
+        <a class="action primary" routerLink="/circuits">Voir les circuits</a>
+      }
+    </section>
+  } @else if (vm().circuit; as circuit) {
+    <header class="page-heading detail-heading">
+      <h1>{{ circuit.titre }}</h1>
+      <p>
+        {{ circuit.ville || 'Ville à confirmer' }} <span aria-hidden="true">·</span>
+        {{
+          circuit.dureeHeures === null
+            ? 'Durée à confirmer'
+            : circuit.dureeHeures + ' heures de visite'
+        }}
+      </p>
+    </header>
+    <div class="detail-grid">
+      <article class="surface detail-content">
+        <div class="detail-cover">
+          <img src="/images/circuit-landscape.svg" alt="" width="640" height="360" />
+        </div>
+        <div class="detail-body">
+          <h2>Au programme</h2>
+          <p class="long-description">
+            {{
+              circuit.description ||
+                'Le programme détaillé de cette visite sera bientôt disponible.'
+            }}
+          </p>
+          <div class="facts">
+            <div>
+              <span>Ville</span><strong>{{ circuit.ville || 'À confirmer' }}</strong>
+            </div>
+            <div>
+              <span>Durée</span
+              ><strong>{{
+                circuit.dureeHeures === null ? 'À confirmer' : circuit.dureeHeures + ' h'
+              }}</strong>
+            </div>
+            <div>
+              <span>Tarif par personne</span
+              ><strong>{{ circuit.prix | currency: 'MAD' : 'code' : '1.0-2' }}</strong>
+            </div>
+          </div>
+          <section class="guide-panel" aria-labelledby="guide-title">
+            <h2 id="guide-title">Votre guide</h2>
+            @if (vm().guide; as guide) {
+              <h3>{{ guide.nom }}</h3>
+              @if (guide.ville) {
+                <p>{{ guide.ville }}</p>
+              }
+              @if (guide.langues?.length) {
+                <p>Langues : {{ guide.langues?.join(', ') }}</p>
+              }
+              <span class="availability" [class.unavailable]="!guide.disponible">{{
+                guide.disponible ? 'Disponible' : 'Indisponible pour le moment'
+              }}</span>
+            } @else {
+              <p role="status">Les informations du guide sont momentanément indisponibles.</p>
+              <button class="text-button" (click)="retry()">Recharger les informations</button>
+            }
+          </section>
+        </div>
+      </article>
+      <aside class="surface booking-card" aria-labelledby="booking-title">
+        <p class="eyebrow">UNE VISITE AVEC UN GUIDE LOCAL</p>
+        <h2 id="booking-title">Envie de découvrir ?</h2>
+        <p class="booking-price">
+          {{ circuit.prix | currency: 'MAD' : 'code' : '1.0-2' }}<span>par personne</span>
+        </p>
+        <p>Choisissez votre date et le nombre de participants à l’étape suivante.</p>
+        @if (vm().guide?.disponible === false) {
+          <button class="action primary wide" disabled>Guide indisponible</button>
+          <p class="small-note">Revenez plus tard ou choisissez un autre circuit.</p>
+        } @else {
+          <a
+            class="action accent wide"
+            routerLink="/reservations"
+            [queryParams]="{ circuitId: circuit.id }"
+            >Réserver ce circuit <span aria-hidden="true">→</span></a
+          >
+          <p class="small-note">La disponibilité est vérifiée lors de votre demande.</p>
+        }
+      </aside>
+    </div>
+  }
+</main>
