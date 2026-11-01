@@ -1,0 +1,152 @@
+@use 'circuit-base';
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--primary);
+  font-size: 14px;
+  margin-bottom: 20px;
+  text-decoration: none;
+}
+.back-link:hover {
+  text-decoration: underline;
+}
+.detail-heading {
+  margin-bottom: 28px;
+  padding: 28px 26px;
+  border-radius: 16px;
+}
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.detail-content {
+  overflow: hidden;
+}
+.detail-cover {
+  aspect-ratio: 2.25;
+  background: #cffafe;
+}
+.detail-body {
+  padding: 26px;
+}
+.detail-body h2,
+.booking-card h2 {
+  font-size: 22px;
+  color: var(--primary);
+}
+.long-description {
+  color: var(--muted);
+  line-height: 1.85;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-block: 1px solid #e9eef2;
+  padding: 22px 0;
+  margin: 26px 0;
+  gap: 16px;
+}
+.facts span,
+.facts strong {
+  display: block;
+}
+.facts span {
+  color: var(--muted);
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+.facts strong {
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.guide-panel h3 {
+  margin: 20px 0 6px;
+  font-size: 22px;
+  color: var(--primary-hover);
+}
+.guide-panel p {
+  color: var(--muted);
+  margin: 8px 0;
+  font-size: 15px;
+}
+.availability {
+  display: inline-block;
+  border-radius: 5px;
+  padding: 6px 10px;
+  background: #e9f5ed;
+  color: #25623b;
+  font-size: 12px;
+  margin-top: 10px;
+}
+.availability.unavailable {
+  color: #795300;
+  background: #fff4d6;
+}
+.booking-card {
+  padding: 26px;
+}
+.booking-price {
+  font-size: 26px;
+  background: var(--panel-tint);
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-weight: 700;
+  margin: 28px 0;
+}
+.booking-price span {
+  display: block;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 400;
+  margin-top: 6px;
+}
+.booking-card > p:not(.eyebrow):not(.booking-price) {
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.7;
+}
+.booking-card .action {
+  margin-top: 10px;
+}
+.booking-card .small-note {
+  font-size: 13px !important;
+  text-align: center;
+  margin-bottom: 0;
+}
+.text-button {
+  border: 0;
+  padding: 10px 0;
+  min-height: 44px;
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+@media (max-width: 960px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .detail-body {
+    padding: 20px;
+  }
+  .facts {
+    grid-template-columns: 1fr;
+  }
+  .facts > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .facts span {
+    margin-bottom: 0;
+  }
+}
