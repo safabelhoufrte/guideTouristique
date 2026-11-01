@@ -1,5 +1,11 @@
 # 🧭 Guide Touristique
 
+> **État actuel de main2 :** frontend public et initialisation PostgreSQL partagés. Lire
+> [le guide de lancement et de compatibilité](docs/shared-frontend.md) avant de suivre le planning initial ci-dessous.
+> L’authentification et les espaces privés sont isolés sur `codex/auth-integration` pour revue d’équipe.
+> Les implémentations des services métier restent sur leurs branches ; elles ne sont pas toutes présentes dans main2.
+> Pour une base existante, conserver les volumes : `init.sql` sert uniquement à une première installation.
+
 Application web distribuée de **guide touristique**, composée de 4 modules métier autonomes qui communiquent entre eux via des **Web Services REST (JSON)**.
 
 > Projet Web Services 2026 – Développement collaboratif basé sur les Web Services
