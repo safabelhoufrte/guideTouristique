@@ -1,4 +1,4 @@
-# Contrats implémentés — branche circuit-service
+# Contrats implémentés — branche auth-integration
 
 HTTP/JSON, dates `YYYY-MM-DD`, montants MAD. Ports internes : Guide 8081, Circuit 8082, Réservation 8083, Avis 8084. Le frontend commun utilise `/api/...` ; le proxy transmet à chaque service.
 
@@ -29,7 +29,7 @@ Corps ADMIN : `nom`, `ville`, `langues` (tableau non vide), `tarifParJour` (posi
 | PUT `/api/circuits/{id}` | ADMIN | Modifier |
 | DELETE `/api/circuits/{id}` | ADMIN | Archiver (204) |
 
-Corps : `titre`, `description`, `ville`, `dureeHeures`, `prix`, **un seul `guideId`**. Circuit appelle GET Guide `/{id}` et exige un guide disponible. Aucun tableau de guides, aucune séance intermédiaire.
+Corps : `titre`, `description`, `ville`, `dureeHeures`, `prix`, **un seul `guideId`**. Circuit appelle GET Guide `/{id}` pour vérifier son existence. La disponibilité du guide est contrôlée par Réservation au moment de réserver. Aucun tableau de guides, aucune séance intermédiaire.
 
 ## Réservation — Mariem
 

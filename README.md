@@ -1,536 +1,390 @@
-# 🧭 Guide Touristique
+# Guide Touristique — intégrer l’authentification ensemble
 
-Application web distribuée de **guide touristique**, composée de 4 modules métier autonomes qui communiquent entre eux via des **Web Services REST (JSON)**.
+Bienvenue Safa, Nada, Mariem et Hajar ! Cette branche `auth-integration` rassemble une version locale de l’application avec connexion, comptes et permissions. Elle sert de référence pour ajouter l’authentification à vos services sans perdre le travail que chacune a déjà réalisé.
 
-## Espaces et connexion — branche circuit-service
+**Vous n’avez pas besoin de réécrire votre service.** Gardez vos fonctionnalités et votre organisation, puis adaptez les éléments de sécurité expliqués ci-dessous. Les versions Guide, Réservation et Avis présentes ici sont des propositions d’intégration à relire avec leurs responsables, pas des remplacements imposés.
 
-### Accueil et thème de connexion
+| Branche | Ce qu’on y trouve |
+|---|---|
+| `main2` | Le frontend public partagé, les photos et la configuration commune de première installation PostgreSQL |
+| `circuit-service` | Le service Circuit de Nada et ses pages publiques |
+| `auth-integration` | La connexion Keycloak, les espaces privés et une intégration de référence des quatre API |
 
-`/` affiche la page d’accueil publique avec la navigation commune. `/connexion` démarre directement la connexion Keycloak ; ce n’est pas une seconde page d’accueil. Le bouton **Connexion** ouvre une fenêtre modale ; ses actions démarrent la connexion ou l’inscription Keycloak avec le thème Guide Touristique. Les mots de passe restent saisis uniquement chez Keycloak. Une réservation protégée conserve sa destination après connexion ou inscription.
+Ne fusionnez pas toute cette branche dans `main2` pour récupérer seulement la connexion. Avancez service par service, avec une petite Pull Request relue par sa responsable.
 
-Le thème est dans `infra/keycloak/themes/guide-touristique`, monté en lecture seule par Docker Compose. Pour une installation existante, après `docker compose up -d --no-deps keycloak`, exécuter `python scripts/apply-auth-theme.py`. Ce script applique uniquement le thème, les langues et le lien de retour de l’application : il ne réimporte pas les comptes ni les paramètres SMTP. Une nouvelle installation sélectionne le thème via le fichier de realm. Pour revenir au thème standard, sélectionner `keycloak` dans **Realm settings → Themes → Login theme**.
+## Par où commencer ?
 
-Cette branche intègre les espaces Angular administrateur, guide et touriste, avec Keycloak et validation des JWT dans chacune des quatre API. Le planning ci-dessous décrit le plan initial ; les contrats effectifs sont dans [docs/api-contracts.md](docs/api-contracts.md).
+1. **Pour voir le résultat :** suivez [le démarrage local](#1-démarrer-la-version-avec-connexion).
+2. **Pour comprendre :** lisez [le parcours d’une connexion](#2-comment-la-connexion-fonctionne).
+3. **Pour coder :** appliquez [les étapes communes](#3-ce-que-chaque-service-spring-boot-doit-ajouter), puis [la partie de votre service](#4-la-partie-de-chacune).
+4. **Avant de partager :** utilisez [les vérifications](#7-vérifier-que-tout-fonctionne), puis [le parcours Git](#8-intégrer-sans-écraser-le-travail-des-autres).
 
-Pour démarrer : Docker Desktop, copier `.env.example` vers `.env`, renseigner les mots de passe PostgreSQL, puis :
+## 1. Démarrer la version avec connexion
 
-```sh
+### Ce qu’il faut sur votre PC
+
+- Git, Docker Desktop démarré et Python 3.
+- Pour développer hors Docker : Java 21 et Maven pour les services, Node.js 24 pour Angular.
+- Les ports locaux 4200 et 8180 disponibles. Les ports des API sont indiqués plus bas.
+
+### Première installation, dans un dossier de test
+
+Si vous avez des modifications non enregistrées, gardez votre dossier actuel. Le plus simple pour découvrir cette branche est un nouveau clone :
+
+```powershell
+git clone --branch auth-integration https://github.com/safabelhoufrte/guideTouristique.git guide-touristique-auth
+cd guide-touristique-auth
+Copy-Item .env.example .env
+```
+
+Ouvrez `.env` et remplacez les valeurs `replace-...` de `DB_PASSWORD`, `GUIDE_DB_PASSWORD`, `CIRCUIT_DB_PASSWORD`, `RESERVATION_DB_PASSWORD` et `AVIS_DB_PASSWORD` par vos mots de passe locaux.
+
+Puis, depuis la racine du projet :
+
+```powershell
 python scripts/setup-local-auth.py
 docker compose up --build -d
+docker compose ps
 ```
 
-Ouvrir `http://localhost:4200/connexion`. Les comptes `demo-admin`, `demo-guide`, `demo-touriste` et leurs mots de passe générés sont dans **`.local/demo-accounts.txt`**, exclu de Git. Console Keycloak : `http://localhost:8180/admin` (local-admin dans le même fichier). Ces comptes et le mode `start-dev` sont réservés au développement local.
+Le script génère les trois mots de passe Keycloak manquants dans `.env` et écrit les accès dans `.local/demo-accounts.txt`. **Il ne crée pas les mots de passe des bases métier et ne les remplace pas.** N’envoyez ni `.env` ni `.local/` sur GitHub.
 
-| Espace | Adresse | Permissions |
-|---|---|---|
-| Administrateur | `/administration` | Gérer circuits/guides, décider les réservations, modérer les avis |
-| Guide | `/espace-guide` | Modifier son profil, voir ses circuits et leurs réservations |
-| Touriste | `/espace-touriste` | Ses réservations/annulations, avis après une visite acceptée |
+Attention si l’application tourne déjà sur votre PC : les clones utilisent le même nom de projet Compose et les mêmes ports. Un nouveau dossier ne suffit pas à isoler les conteneurs. Arrêtez votre pile de développement précédente avec `docker compose stop` depuis son dossier, ou préparez une configuration réellement séparée avant de lancer une seconde pile. Gardez ses volumes.
 
-Le catalogue reste public. Un circuit a **un seul guide**. Les services communiquent par HTTP/JSON ; aucun ne lit la base d'un autre. PostgreSQL reste une instance commune avec une base et un utilisateur par service. Keycloak dispose d'une base et d'un volume séparés.
-
-Pour activer un guide : créer son compte dans Keycloak, attribuer le rôle de realm `GUIDE`, puis copier son UUID dans le profil Guide créé par l'administrateur. L'inscription publique donne uniquement `USER`. Les mots de passe ne transitent pas par les services métier. Les anciennes réservations sans propriétaire restent accessibles seulement à l'administrateur.
-
-Flyway applique les migrations au démarrage : **ne pas utiliser `down -v` pour mettre à jour**, car cela efface les données. Le fichier d'import Keycloak s'applique uniquement à la création du realm ; gérer ensuite les comptes/rôles dans sa console. Les ports hôte Circuit/Réservation se règlent dans `.env`, sans changer les ports internes Docker.
-
-Vérifier : `mvn verify` dans chacun des quatre services (Docker requis pour Testcontainers) ; `npm ci`, `npm test -- --watch=false`, `npm run build` dans `frontend`. Pour `npm start`, vérifier les ports du proxy dans `frontend/proxy.conf.cjs`.
-
-Créer d'abord les guides puis les circuits via l'espace administrateur. L'ancien script de démonstration Circuit exige désormais un jeton ADMIN dans la variable locale `DEMO_ADMIN_TOKEN`. Ne jamais enregistrer de jeton dans Git.
-
-Ne pas ajouter `compose.demo.yaml` pour les espaces authentifiés : ce fichier remplace Guide par un simulateur. Sur le poste Nada, le téléchargement de l'image Quay était indisponible : `.env` sélectionne une image locale construite avec la distribution officielle Keycloak 26.2.5. Les autres postes utilisent l'image officielle par défaut ; `KEYCLOAK_IMAGE` permet de sélectionner une image locale déjà construite sans changer le compose partagé.
-
-Cette intégration conserve le code Réservation de Mariem comme base et ajoute les API Guide/Avis nécessaires aux écrans. Faire relire ces modifications par Safa, Mariem et Hajar avant fusion dans `main2`.
-
-> Projet Web Services 2026 – Développement collaboratif basé sur les Web Services
-> **Deadline de livraison : 20/11/2026** · **Soutenances : à partir du 26/11/2026**
-
----
-
-## 📑 Table des matières
-
-1. [Présentation du projet](#1-présentation-du-projet)
-2. [L'équipe et la répartition](#2-léquipe-et-la-répartition)
-3. [Technologies utilisées](#3-technologies-utilisées)
-4. [Architecture](#4-architecture)
-5. [Structure du dépôt](#5-structure-du-dépôt)
-6. [Prérequis et installation](#6-prérequis-et-installation)
-7. [Lancer l'application avec Docker](#7-lancer-lapplication-avec-docker)
-8. [Stratégie de branches Git](#8-stratégie-de-branches-git)
-9. [Workflow de travail quotidien](#9-workflow-de-travail-quotidien)
-10. [Pull Requests et intégration](#10-pull-requests-et-intégration)
-11. [Conventions de l'équipe](#11-conventions-de-léquipe)
-12. [Documentation des API (Swagger)](#12-documentation-des-api-swagger)
-13. [Planning](#13-planning)
-14. [Aide-mémoire des commandes](#14-aide-mémoire-des-commandes)
-15. [Problèmes fréquents](#15-problèmes-fréquents)
-16. [Checklist de livraison](#16-checklist-de-livraison)
-
----
-
-## 1. Présentation du projet
-
-Le projet consiste à concevoir une application distribuée de guide touristique. Chaque module est **indépendant** : il a son propre code, sa propre base de données, son propre Dockerfile, et il **expose** et **consomme** des Web Services REST.
-
-| Module | Rôle |
+| Pour accéder à… | Adresse par défaut |
 |---|---|
-| **Guide** | Gestion des guides touristiques (profil, langues, ville, disponibilité) |
-| **Circuit** | Gestion des circuits touristiques, associés à un guide |
-| **Réservation** | Réservation d'un circuit auprès d'un guide |
-| **Avis** | Notes et commentaires sur les guides et les circuits |
+| La page d’accueil | http://localhost:4200/ |
+| La connexion | http://localhost:4200/connexion |
+| L’espace administrateur | http://localhost:4200/administration |
+| L’espace guide | http://localhost:4200/espace-guide |
+| L’espace touriste | http://localhost:4200/espace-touriste |
+| La console de gestion Keycloak | http://localhost:8180/admin |
+| Les API Guide / Circuit / Réservation / Avis | Ports 8081 / 8082 / 8083 / 8084 |
 
-## 2. L'équipe et la répartition
+`CIRCUIT_HOST_PORT`, `RESERVATION_HOST_PORT` et `FRONTEND_HOST_PORT` permettent de changer les ports exposés sur le PC. Les ports internes Docker restent les mêmes. Les exemples de ce README utilisent les ports par défaut.
 
-| Membre | Rôle | Module | Branche | Port |
-|---|---|---|---|---|
-| **Safa** | **Cheffe de projet** + développeuse | Guide | `guide` | 8081 |
-| **Nada** | Développeuse | Circuit | `circuit` | 8082 |
-| **Mariem** | Développeuse | Réservation | `reservation` | 8083 |
-| **Hajar** | Développeuse | Avis | `avis` | 8084 |
+### Avec quels comptes essayer ?
 
-
-## 3. Technologies utilisées
-
-| Couche | Technologie |
+| Compte | Utilisation |
 |---|---|
-| Backend | Java 21, Spring Boot 3 (Spring Web, Spring Data JPA) |
-| Frontend | Angular |
-| Base de données | PostgreSQL 16 (une instance, **une base par service**) |
-| Conteneurisation | Docker et Docker Compose |
-| Documentation API | Swagger / OpenAPI (springdoc-openapi) |
-| Gestion de code | Git et GitHub (branches, Pull Requests, Projects) |
+| `demo-touriste` | Réserver et retrouver ses réservations / avis |
+| `demo-guide` | Voir son profil et ses circuits / réservations associés |
+| `demo-admin` | Gérer les guides, circuits, réservations et avis dans l’application |
+| `demo-autre` | Second touriste, utile pour vérifier l’isolation entre utilisateurs |
+| `local-admin` | Administrer Keycloak, dans sa console uniquement |
 
-## 4. Architecture
+Les mots de passe sont dans votre propre `.local/demo-accounts.txt` : il n’y a pas de mot de passe partagé dans ce README. `local-admin` et `demo-admin` n’ont pas le même rôle ni le même usage.
 
-```
-                      ┌──────────────────────┐
-                      │   Frontend Angular   │  :4200
-                      └──────────┬───────────┘
-          ┌───────────────┬──────┴────────┬───────────────┐
-          ▼               ▼               ▼               ▼
-  ┌──────────────┐ ┌──────────────┐ ┌───────────────┐ ┌──────────────┐
-  │ guide-service│ │circuit-service│ │reservation-svc│ │  avis-service│
-  │    :8081     │ │    :8082     │ │    :8083      │ │    :8084     │
-  └──────┬───────┘ └──────┬───────┘ └───────┬───────┘ └──────┬───────┘
-         │                │                 │                │
-         ▼                ▼                 ▼                ▼
-     guide_db        circuit_db      reservation_db       avis_db
-                    └──────────── PostgreSQL :5432 ────────────┘
-```
+Sur une installation neuve, l’import Keycloak crée les comptes de démonstration, mais **ne remplit pas les tables métier**. Avec `demo-admin`, créez d’abord un profil Guide, puis un Circuit associé. Pour que `demo-guide` voie ce profil, associez son identifiant Keycloak comme expliqué dans la partie Safa.
 
-### Qui appelle qui (communication REST entre services)
+### Si vous avez déjà des données ou un realm Keycloak
 
-| Service | Expose | Consomme |
-|---|---|---|
-| guide-service | Liste, détail, disponibilité des guides | – |
-| circuit-service | Circuits | guide-service (`GET /api/guides/{id}`) |
-| reservation-service | Réservations | guide-service et circuit-service |
-| avis-service | Avis et note moyenne | guide-service et circuit-service |
+**Ne supprimez pas vos volumes et n’utilisez pas `docker compose down -v`.**
 
-> Entre conteneurs, les services s'appellent par **leur nom Docker** (ex. `http://guide-service:8081`), jamais par `localhost`.
+- `db/init.sql` s’exécute seulement lors de la création d’une base PostgreSQL vide. Sur une base existante, prévoyez une sauvegarde et une migration des comptes/permissions avec l’équipe.
+- Flyway applique les migrations métier nouvelles. Comparez-les à vos tables avant de les reprendre : un script `CREATE TABLE` déjà utilisé ne doit pas être recopié comme une nouvelle migration.
+- Le fichier de realm est importé à la première création. Modifier ce JSON ne met pas à jour un realm déjà présent.
+- Le script de préparation écrit les accès locaux ; il ne change pas les mots de passe des comptes déjà stockés dans Keycloak. Si vous avez changé ces mots de passe, utilisez ceux de votre installation.
+- Pour appliquer le thème à un realm existant, attendez que Keycloak soit prêt, puis lancez `python scripts/apply-auth-theme.py`. Ce script applique le thème, les langues et le lien de retour, en conservant comptes, rôles et paramètres SMTP.
 
-## 5. Structure du dépôt
+## 2. Comment la connexion fonctionne
 
-```
-guideTouristique/
-├── guide-service/          # Safa
-│   ├── Dockerfile
-│   └── .dockerignore
-├── circuit-service/        # Nada
-├── reservation-service/    # Mariem
-├── avis-service/           # Hajar
-├── frontend/               # Angular (Safa)
-├── db/
-│   └── init.sql            # Création des 4 bases PostgreSQL
-├── docs/
-│   └── api-contracts.md    # Contrats d'API (à respecter !)
-├── docker-compose.yml
-├── .env.example
-├── .gitignore
-└── README.md
-```
+Prenons un exemple : un touriste veut consulter ses réservations.
 
-## 6. Prérequis et installation
+1. Il clique sur **Connexion**. Angular ouvre le parcours Keycloak ; l’identifiant et le mot de passe sont saisis chez Keycloak.
+2. Après connexion, Angular reçoit un **access token JWT**, un jeton signé qui décrit le compte et ses rôles. Le parcours utilise le flux « authorization code » avec PKCE S256.
+3. Angular ajoute ce jeton à ses appels vers nos API :
 
-À installer sur chaque PC :
+   ```http
+   Authorization: Bearer <access_token>
+   ```
 
-- [Git](https://git-scm.com/)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (doit être **lancé** avant toute commande Docker)
-- JDK 21 et Maven (ou l'IDE IntelliJ / VS Code)
-- Node.js 20+ et Angular CLI (pour le frontend)
+4. L’API vérifie le jeton, puis vérifie que la personne a le droit de faire cette opération.
+5. Pour « mes réservations », elle recherche uniquement les lignes appartenant au compte connecté.
 
-Vérification :
+Keycloak gère les identifiants et mots de passe. Chaque service garde ses données métier et leurs liens avec le compte. Aucun service n’a besoin d’enregistrer un mot de passe utilisateur.
 
-```bash
-git --version
-docker --version
-docker compose version
-java -version
-```
+### Les quatre informations à reconnaître dans le jeton
 
-### Première installation (une seule fois)
-
-```bash
-# 1. Cloner le dépôt
-git clone https://github.com/<compte-github>/guideTouristique.git
-cd guideTouristique
-
-# 2. Créer son fichier d'environnement local (NE JAMAIS le commiter)
-cp .env.example .env
-
-# 3. Récupérer les branches distantes
-git fetch --all
-```
-
-## 7. Lancer l'application avec Docker
-
-```bash
-# Tout construire et lancer
-docker compose up --build
-
-# Ou en arrière-plan
-docker compose up -d --build
-```
-
-| Élément | URL |
+| Information | Signification dans notre projet |
 |---|---|
-| Guide service | http://localhost:8081 |
-| Circuit service | http://localhost:8082 |
-| Réservation service | http://localhost:8083 |
-| Avis service | http://localhost:8084 |
-| Frontend | http://localhost:4200 |
-| PostgreSQL | `localhost:15433` (configurable) |
+| `iss` | L’émetteur : `http://localhost:8180/realms/guide-touristique` en local |
+| `aud` | Le destinataire ; doit contenir `guide-touristique-api` |
+| `sub` | L’identifiant stable du compte ; on s’en sert pour la propriété des données |
+| `realm_access.roles` | Les rôles Keycloak : `USER`, `GUIDE`, `ADMIN` |
 
-### Tester uniquement la base de données
+Le realm s’appelle `guide-touristique` et le client Angular `guide-touristique-web`. Le client est public, sans secret à mettre dans Angular. L’API attend un **access token**, pas l’ID token utilisé pour les informations de connexion.
 
-```bash
-docker compose up -d postgres
-docker compose ps          # doit afficher "healthy"
-docker compose exec postgres psql -U postgres -c "\l"
-```
+**Un rôle et une propriété sont deux vérifications différentes.** Avoir le rôle USER permet de demander une réservation ; cela ne permet pas de lire celle d’un autre touriste. Le backend doit comparer le `sub` signé au propriétaire enregistré. L’e-mail ou un `userId` envoyé dans le JSON ne prouve pas l’identité.
 
-### Ajouter son service au `docker-compose.yml`
+## 3. Ce que chaque service Spring Boot doit ajouter
 
-Chaque développeuse ajoute **son bloc** en s'inspirant de `guide-service`. Exemple pour `circuit-service` :
+Faites cette adaptation sur une branche de travail de votre service. Les liens suivants montrent le code de référence ; adaptez les packages et les routes à votre projet.
 
-```yaml
-  circuit-service:
-    build: ./circuit-service
-    ports:
-      - "8082:8082"
-    environment:
-      SERVER_PORT: 8082
-      DB_URL: jdbc:postgresql://postgres:5432/circuit_db
-      DB_USER: circuit
-      DB_PASSWORD: ${CIRCUIT_DB_PASSWORD}
-      GUIDE_SERVICE_URL: http://guide-service:8081
-    depends_on:
-      postgres:
-        condition: service_healthy
-```
+Pour travailler seulement sur votre service depuis IntelliJ, vous pouvez lancer uniquement l’infrastructure de cette branche avec `docker compose up -d postgres keycloak-db keycloak`, après avoir préparé `.env`. Lancez ensuite votre service avec ses paramètres de base et JWT. Le frontend privé pourra être activé lors du test commun ; le frontend public de `main2` ne fournit pas encore les sessions authentifiées. N’exécutez pas en même temps la version Docker et la version IntelliJ du même service sur le même port.
 
-> ⚠️ Le fichier est partagé : pour éviter les conflits, chacune ajoute son bloc **à la fin de la section `services:`**, juste avant `volumes:`, et prévient la cheffe de projet.
+### Étape A — ajouter les dépendances
 
-### Configuration Spring Boot (`application.properties`)
-
-```properties
-server.port=${SERVER_PORT:8081}
-spring.datasource.url=${DB_URL}
-spring.datasource.username=${DB_USER}
-spring.datasource.password=${DB_PASSWORD}
-spring.jpa.hibernate.ddl-auto=update
-```
-
-Les URLs des autres services se lisent aussi via une variable, par exemple :
-
-```properties
-guide.service.url=${GUIDE_SERVICE_URL:http://localhost:8081}
-```
-
-### État vérifié de Circuit sur cette branche
-
-Le frontend partagé contient maintenant `/circuits` (filtres ville/guide) et `/circuits/{id}` (fiche et guide unique). Le bouton Réserver transmet `circuitId` à la page de Réservation. Le modèle reste **un guide par circuit**, sans séances ; `guideId` et `dureeHeures` sont conservés.
-
-- Avec Docker, `frontend` écoute sur `http://localhost:4200` (`FRONTEND_HOST_PORT`) et Nginx transmet `/api/*` aux services par leur nom Docker. Le backend Réservation de Mariem doit être intégré au Compose commun pour enregistrer une réservation ; aucun succès n'est simulé s'il est absent.
-- En développement : dans `frontend`, `npm ci`, puis `npm start`. Le proxy utilise les ports équipe 8081/8082/8083/8084. Si Circuit écoute sur 18092 côté PC, définir `CIRCUIT_API_URL=http://localhost:18092` dans l'environnement du processus Angular. Les autres variables sont `GUIDE_API_URL`, `RESERVATION_API_URL` et `AVIS_API_URL`.
-- Vérification frontend : `npm test -- --watch=false` et `npm run build`. Les pages Guide/Avis affichent un écran d'attente tant que les pages des coéquipières ne sont pas intégrées. Le parcours livré est public ; la sécurité ADMIN des écritures backend reste à intégrer avant exposition hors développement.
-- Pour ajouter volontairement des circuits de démonstration sans modifier les existants : `python circuit-service/scripts/seed-demo.py --url http://localhost:18092` (Guide démo 1/2 requis).
-
-- Circuit respecte `docs/api-contracts.md` : Java 21, port 8082, `/api/circuits`, JSON camelCase et base `circuit_db`. Le dépôt JDBC conserve la séparation contrôleur/service/repository et utilise Flyway.
-- La branche `guide` contient actuellement le squelette Docker et les contrats, sans `pom.xml` ni code Guide. Un test avec le vrai Guide reste à effectuer après son implémentation.
-- Pour tester maintenant : `docker compose -f docker-compose.yml -f compose.demo.yaml up --build -d`, puis `python circuit-service/scripts/demo-client.py`. Le mode démo remplace seulement le build Guide par un simulateur Python.
-- Dans `.env`, définir `DB_USER`, `DB_PASSWORD` administrateur et les quatre mots de passe `GUIDE_DB_PASSWORD`, `CIRCUIT_DB_PASSWORD`, `RESERVATION_DB_PASSWORD`, `AVIS_DB_PASSWORD`. Chaque application reçoit uniquement son propre compte limité.
-- PostgreSQL est accessible localement sur `localhost:15433` par défaut (`DB_HOST_PORT`), et sur `postgres:5432` entre conteneurs. Les anciennes bases et volumes locaux ne sont pas supprimés ni importés automatiquement.
-- Si le port local 8082 est occupé, régler `CIRCUIT_HOST_PORT` dans `.env` (par exemple 18092). Le port interne reste 8082 ; utiliser alors `python circuit-service/scripts/demo-client.py --url http://localhost:18092` et Swagger sur ce même port local.
-- `init.sql` crée les quatre bases et comptes uniquement pour un volume neuf. Les évolutions des tables Circuit passent par de nouvelles migrations Flyway, sans modifier V1 déjà appliquée ni utiliser `down -v`. Pour un volume existant provenant de main2, un administrateur doit créer les comptes et attribuer les bases avant de lancer cette configuration.
-- Les champs ajoutés par V2 restent null pour les anciens enregistrements dont ces informations sont inconnues ; ils deviennent obligatoires dans les nouvelles requêtes.
-
-## 8. Stratégie de branches Git
-
-```
-main            → version finale et stable (celle que le prof voit)
-  └── main2     → branche d'intégration et de tests
-        ├── guide         (Safa)
-        ├── circuit       (Nada)
-        ├── reservation   (Mariem)
-        └── avis          (Hajar)
-```
-
-| Branche | Rôle | Qui peut la modifier ? |
-|---|---|---|
-| `main` | Version finale, testée et validée | Uniquement via PR depuis `main2` (Safa) |
-| `main2` | Intégration : on y fusionne les services pour vérifier que tout marche ensemble | Uniquement via PR depuis une branche de service |
-| `guide`, `circuit`, `reservation`, `avis` | Développement d'un service | La propriétaire de la branche |
-
-**Règles d'or :**
-
-1. ❌ Personne ne pousse directement sur `main` ni sur `main2` (sauf Safa pour la config commune).
-2. ✅ Chacune travaille **uniquement dans le dossier de son service**.
-3. ✅ On fusionne d'abord vers `main2`, on teste, et **seulement ensuite** `main2` vers `main`.
-4. ✅ Si on doit modifier un fichier commun (`docker-compose.yml`, `docs/`), on prévient Safa.
-
-### Créer sa branche (une seule fois)
-
-```bash
-git checkout main2
-git pull origin main2
-
-# remplacer <service> par : circuit, reservation ou avis
-git checkout -b <service>
-git push -u origin <service>
-```
-
-## 9. Workflow de travail quotidien
-
-### Début de journée : se mettre à jour
-
-```bash
-git checkout <ma-branche>
-git pull origin <ma-branche>
-git merge main2        # récupérer les nouveautés communes
-```
-
-### Pendant le travail : commiter souvent
-
-```bash
-git status                       # voir ce qui a changé
-git add .
-git commit -m "feat: ajout endpoint GET /api/guides (#3)"
-git push origin <ma-branche>
-```
-
-### Convention des messages de commit
-
-| Préfixe | Utilisation | Exemple |
-|---|---|---|
-| `feat:` | nouvelle fonctionnalité | `feat: ajout entité Guide (#2)` |
-| `fix:` | correction de bug | `fix: erreur 404 sur GET /guides/{id}` |
-| `docs:` | documentation | `docs: mise à jour du contrat d'API` |
-| `chore:` | config, Docker, outils | `chore: ajout Dockerfile guide-service` |
-| `test:` | tests | `test: tests du CRUD guide` |
-| `refactor:` | amélioration du code | `refactor: séparation service/contrôleur` |
-
-> Le numéro `(#3)` renvoie à l'issue GitHub correspondante. Écrire `closes #3` dans une PR ferme automatiquement l'issue au merge.
-
-### Avant d'ouvrir une Pull Request (checklist)
-
-```bash
-git checkout <ma-branche>
-git pull origin main2          # intégrer les dernières modifications
-# → résoudre les conflits s'il y en a
-docker compose up --build      # vérifier que mon service démarre
-```
-
-- [ ] Mon service démarre sans erreur dans Docker
-- [ ] Mes endpoints respectent `docs/api-contracts.md`
-- [ ] Swagger est accessible
-- [ ] Aucun fichier `.env`, `target/` ou `node_modules/` dans le commit
-
-## 10. Pull Requests et intégration
-
-### A. Service → `main2` (par chaque développeuse)
-
-1. `git push origin <ma-branche>`
-2. Sur GitHub : **Pull requests → New pull request**
-3. **base : `main2`** ← **compare : `<ma-branche>`**
-4. Titre clair, description courte, `closes #numéro`, puis **Create pull request**
-5. Safa relit, teste, puis clique sur **Merge pull request**
-
-### B. `main2` → `main` (par Safa, une fois tout validé)
-
-1. Sur `main2` : `docker compose up --build` et test de **tous** les services.
-2. Pull request : **base `main`** ← **compare `main2`**.
-3. Merge, puis vérification finale sur `main`.
-
-Équivalent en ligne de commande (si les règles de protection le permettent) :
-
-```bash
-# Safa uniquement
-git checkout main2
-git pull origin main2
-git checkout main
-git pull origin main
-git merge main2
-git push origin main
-```
-
-### Pousser sa branche `guide` (Safa)
-
-```bash
-git checkout guide
-git add .
-git commit -m "feat: description du changement"
-git push origin guide
-```
-
-### Pousser le squelette ou la config commune sur `main2` (Safa)
-
-```bash
-git checkout main2
-git pull origin main2
-git add .
-git commit -m "chore: description du changement"
-git push origin main2
-
-# puis remettre les nouveautés dans guide
-git checkout guide
-git merge main2
-```
-
-### Résoudre un conflit
-
-Si Git affiche `CONFLICT`, ouvrir le fichier concerné : les zones en conflit sont entourées de `<<<<<<<`, `=======` et `>>>>>>>`. Garder le bon contenu (en discuter avec la personne concernée), supprimer ces marqueurs, puis :
-
-```bash
-git add .
-git commit -m "fix: résolution de conflit"
-git push
-```
-
-## 11. Conventions de l'équipe
-
-| Sujet | Règle |
-|---|---|
-| Préfixes d'URL | `/api/guides`, `/api/circuits`, `/api/reservations`, `/api/avis` |
-| Format des données | JSON |
-| Noms de champs JSON | camelCase (`dateCreation`) |
-| Identifiants | `Long` |
-| Dates | ISO 8601 (`2026-11-05` ou `2026-11-05T14:30:00`) |
-| Ports | 8081 guide · 8082 circuit · 8083 réservation · 8084 avis |
-| Langue du code | À fixer ensemble (tout en français ou tout en anglais) |
-
-**Codes HTTP :** `200` OK · `201` créé · `204` supprimé · `400` données invalides · `404` introuvable · `503` autre service indisponible.
-
-**Format d'erreur commun à tous les services :**
-
-```json
-{
-  "timestamp": "2026-11-05T14:30:00",
-  "status": 404,
-  "error": "Not Found",
-  "message": "Guide avec id 12 introuvable",
-  "path": "/api/guides/12"
-}
-```
-
-**Contrats d'API :** voir [`docs/api-contracts.md`](docs/api-contracts.md). Aucun endpoint ne change sans que le fichier soit modifié d'abord et que l'équipe soit prévenue.
-
-**CORS :** chaque service autorise `http://localhost:4200` (frontend Angular).
-
-**Appels entre services :** utiliser `RestTemplate` ou `WebClient` et gérer le cas où l'autre service est indisponible (réponse `503`).
-
-## 12. Documentation des API (Swagger)
-
-Dépendance Maven à ajouter dans chaque service :
+Dans votre `pom.xml`, en gardant vos dépendances existantes :
 
 ```xml
 <dependency>
-  <groupId>org.springdoc</groupId>
-  <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-  <version>2.6.0</version>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.springframework.security</groupId>
+  <artifactId>spring-security-test</artifactId>
+  <scope>test</scope>
 </dependency>
 ```
 
-| Service | Swagger UI |
+Spring Boot gère les versions. Pas besoin de remplacer JPA par JDBC, ou l’inverse, pour intégrer l’authentification.
+
+### Étape B — renseigner l’émetteur et les clés publiques
+
+Dans `application.properties` :
+
+```properties
+spring.security.oauth2.resourceserver.jwt.issuer-uri=${AUTH_ISSUER_URI:http://localhost:8180/realms/guide-touristique}
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri=${AUTH_JWK_SET_URI:http://localhost:8180/realms/guide-touristique/protocol/openid-connect/certs}
+spring.security.oauth2.resourceserver.jwt.audiences=guide-touristique-api
+```
+
+Dans l’environnement Docker de **chaque API** :
+
+```yaml
+AUTH_ISSUER_URI: http://localhost:8180/realms/guide-touristique
+AUTH_JWK_SET_URI: http://keycloak:8080/realms/guide-touristique/protocol/openid-connect/certs
+```
+
+Pourquoi deux adresses ? `iss` doit correspondre exactement à l’adresse écrite dans le jeton reçu par le navigateur. Pour télécharger les clés, le conteneur appelle Keycloak par son nom Docker `keycloak:8080`. Une API lancée depuis IntelliJ utilise au contraire l’adresse `localhost:8180` pour ces clés.
+
+Gardez aussi votre configuration de base. Sous Docker, chaque service utilise son utilisateur et son mot de passe, pas le compte PostgreSQL administrateur. Hors Docker, Réservation a encore des valeurs par défaut historiques : définissez explicitement `DB_URL=jdbc:postgresql://localhost:15433/reservation_db`, `DB_USER=reservation` et son `DB_PASSWORD` pour utiliser le PostgreSQL de ce projet.
+
+### Étape C — adapter `SecurityConfig`
+
+Prenez le fichier de votre service comme modèle :
+
+- [Guide : SecurityConfig](guide-service/src/main/java/ma/tourisme/guide/config/SecurityConfig.java)
+- [Circuit : SecurityConfig](circuit-service/src/main/java/ma/tourisme/circuit/config/SecurityConfig.java)
+- [Réservation : SecurityConfig](reservation-service/src/main/java/ma/tourisme/reservation/config/SecurityConfig.java)
+- [Avis : SecurityConfig](avis-service/src/main/java/ma/tourisme/avis/config/SecurityConfig.java)
+
+Ces fichiers font trois choses importantes :
+
+1. Ils vérifient la signature, l’expiration, l’émetteur, l’audience et la présence d’un `sub` non vide. Gardez les validateurs explicites : nos configurations créent leur propre `JwtDecoder`, donc copier seulement la propriété `audiences` ne suffit pas à reproduire la validation.
+2. Ils transforment les rôles de `realm_access.roles` en autorités Spring : `ADMIN` devient `ROLE_ADMIN`. On peut alors utiliser `hasRole("ADMIN")`.
+3. Ils définissent les routes publiques, les rôles autorisés et un refus par défaut pour les autres routes.
+
+Placez les règles précises (`/me`, `/admin`, etc.) **avant** une règle générale comme `GET /api/guides/*`. Sinon, une route privée pourrait devenir publique par erreur.
+
+Les API fonctionnent sans session serveur et reçoivent un Bearer token dans un en-tête. Le CSRF est désactivé pour ce fonctionnement précis ; ne reprenez pas ce choix sans réévaluation si vous utilisez plus tard une authentification par cookie. Le CORS local autorise `http://localhost:4200`, les méthodes attendues et les en-têtes `Authorization` / `Content-Type`. Préservez le traitement des requêtes OPTIONS du navigateur.
+
+### Étape D — récupérer le compte connecté dans le contrôleur
+
+Voici la forme utilisée dans Réservation :
+
+```java
+@PostMapping
+@ResponseStatus(HttpStatus.CREATED)
+public Reservation create(
+    @Valid @RequestBody ReservationRequest request,
+    @AuthenticationPrincipal Jwt jwt) {
+  return service.creer(request, jwt);
+}
+```
+
+Imports : `AuthenticationPrincipal` vient de `org.springframework.security.core.annotation` et `Jwt` de `org.springframework.security.oauth2.jwt`.
+
+Dans la couche Service, `jwt.getSubject()` donne le propriétaire à enregistrer ou à vérifier. La règle d’accès doit fonctionner même si quelqu’un appelle directement l’API sans passer par Angular.
+
+## 4. La partie de chacune
+
+### Safa — Guide : relier un profil à son compte
+
+Le rôle GUIDE dit « cette personne est guide ». Le champ métier `ownerSubject` dit **quel profil lui appartient**.
+
+- Les lectures publiques affichent les profils actifs sans e-mail, téléphone ni identifiant Keycloak.
+- ADMIN peut créer, modifier et archiver les guides, et associer leur compte.
+- GUIDE peut lire/modifier son profil via `/api/guides/me` et consulter ses circuits via `/api/guides/me/circuits`.
+- Le guide ne doit pas pouvoir changer lui-même son `ownerSubject` ni son tarif par cette route.
+
+Pour faire l’association : ouvrez la console Keycloak, sélectionnez le realm `guide-touristique`, puis **Users**. Ouvrez le compte du guide, attribuez-lui le rôle de realm GUIDE dans **Role mapping**, puis copiez son ID. Avec un compte ADMIN dans l’application, placez cet ID dans `ownerSubject` du profil Guide. Un compte ne peut être associé qu’à un profil dans cette version.
+
+Exemple : si Youssef se connecte, `/me` retrouve son profil par `sub`. Il ne reçoit pas un `guideId` arbitraire du navigateur.
+
+À consulter : [contrôleur](guide-service/src/main/java/ma/tourisme/guide/controller/GuideController.java), [service](guide-service/src/main/java/ma/tourisme/guide/service/GuideService.java), [réponses publiques/privées](guide-service/src/main/java/ma/tourisme/guide/dto/GuideResponse.java), [migration](guide-service/src/main/resources/db/migration/guide/V1__create_guides.sql).
+
+### Nada — Circuit : garder le catalogue public, protéger la gestion
+
+- GET `/api/circuits` et GET `/api/circuits/{id}` restent publics.
+- POST, PUT et DELETE demandent ADMIN. DELETE archive le circuit.
+- Un circuit garde un seul `guideId`. Circuit vérifie l’existence du guide via Guide API.
+- Dans le code actuel, Circuit ne refuse pas un guide uniquement parce que `disponible=false` ; c’est Réservation qui vérifie sa disponibilité au moment de réserver.
+
+Reprenez ensemble le `pom.xml`, `SecurityConfig`, les propriétés JWT et les adaptations des tests. Le [script de démonstration](circuit-service/scripts/seed-demo.py) nécessite désormais un jeton ADMIN dans `DEMO_ADMIN_TOKEN`, conservé uniquement dans votre environnement local.
+
+À consulter : [service](circuit-service/src/main/java/ma/tourisme/circuit/service/CircuitService.java), [test d’intégration](circuit-service/src/test/java/ma/tourisme/circuit/CircuitIntegrationTest.java).
+
+### Mariem — Réservation : chaque touriste voit ses réservations
+
+À la création, enregistrez `jwt.getSubject()` dans `user_subject`. Conservez vos données métier et ajoutez la propriété du compte sans la déduire du nom ou de l’e-mail.
+
+| Route | Accès attendu |
 |---|---|
-| Guide | http://localhost:8081/swagger-ui.html |
-| Circuit | http://localhost:8082/swagger-ui.html |
-| Réservation | http://localhost:8083/swagger-ui.html |
-| Avis | http://localhost:8084/swagger-ui.html |
+| POST `/api/reservations` | USER ; propriétaire déduit du jeton |
+| GET `/api/reservations/me` | USER ; uniquement ses réservations |
+| GET `/api/reservations/guide` | GUIDE ; uniquement les réservations de son profil Guide |
+| GET `/api/reservations` | ADMIN |
+| GET `/api/reservations/{id}` | Propriétaire USER ou ADMIN |
+| PATCH `/{id}/annuler` | Propriétaire USER ou ADMIN, selon date et statut |
+| PATCH `/{id}/accepter` ou `/{id}/refuser` | ADMIN, pour une demande encore en attente et non passée |
+| GET `/{id}/eligibilite` | Propriétaire USER ou ADMIN |
 
-## 13. Planning
+Les chemins abrégés du tableau commencent tous par `/api/reservations`.
 
-| Période | Objectifs |
+Le navigateur envoie `circuitId`, `dateVisite`, `nbPersonnes`, `nom`, `email`. Le serveur déduit le guide et le prix depuis Circuit, vérifie la disponibilité auprès de Guide et calcule le total. Le client ne choisit ni propriétaire, ni prix total, ni statut.
+
+Pour les réservations d’un guide, Réservation appelle Guide `/api/guides/me` avec **le même jeton**, puis utilise l’ID du profil retourné. Les anciennes réservations sans propriétaire restent visibles par ADMIN seulement. Le champ `version` protège les changements de statut concurrents.
+
+À consulter : [contrôleur](reservation-service/src/main/java/ma/tourisme/reservation/controller/ReservationController.java), [service et propriété](reservation-service/src/main/java/ma/tourisme/reservation/service/ReservationService.java), [appel Guide](reservation-service/src/main/java/ma/tourisme/reservation/client/GuideClient.java), [migration V2](reservation-service/src/main/resources/db/migration/reservation/V2__reservation_ownership.sql).
+
+### Hajar — Avis : vérifier la visite avant de publier
+
+- GET `/api/avis` affiche seulement les avis publiés ; filtres possibles par circuit ou guide.
+- POST `/api/avis` et GET `/api/avis/me` demandent USER.
+- GET `/api/avis/admin` et PATCH `/api/avis/{id}/publication` demandent ADMIN.
+
+Le formulaire envoie `{reservationId, noteGuide, noteCircuit, commentaire}`. Les notes sont des entiers de 1 à 5 et le commentaire contient au maximum 2 000 caractères. Le serveur déduit l’auteur depuis le jeton et les références du circuit/guide depuis Réservation.
+
+Avant de créer un avis, appelez `/api/reservations/{id}/eligibilite` avec le jeton du touriste. Réservation vérifie que la réservation lui appartient, qu’elle est acceptée et que sa date est **strictement antérieure à aujourd’hui**, selon Africa/Casablanca. Un simple rôle USER ne suffit donc pas à publier sur n’importe quelle réservation.
+
+Gardez une contrainte unique en base sur `reservation_id` : elle empêche deux avis pour la même visite, même avec deux requêtes simultanées. Le code de cette branche publie un nouvel avis immédiatement ; ADMIN peut ensuite le masquer. Une validation obligatoire avant publication serait un changement de règle à décider ensemble.
+
+À consulter : [service](avis-service/src/main/java/ma/tourisme/avis/service/AvisService.java), [appel Réservation](avis-service/src/main/java/ma/tourisme/avis/client/ReservationClient.java), [migration](avis-service/src/main/resources/db/migration/avis/V1__create_avis.sql).
+
+## 5. Quand un service appelle un autre service
+
+Pour une lecture publique, le jeton n’est pas nécessaire. Pour agir au nom de la personne connectée sur une route privée, transmettez son access token :
+
+```java
+http.get()
+    .uri("/api/reservations/{id}/eligibilite", reservationId)
+    .header("Authorization", "Bearer " + jwt.getTokenValue())
+    .retrieve();
+```
+
+Ce fragment montre l’ajout de l’en-tête ; reprenez aussi la lecture de la réponse, les délais et le traitement des erreurs du [client complet](avis-service/src/main/java/ma/tourisme/avis/client/ReservationClient.java).
+
+| Appel actuel | Jeton transmis ? |
 |---|---|
-| **S1 (23/10 – 30/10)** | Squelette Git/Docker, contrats d'API, création des projets Spring Boot, entités et premiers endpoints |
-| **S2 (31/10 – 06/11)** | CRUD terminés, Swagger, Dockerfile fonctionnel, squelette Angular |
-| **S3 (07/11 – 13/11)** | Appels REST entre services, premières PR vers `main2`, frontend connecté aux API |
-| **S4 (14/11 – 20/11)** | Tests d'intégration sur `main2`, corrections, documentation, merge vers `main`. **Gel du code le 18/11** |
-| **À partir du 26/11** | Soutenances (démo de l'application et du travail de chaque membre) |
+| Circuit → Guide `/{id}` | Non, lecture publique |
+| Réservation → Circuit `/{id}` et Guide `/{id}` | Non, lectures publiques |
+| Réservation → Guide `/me` | Oui, celui du guide connecté |
+| Avis → Réservation `/{id}/eligibilite` | Oui, celui du touriste connecté |
 
-**Suivi :** tableau GitHub Projects (Todo / In Progress / Done) + points d'équipe de 15 minutes deux fois par semaine (fait / à faire / blocages).
+Les API visées vérifient à nouveau le jeton et leurs permissions. N’utilisez pas un compte ADMIN partagé pour contourner ces contrôles. Les appels utilisent HTTP/JSON, pas l’accès direct à la base d’un autre service. Les clients actuels limitent la connexion à 2 secondes et l’attente de réponse à 3 secondes.
 
-## 14. Aide-mémoire des commandes
+## 6. Ce qui est déjà fait côté Angular et Keycloak
 
-### Git
+- [AuthService](frontend/src/app/auth/auth.service.ts) initialise Keycloak, récupère les rôles, renouvelle le jeton et gère connexion/déconnexion.
+- [L’intercepteur](frontend/src/app/auth/auth.interceptor.ts) ajoute le jeton aux URLs relatives `/api/…`, sans l’envoyer aux sites tiers ni aux images. Gardez ces URLs dans les services Angular.
+- [Les guards](frontend/src/app/auth/auth.guard.ts) dirigent vers la connexion ou le bon espace. Ils améliorent la navigation ; les permissions restent contrôlées côté API.
+- [La configuration publique](frontend/public/auth-config.json) contient l’URL Keycloak, le realm et le client, sans secret.
+- [Le realm de référence](infra/keycloak/guide-touristique-realm.json) configure les rôles, l’audience API, le client public et les comptes de démonstration.
+- [Le thème](infra/keycloak/themes/guide-touristique/login) donne aux formulaires Keycloak le style de l’application.
 
-| Commande | Rôle |
+L’inscription publique attribue uniquement USER. GUIDE et ADMIN se gèrent dans Keycloak. Les comptes de démonstration sont déjà marqués comme vérifiés ; l’envoi de véritables e-mails nécessite encore un serveur SMTP et un test de livraison. N’activez l’obligation de vérifier l’e-mail qu’une fois cet envoi fonctionnel.
+
+Si vous changez l’adresse ou le port du frontend, adaptez ensemble la configuration Angular, les redirect URIs / web origins du client Keycloak et le CORS des API. Si vous changez l’adresse de Keycloak, adaptez aussi `KC_HOSTNAME`, l’émetteur JWT et l’adresse des clés.
+
+## 7. Vérifier que tout fonctionne
+
+### Tests automatiques
+
+Dans le dossier du service que vous adaptez, par exemple :
+
+```powershell
+cd reservation-service
+mvn verify
+```
+
+Docker Desktop doit fonctionner pour les tests PostgreSQL avec Testcontainers. Les tests de référence se trouvent dans les quatre dossiers `src/test/java` : Circuit vérifie notamment les JWT falsifiés, expirés, sans sujet ou avec une mauvaise audience ; les autres services couvrent leurs permissions et règles métier. Complétez ces tests si vos endpoints diffèrent.
+
+Dans `frontend` :
+
+```powershell
+npm ci
+npm test -- --watch=false
+npm run build
+```
+
+Pour lancer Angular hors Docker : `npm start`. Le [proxy de développement](frontend/proxy.conf.cjs) utilise les ports équipe. Par exemple, si Circuit écoute sur 18092 sur votre PC : `$env:CIRCUIT_API_URL = 'http://localhost:18092'` avant `npm start`.
+
+### Petit parcours à faire ensemble
+
+1. Sans connexion, consulter les circuits et les guides ; les avis publics doivent exclure les avis masqués.
+2. Avec ADMIN, créer un profil Guide et un Circuit. Un touriste doit recevoir **403** s’il tente la même création.
+3. Avec `demo-touriste`, réserver. Le prix vient de l’API Circuit ; la réservation apparaît dans son espace.
+4. Avec `demo-autre`, essayer de lire cette réservation : accès refusé. Se déconnecter entre les deux comptes, ou utiliser des sessions de navigateur séparées.
+5. Avec GUIDE et un profil associé, voir uniquement les circuits/réservations de ce guide.
+6. Avec ADMIN, accepter ou refuser une demande ; vérifier qu’une décision incompatible avec le statut est rejetée.
+7. Pour les avis, utiliser une réservation acceptée dont la visite est passée : vérifier propriété, notes et unicité. Les tests automatiques préparent ces dates ; ne modifiez pas des données réelles pour forcer l’éligibilité.
+
+Pour tester directement une API, récupérez un access token de votre propre session locale dans les en-têtes réseau du navigateur. Gardez-le temporairement dans votre terminal, sans le coller dans un site externe ni dans Git :
+
+```powershell
+$env:ACCESS_TOKEN = '<votre access token local>'
+curl.exe -i -H "Authorization: Bearer $env:ACCESS_TOKEN" http://localhost:8083/api/reservations/me
+Remove-Item Env:ACCESS_TOKEN
+```
+
+Cet exemple demande un jeton USER. Utilisez le port réellement configuré. Sans l’en-tête, cette route doit répondre **401** ; avec un rôle non autorisé, **403**.
+
+## 8. Intégrer sans écraser le travail des autres
+
+Enregistrez d’abord votre travail sur votre branche habituelle. Ensuite, créez une branche d’intégration à partir de **votre service**, puis examinez la référence :
+
+```powershell
+git status
+git fetch origin
+git switch -c integration/auth-mon-service
+git diff HEAD origin/auth-integration -- mon-service/
+```
+
+Remplacez `mon-service/` par `guide-service/`, `circuit-service/`, `reservation-service/` ou `avis-service/`. La dernière commande ne modifie rien : elle permet de voir les différences avant de reprendre les changements utiles.
+
+Reprenez par petits groupes cohérents : dépendances + configuration JWT ; règles des routes ; propriété des données et migrations ; appels entre API ; tests. Ne copiez pas un `SecurityConfig` sans adapter ses routes, et ne remplacez pas tout votre service par le dossier de cette branche.
+
+Si vous devez récupérer les dernières modifications de `main2`, faites-le séparément et résolvez les éventuels conflits avant la partie auth. Pour Guide/Avis, comparez particulièrement les migrations V1 à votre schéma existant. Pour Réservation, adaptez la V2 à votre historique Flyway au lieu de renuméroter une migration déjà appliquée.
+
+Quand vos tests passent, ouvrez une Pull Request avec les routes protégées, les migrations prévues et les vérifications réalisées. Faites relire les échanges entre API par les deux responsables concernées, puis coordonnez l’activation du frontend privé avec celle des API protégées.
+
+Cette branche utilise Keycloak `start-dev` et des adresses localhost pour les essais sur nos PC. Une mise en ligne demandera sa propre configuration HTTPS, ses vrais comptes et secrets, ses origines autorisées et ses sauvegardes.
+
+## 9. Si quelque chose bloque
+
+| Ce que vous voyez | Ce qu’il faut vérifier |
 |---|---|
-| `git branch` | Voir les branches (l'étoile `*` = branche actuelle) |
-| `git checkout <branche>` | Changer de branche |
-| `git checkout -b <branche>` | Créer et aller sur une nouvelle branche |
-| `git status` | Voir l'état des fichiers |
-| `git add .` | Préparer tous les fichiers modifiés |
-| `git commit -m "message"` | Enregistrer les changements |
-| `git push origin <branche>` | Envoyer sur GitHub |
-| `git pull origin <branche>` | Récupérer depuis GitHub |
-| `git merge main2` | Fusionner main2 dans la branche actuelle |
-| `git log --oneline` | Historique résumé |
-| `git stash` / `git stash pop` | Mettre de côté / récupérer des modifications non commitées |
+| 401 sur une route privée | Access token présent, non expiré, bonne signature, bon `iss`, `aud` contenant `guide-touristique-api` et `sub` présent |
+| 403 | Rôle de realm attendu, mapping `ROLE_…`, puis propriété de la réservation / du profil |
+| `/api/guides/me` renvoie 404 | Compte GUIDE non associé à un profil actif via `ownerSubject` |
+| « Invalid redirect URI » | Adresse et port du frontend présents dans les redirect URIs du client Keycloak |
+| Connexion indisponible | Keycloak prêt, port 8180 accessible et `auth-config.json` correct ; consulter `docker compose logs --tail 80 keycloak` |
+| Impossible de charger les clés JWT dans Docker | Utiliser `keycloak:8080` pour les clés, sans changer arbitrairement le `iss` attendu |
+| Erreur CORS | Origine exacte du frontend, en-tête Authorization et prérequêtes OPTIONS autorisés |
+| 409 lors d’un avis ou d’un changement de statut | Conflit métier : visite pas encore éligible, avis déjà présent ou transition impossible |
+| 503 entre services | Vérifier service cible, nom Docker, port et contrat JSON ; ne pas accepter l’opération sans vérification |
+| Les nouveaux réglages JSON du realm n’apparaissent pas | Le realm existe déjà ; l’import ne l’écrase pas. Appliquer les changements ciblés dans la console |
+| Mot de passe démo refusé après un nouveau lancement | Les comptes existants n’ont pas été recréés. Utiliser leurs accès actuels, sans supprimer les volumes |
+| PostgreSQL refuse un nouveau compte service | Le volume est antérieur au nouvel `init.sql` ; organiser sa migration, pas sa suppression |
 
-### Docker
+## Les liens utiles pour continuer
 
-| Commande | Rôle |
-|---|---|
-| `docker compose up --build` | Construire et lancer tout |
-| `docker compose up -d` | Lancer en arrière-plan |
-| `docker compose up -d --build <service>` | Reconstruire et relancer un seul service |
-| `docker compose down` | Arrêter tout |
-| `docker compose down -v` | Arrêter et **effacer les données** de la base |
-| `docker compose ps` | Voir les conteneurs actifs |
-| `docker compose logs -f <service>` | Suivre les logs d'un service |
-| `docker compose exec postgres psql -U postgres -d <base>` | Ouvrir la console PostgreSQL |
+- [Contrats API détaillés](docs/api-contracts.md) : routes, champs JSON et permissions de cette branche.
+- [Périmètre de la revue d’intégration](docs/auth-integration-review.md) : ce qui reste à valider ensemble.
+- [Configuration Docker](docker-compose.yml) et [variables d’exemple](.env.example).
+- [Provenance des photos](docs/landing-photos.md).
 
-Noms des services : `postgres`, `guide-service`, `circuit-service`, `reservation-service`, `avis-service`, `frontend`.
-
-## 15. Problèmes fréquents
-
-| Problème | Solution |
-|---|---|
-| `Cannot connect to the Docker daemon` | Lancer Docker Desktop et attendre qu'il soit prêt |
-| `port is already allocated` | Un autre programme utilise le port : changer le port de gauche (ex. `"5433:5432"`) |
-| `Connection refused` vers PostgreSQL | Utiliser `postgres` et non `localhost` dans `DB_URL` |
-| `database "xxx_db" does not exist` | Créer la base explicitement avec le compte administrateur, sans supprimer le volume existant |
-| `pom.xml not found` au build | Le projet Spring Boot doit être à la racine du dossier du service |
-| `Your local changes would be overwritten` | Commiter (`git add .` puis `git commit`) ou `git stash` avant de changer de branche |
-| Erreur CORS dans le navigateur | Autoriser `http://localhost:4200` dans le service Java |
-| Push refusé sur `main` / `main2` | Normal : passer par une Pull Request |
-| Fichier `.env` apparu sur GitHub | Prévenir Safa immédiatement (changer les mots de passe, retirer le fichier du dépôt) |
-
-## 16. Checklist de livraison
-
-- [ ] Les 4 services démarrent avec `docker compose up --build`
-- [ ] Chaque service **expose** et **consomme** au moins un Web Service
-- [ ] Chaque service a son Dockerfile
-- [ ] Swagger accessible pour chaque service
-- [ ] `docs/api-contracts.md` à jour
-- [ ] Données de démo chargées au démarrage
-- [ ] Frontend Angular connecté aux services
-- [ ] README complet et à jour
-- [ ] Contributions de chaque membre visibles (commits, PR, issues)
-- [ ] Code final fusionné dans `main`
-- [ ] Prof ajouté comme collaborateur (si le dépôt est privé)
-- [ ] Présentation finale et schéma d'architecture prêts
-
----
-
-👩‍💻 **Équipe :** Safa (cheffe de projet, Guide) · Nada (Circuit) · Mariem (Réservation) · Hajar (Avis)
+L’objectif est simple : une seule connexion pour l’utilisateur, et chaque service qui garde la responsabilité de ses propres données et permissions.
