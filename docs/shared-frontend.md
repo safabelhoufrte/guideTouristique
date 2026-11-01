@@ -3,7 +3,7 @@
 This main2 release contains the public Angular frontend: Moroccan landing page, circuit catalogue
 and details with inspiration photos, guide directory, published reviews and the existing reservation form.
 It does not enable Keycloak, JWT interception, role guards or private workspaces. Authentication is
-being reviewed separately on `codex/auth-integration`; this public development release is not a
+being reviewed separately on `auth-integration`; this public development release is not a
 production security boundary. Protected operations must be authorized by the owning backend.
 
 ## Run and verify
@@ -46,7 +46,7 @@ the internal database endpoint remains `postgres:5432`.
 
 - `main2`: shared public frontend and paired first-time database configuration.
 - `circuit-service`: Circuit backend, migrations, tests, UML and Circuit page updates.
-- `codex/auth-integration`: local authenticated integration for team review, not merged into main2.
+- `auth-integration`: local authenticated integration for team review, not merged into main2.
 
 Never merge the entire Circuit branch just to obtain shared frontend files: that would also import
 backend-specific history. Integrate agreed service changes explicitly after review.
