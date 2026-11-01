@@ -46,6 +46,9 @@ describe('Circuit pages with real HTTP contracts', () => {
     expect(harness.routeNativeElement?.textContent).toContain('Tour Agadir');
     const link = harness.routeNativeElement?.querySelector('a');
     expect(link?.getAttribute('href')).toBe('/circuits/10?ville=Agadir&guideId=7');
+    expect(
+      harness.routeNativeElement?.querySelector('.circuit-cover img')?.getAttribute('src'),
+    ).toBe('/images/agadir-coast.jpg');
   });
 
   it('preserves circuit browsing when Guide API fails', async () => {
@@ -94,6 +97,9 @@ describe('Circuit pages with real HTTP contracts', () => {
     expect(
       harness.routeNativeElement?.querySelector('a[href="/reservations?circuitId=10"]'),
     ).not.toBeNull();
+    expect(
+      harness.routeNativeElement?.querySelector('.detail-cover img')?.getAttribute('src'),
+    ).toBe('/images/agadir-coast.jpg');
   });
 
   it('keeps the detail visible if the guide is temporarily unavailable', async () => {

@@ -68,8 +68,14 @@
       <div class="circuit-grid">
         @for (circuit of vm().circuits; track circuit.id) {
           <article class="circuit-card surface">
-            <div class="circuit-cover" aria-hidden="true">
-              <img src="/images/circuit-landscape.svg" alt="" width="640" height="360" />
+            <div class="circuit-cover">
+              <img
+                [src]="photoFor(circuit).src"
+                [alt]="photoFor(circuit).alt"
+                width="640"
+                height="360"
+                loading="lazy"
+              />
               @if (circuit.ville) {
                 <span class="city-tag">{{ circuit.ville }}</span>
               }
@@ -105,6 +111,9 @@
           </article>
         }
       </div>
+      <p class="result-count">
+        Photos d’inspiration : consultez le programme détaillé de chaque circuit.
+      </p>
     }
   }
 </main>
