@@ -16,4 +16,12 @@ export class CircuitService {
   get(id: number) {
     return this.http.get<Circuit>(`/api/circuits/${id}`, { timeout: 5000 });
   }
+  save(id: number | null, body: Omit<Circuit, 'id'>) {
+    return id === null
+      ? this.http.post<Circuit>('/api/circuits', body)
+      : this.http.put<Circuit>(`/api/circuits/${id}`, body);
+  }
+  archive(id: number) {
+    return this.http.delete<void>(`/api/circuits/${id}`);
+  }
 }

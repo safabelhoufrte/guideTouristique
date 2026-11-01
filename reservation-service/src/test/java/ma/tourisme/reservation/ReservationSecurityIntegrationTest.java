@@ -1,0 +1,86 @@
+package ma.tourisme.reservation;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import com.fasterxml.jackson.databind.*;
+import java.net.URI;
+import java.net.http.*;
+import java.time.Instant;
+import java.util.*;
+import org.junit.jupiter.api.*;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.*;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.jwt.*;
+import org.springframework.test.context.*;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.testcontainers.containers.PostgreSQLContainer;
+
+@SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Import(ReservationSecurityIntegrationTest.TestJwt.class)
+class ReservationSecurityIntegrationTest {
+
+  static final PostgreSQLContainer<?> DB=new PostgreSQLContainer<>("postgres:16");
+  static { DB.start(); }
+  @DynamicPropertySource static void properties(DynamicPropertyRegistry r){r.add("spring.datasource.url",DB::getJdbcUrl);r.add("spring.datasource.username",DB::getUsername);r.add("spring.datasource.password",DB::getPassword);}
+  @LocalServerPort int port;
+  @Autowired JdbcTemplate jdbc;
+  final ObjectMapper json=new ObjectMapper();
+  static final HttpClient http=HttpClient.newHttpClient();
+  @TestConfiguration static class TestJwt {
+    @Bean @Primary JwtDecoder decoder(){return token->{
+      String role=token.startsWith("admin")?"ADMIN":token.startsWith("guide")?"GUIDE":"USER";
+      String sub=token.equals("user")?"11111111-1111-4111-8111-111111111111":token.equals("guide")?"22222222-2222-4222-8222-222222222222":token.equals("admin")?"33333333-3333-4333-8333-333333333333":"44444444-4444-4444-8444-444444444444";
+      return Jwt.withTokenValue(token).header("alg","test").subject(sub).issuedAt(Instant.now()).expiresAt(Instant.now().plusSeconds(300)).claim("realm_access",Map.of("roles",List.of(role))).claim("name","Test Tourist").build();
+    };}
+  }
+  HttpResponse<String> call(String method,String path,String body,String token)throws Exception{
+    var req=HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+path)).header("Content-Type","application/json");
+    if(token!=null)req.header("Authorization","Bearer "+token);
+    return http.send(req.method(method,body==null?HttpRequest.BodyPublishers.noBody():HttpRequest.BodyPublishers.ofString(body)).build(),HttpResponse.BodyHandlers.ofString());
+  }
+  JsonNode expect(String method,String path,String body,String token,int status)throws Exception{
+    var response=call(method,path,body,token);assertEquals(status,response.statusCode(),response.body());return response.body().isBlank()?json.nullNode():json.readTree(response.body());
+  }
+
+  @MockitoBean ma.tourisme.reservation.client.CircuitClient circuits;
+  @MockitoBean ma.tourisme.reservation.client.GuideClient guides;
+  @BeforeEach void clear(){jdbc.update("DELETE FROM reservations");when(circuits.get(10)).thenReturn(new ma.tourisme.reservation.client.CircuitClient.CircuitDto(10,"Tour",new java.math.BigDecimal("300.50"),7));}
+  String request(){return "{\"circuitId\":10,\"dateVisite\":\"2099-11-10\",\"nbPersonnes\":2,\"nom\":\"Client\",\"email\":\"test@example.com\"}";}
+  @Test void onlyOwnerSeesOrCancelsPersonalRecords()throws Exception{
+    expect("POST","/api/reservations",request(),null,401);
+    long id=expect("POST","/api/reservations",request(),"user",201).path("id").asLong();
+    assertEquals(601,expect("GET","/api/reservations/"+id,null,"user",200).path("prixTotal").asInt());
+    expect("GET","/api/reservations/"+id,null,"other",403);
+    expect("PATCH","/api/reservations/"+id+"/annuler","{}","other",403);
+    assertEquals(0,expect("GET","/api/reservations/me",null,"other",200).size());
+    expect("GET","/api/reservations?email=test@example.com",null,"user",403);
+    expect("PATCH","/api/reservations/"+id+"/accepter","{}","user",403);
+    expect("PATCH","/api/reservations/"+id+"/accepter","{}","admin",200);
+    expect("PATCH","/api/reservations/"+id+"/refuser","{}","admin",409);
+    expect("PATCH","/api/reservations/"+id+"/annuler","{}","user",200);
+    expect("PATCH","/api/reservations/"+id+"/annuler","{}","user",409);
+  }
+  @Test void eligibilityUsesOwnerAndAcceptedPastVisit()throws Exception{
+    long id=expect("POST","/api/reservations",request(),"user",201).path("id").asLong();
+    assertFalse(expect("GET","/api/reservations/"+id+"/eligibilite",null,"user",200).path("eligible").asBoolean());
+    jdbc.update("UPDATE reservations SET date_visite=DATE '2026-01-01',statut='ACCEPTEE' WHERE id=?",id);
+    assertTrue(expect("GET","/api/reservations/"+id+"/eligibilite",null,"user",200).path("eligible").asBoolean());
+    expect("GET","/api/reservations/"+id+"/eligibilite",null,"other",403);
+    jdbc.update("UPDATE reservations SET user_subject=NULL WHERE id=?",id);
+    expect("GET","/api/reservations/"+id,null,"user",403);
+    expect("GET","/api/reservations/"+id,null,"admin",200);
+  }
+  @Test void guideListUsesServerResolvedProfile()throws Exception{
+    expect("POST","/api/reservations",request(),"user",201);
+    when(guides.own(any())).thenReturn(99L);
+    assertEquals(0,expect("GET","/api/reservations/guide",null,"guide",200).size());
+    when(guides.own(any())).thenReturn(7L);
+    assertEquals(1,expect("GET","/api/reservations/guide",null,"guide",200).size());
+    expect("GET","/api/reservations/guide",null,"user",403);
+  }
+
+}

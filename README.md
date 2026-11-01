@@ -2,6 +2,45 @@
 
 Application web distribuée de **guide touristique**, composée de 4 modules métier autonomes qui communiquent entre eux via des **Web Services REST (JSON)**.
 
+## Espaces et connexion — branche circuit-service
+
+### Accueil et thème de connexion
+
+`/` affiche la page d’accueil publique avec la navigation commune. `/connexion` démarre directement la connexion Keycloak ; ce n’est pas une seconde page d’accueil. Le bouton **Connexion** ouvre une fenêtre modale ; ses actions démarrent la connexion ou l’inscription Keycloak avec le thème Guide Touristique. Les mots de passe restent saisis uniquement chez Keycloak. Une réservation protégée conserve sa destination après connexion ou inscription.
+
+Le thème est dans `infra/keycloak/themes/guide-touristique`, monté en lecture seule par Docker Compose. Pour une installation existante, après `docker compose up -d --no-deps keycloak`, exécuter `python scripts/apply-auth-theme.py`. Ce script applique uniquement le thème, les langues et le lien de retour de l’application : il ne réimporte pas les comptes ni les paramètres SMTP. Une nouvelle installation sélectionne le thème via le fichier de realm. Pour revenir au thème standard, sélectionner `keycloak` dans **Realm settings → Themes → Login theme**.
+
+Cette branche intègre les espaces Angular administrateur, guide et touriste, avec Keycloak et validation des JWT dans chacune des quatre API. Le planning ci-dessous décrit le plan initial ; les contrats effectifs sont dans [docs/api-contracts.md](docs/api-contracts.md).
+
+Pour démarrer : Docker Desktop, copier `.env.example` vers `.env`, renseigner les mots de passe PostgreSQL, puis :
+
+```sh
+python scripts/setup-local-auth.py
+docker compose up --build -d
+```
+
+Ouvrir `http://localhost:4200/connexion`. Les comptes `demo-admin`, `demo-guide`, `demo-touriste` et leurs mots de passe générés sont dans **`.local/demo-accounts.txt`**, exclu de Git. Console Keycloak : `http://localhost:8180/admin` (local-admin dans le même fichier). Ces comptes et le mode `start-dev` sont réservés au développement local.
+
+| Espace | Adresse | Permissions |
+|---|---|---|
+| Administrateur | `/administration` | Gérer circuits/guides, décider les réservations, modérer les avis |
+| Guide | `/espace-guide` | Modifier son profil, voir ses circuits et leurs réservations |
+| Touriste | `/espace-touriste` | Ses réservations/annulations, avis après une visite acceptée |
+
+Le catalogue reste public. Un circuit a **un seul guide**. Les services communiquent par HTTP/JSON ; aucun ne lit la base d'un autre. PostgreSQL reste une instance commune avec une base et un utilisateur par service. Keycloak dispose d'une base et d'un volume séparés.
+
+Pour activer un guide : créer son compte dans Keycloak, attribuer le rôle de realm `GUIDE`, puis copier son UUID dans le profil Guide créé par l'administrateur. L'inscription publique donne uniquement `USER`. Les mots de passe ne transitent pas par les services métier. Les anciennes réservations sans propriétaire restent accessibles seulement à l'administrateur.
+
+Flyway applique les migrations au démarrage : **ne pas utiliser `down -v` pour mettre à jour**, car cela efface les données. Le fichier d'import Keycloak s'applique uniquement à la création du realm ; gérer ensuite les comptes/rôles dans sa console. Les ports hôte Circuit/Réservation se règlent dans `.env`, sans changer les ports internes Docker.
+
+Vérifier : `mvn verify` dans chacun des quatre services (Docker requis pour Testcontainers) ; `npm ci`, `npm test -- --watch=false`, `npm run build` dans `frontend`. Pour `npm start`, vérifier les ports du proxy dans `frontend/proxy.conf.cjs`.
+
+Créer d'abord les guides puis les circuits via l'espace administrateur. L'ancien script de démonstration Circuit exige désormais un jeton ADMIN dans la variable locale `DEMO_ADMIN_TOKEN`. Ne jamais enregistrer de jeton dans Git.
+
+Ne pas ajouter `compose.demo.yaml` pour les espaces authentifiés : ce fichier remplace Guide par un simulateur. Sur le poste Nada, le téléchargement de l'image Quay était indisponible : `.env` sélectionne une image locale construite avec la distribution officielle Keycloak 26.2.5. Les autres postes utilisent l'image officielle par défaut ; `KEYCLOAK_IMAGE` permet de sélectionner une image locale déjà construite sans changer le compose partagé.
+
+Cette intégration conserve le code Réservation de Mariem comme base et ajoute les API Guide/Avis nécessaires aux écrans. Faire relire ces modifications par Safa, Mariem et Hajar avant fusion dans `main2`.
+
 > Projet Web Services 2026 – Développement collaboratif basé sur les Web Services
 > **Deadline de livraison : 20/11/2026** · **Soutenances : à partir du 26/11/2026**
 
@@ -208,6 +247,13 @@ guide.service.url=${GUIDE_SERVICE_URL:http://localhost:8081}
 ```
 
 ### État vérifié de Circuit sur cette branche
+
+Le frontend partagé contient maintenant `/circuits` (filtres ville/guide) et `/circuits/{id}` (fiche et guide unique). Le bouton Réserver transmet `circuitId` à la page de Réservation. Le modèle reste **un guide par circuit**, sans séances ; `guideId` et `dureeHeures` sont conservés.
+
+- Avec Docker, `frontend` écoute sur `http://localhost:4200` (`FRONTEND_HOST_PORT`) et Nginx transmet `/api/*` aux services par leur nom Docker. Le backend Réservation de Mariem doit être intégré au Compose commun pour enregistrer une réservation ; aucun succès n'est simulé s'il est absent.
+- En développement : dans `frontend`, `npm ci`, puis `npm start`. Le proxy utilise les ports équipe 8081/8082/8083/8084. Si Circuit écoute sur 18092 côté PC, définir `CIRCUIT_API_URL=http://localhost:18092` dans l'environnement du processus Angular. Les autres variables sont `GUIDE_API_URL`, `RESERVATION_API_URL` et `AVIS_API_URL`.
+- Vérification frontend : `npm test -- --watch=false` et `npm run build`. Les pages Guide/Avis affichent un écran d'attente tant que les pages des coéquipières ne sont pas intégrées. Le parcours livré est public ; la sécurité ADMIN des écritures backend reste à intégrer avant exposition hors développement.
+- Pour ajouter volontairement des circuits de démonstration sans modifier les existants : `python circuit-service/scripts/seed-demo.py --url http://localhost:18092` (Guide démo 1/2 requis).
 
 - Circuit respecte `docs/api-contracts.md` : Java 21, port 8082, `/api/circuits`, JSON camelCase et base `circuit_db`. Le dépôt JDBC conserve la séparation contrôleur/service/repository et utilise Flyway.
 - La branche `guide` contient actuellement le squelette Docker et les contrats, sans `pom.xml` ni code Guide. Un test avec le vrai Guide reste à effectuer après son implémentation.

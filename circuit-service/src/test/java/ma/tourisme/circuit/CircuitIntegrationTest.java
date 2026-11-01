@@ -38,6 +38,18 @@ class CircuitIntegrationTest {
   static HttpServer guide;
   static ExecutorService workers;
   static int port;
+  static com.nimbusds.jose.jwk.RSAKey signingKey;
+  static String adminToken;
+  static String userToken;
+
+  static String token(String role, String audience, java.time.Instant expires) throws Exception {
+    var claims = new com.nimbusds.jwt.JWTClaimsSet.Builder().issuer("http://test-issuer")
+        .subject(role.equals("NO_SUB") ? null : "test-" + role).audience(audience).issueTime(java.util.Date.from(java.time.Instant.now()))
+        .expirationTime(java.util.Date.from(expires)).claim("realm_access", java.util.Map.of("roles", java.util.List.of(role))).build();
+    var jwt = new com.nimbusds.jwt.SignedJWT(new com.nimbusds.jose.JWSHeader.Builder(com.nimbusds.jose.JWSAlgorithm.RS256).keyID("test").build(), claims);
+    jwt.sign(new com.nimbusds.jose.crypto.RSASSASigner(signingKey));
+    return jwt.serialize();
+  }
 
   static String databaseUrl(String database) {
     return "jdbc:postgresql://"
@@ -52,6 +64,15 @@ class CircuitIntegrationTest {
   static void start() throws Exception {
     POSTGRES.start();
     guide = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    signingKey = new com.nimbusds.jose.jwk.gen.RSAKeyGenerator(2048).keyID("test").generate();
+    adminToken = token("ADMIN", "guide-touristique-api", java.time.Instant.now().plusSeconds(3600));
+    userToken = token("USER", "guide-touristique-api", java.time.Instant.now().plusSeconds(3600));
+    guide.createContext("/jwks", exchange -> {
+      byte[] bytes = new com.nimbusds.jose.jwk.JWKSet(signingKey.toPublicJWK()).toString().getBytes(StandardCharsets.UTF_8);
+      exchange.getResponseHeaders().add("Content-Type", "application/json");
+      exchange.sendResponseHeaders(200, bytes.length);
+      exchange.getResponseBody().write(bytes); exchange.close();
+    });
     workers = Executors.newCachedThreadPool();
     guide.setExecutor(workers);
     guide.createContext(
@@ -122,6 +143,8 @@ class CircuitIntegrationTest {
                 "--spring.datasource.username=circuit",
                 "--spring.datasource.password=test-circuit-only",
                 "--services.guide-url=http://127.0.0.1:" + guide.getAddress().getPort(),
+                "--spring.security.oauth2.resourceserver.jwt.issuer-uri=http://test-issuer",
+                "--spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://127.0.0.1:" + guide.getAddress().getPort() + "/jwks",
                 "--spring.main.banner-mode=off",
                 "--logging.level.root=WARN");
     port = ((ServletWebServerApplicationContext) app).getWebServer().getPort();
@@ -140,6 +163,7 @@ class CircuitIntegrationTest {
         HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
             .timeout(Duration.ofSeconds(12))
             .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer " + adminToken)
             .method(
                 method,
                 body == null
@@ -162,6 +186,21 @@ class CircuitIntegrationTest {
 
   static long create(long guideId) throws Exception {
     return expect("POST", "/api/circuits", input(guideId), 201).get("id").asLong();
+  }
+
+  @Test
+  void securityEnforcesRolesAndValidatesJwt() throws Exception {
+    var uri = URI.create("http://127.0.0.1:" + port + "/api/circuits");
+    var publicGet = HTTP.send(HttpRequest.newBuilder(uri).GET().build(), HttpResponse.BodyHandlers.ofString());
+    assertEquals(200, publicGet.statusCode());
+    var anonymous = HTTP.send(HttpRequest.newBuilder(uri).header("Content-Type","application/json")
+      .POST(HttpRequest.BodyPublishers.ofString(input(1))).build(),HttpResponse.BodyHandlers.ofString());
+    assertEquals(401, anonymous.statusCode());
+    for (String bad : new String[]{userToken, token("NO_SUB","guide-touristique-api",java.time.Instant.now().plusSeconds(3600)), token("ADMIN","wrong-api",java.time.Instant.now().plusSeconds(3600)), token("ADMIN","guide-touristique-api",java.time.Instant.now().minusSeconds(120)), "forged.token.value"}) {
+      var response=HTTP.send(HttpRequest.newBuilder(uri).header("Content-Type","application/json").header("Authorization","Bearer "+bad)
+        .POST(HttpRequest.BodyPublishers.ofString(input(1))).build(),HttpResponse.BodyHandlers.ofString());
+      assertEquals(bad.equals(userToken)?403:401,response.statusCode(),response.body());
+    }
   }
 
   @Test

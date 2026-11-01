@@ -1,8 +1,8 @@
-name: Verify Circuit
+name: Verify application
 on: [push, pull_request]
 defaults:
   run:
-    working-directory: circuit-service
+    working-directory: .
 jobs:
   frontend:
     runs-on: ubuntu-latest
@@ -21,6 +21,12 @@ jobs:
       - run: npm run build
   verify:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [guide-service, circuit-service, reservation-service, avis-service]
+    defaults:
+      run:
+        working-directory: ${{ matrix.service }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -28,9 +34,9 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-          cache-dependency-path: circuit-service/pom.xml
+          cache-dependency-path: '${{ matrix.service }}/pom.xml'
       - run: mvn -B -ntp verify
-      - run: docker compose -f ../docker-compose.yml -f ../compose.demo.yaml config --quiet
+      - run: docker compose -f ../docker-compose.yml config --quiet
         env:
           DB_USER: postgres
           DB_PASSWORD: ci-admin-only
@@ -38,3 +44,6 @@ jobs:
           CIRCUIT_DB_PASSWORD: ci-circuit-only
           RESERVATION_DB_PASSWORD: ci-reservation-only
           AVIS_DB_PASSWORD: ci-avis-only
+          KEYCLOAK_DB_PASSWORD: ci-keycloak-only
+          KEYCLOAK_ADMIN_PASSWORD: ci-admin-keycloak-only
+          KEYCLOAK_DEMO_PASSWORD: ci-demo-only

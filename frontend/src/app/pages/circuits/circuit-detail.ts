@@ -7,6 +7,7 @@ import { catchError, combineLatest, map, of, startWith, Subject, switchMap } fro
 import { Circuit, Guide } from '../../models/circuit';
 import { CircuitService } from '../../services/circuit.service';
 import { GuideService } from '../../services/guide.service';
+import { circuitPhoto } from '../../models/circuit-photo';
 
 interface Detail {
   loading: boolean;
@@ -23,6 +24,7 @@ const loading: Detail = { loading: true, circuit: null, guide: null, error: '' }
   styleUrl: './circuit-detail.scss',
 })
 export class CircuitDetail {
+  readonly photoFor = circuitPhoto;
   private readonly api = inject(CircuitService);
   private readonly guides = inject(GuideService);
   private readonly route = inject(ActivatedRoute);

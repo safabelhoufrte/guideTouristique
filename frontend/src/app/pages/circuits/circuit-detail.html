@@ -39,9 +39,18 @@
     <div class="detail-grid">
       <article class="surface detail-content">
         <div class="detail-cover">
-          <img src="/images/circuit-landscape.svg" alt="" width="640" height="360" />
+          <img
+            [src]="photoFor(circuit).src"
+            [alt]="photoFor(circuit).alt"
+            width="960"
+            height="540"
+            fetchpriority="high"
+          />
         </div>
         <div class="detail-body">
+          <p class="small-note">
+            Photo d’inspiration. Le programme ci-dessous décrit les lieux prévus pour cette visite.
+          </p>
           <h2>Au programme</h2>
           <p class="long-description">
             {{

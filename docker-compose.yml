@@ -26,6 +26,10 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/guide_db
       DB_USER: guide
       DB_PASSWORD: ${GUIDE_DB_PASSWORD:?Set GUIDE_DB_PASSWORD in .env}
+      SERVER_ADDRESS: 0.0.0.0
+      CIRCUIT_SERVICE_URL: http://circuit-service:8082
+      AUTH_ISSUER_URI: http://localhost:8180/realms/guide-touristique
+      AUTH_JWK_SET_URI: http://keycloak:8080/realms/guide-touristique/protocol/openid-connect/certs
     depends_on:
       postgres: {condition: service_healthy}
   circuit-service:
@@ -37,8 +41,68 @@ services:
       DB_USER: circuit
       DB_PASSWORD: ${CIRCUIT_DB_PASSWORD:?Set CIRCUIT_DB_PASSWORD in .env}
       GUIDE_SERVICE_URL: http://guide-service:8081
+      AUTH_ISSUER_URI: http://localhost:8180/realms/guide-touristique
+      AUTH_JWK_SET_URI: http://keycloak:8080/realms/guide-touristique/protocol/openid-connect/certs
     depends_on:
       postgres: {condition: service_healthy}
+  reservation-service:
+    build: ./reservation-service
+    ports: ["127.0.0.1:${RESERVATION_HOST_PORT:-8083}:8083"]
+    environment:
+      SERVER_PORT: 8083
+      DB_URL: jdbc:postgresql://postgres:5432/reservation_db
+      DB_USER: reservation
+      DB_PASSWORD: ${RESERVATION_DB_PASSWORD:?Set RESERVATION_DB_PASSWORD in .env}
+      GUIDE_SERVICE_URL: http://guide-service:8081
+      CIRCUIT_SERVICE_URL: http://circuit-service:8082
+      AUTH_ISSUER_URI: http://localhost:8180/realms/guide-touristique
+      AUTH_JWK_SET_URI: http://keycloak:8080/realms/guide-touristique/protocol/openid-connect/certs
+    depends_on:
+      postgres: {condition: service_healthy}
+  avis-service:
+    build: ./avis-service
+    ports: ["127.0.0.1:8084:8084"]
+    environment:
+      SERVER_PORT: 8084
+      SERVER_ADDRESS: 0.0.0.0
+      DB_URL: jdbc:postgresql://postgres:5432/avis_db
+      DB_USER: avis
+      DB_PASSWORD: ${AVIS_DB_PASSWORD:?Set AVIS_DB_PASSWORD in .env}
+      RESERVATION_SERVICE_URL: http://reservation-service:8083
+      AUTH_ISSUER_URI: http://localhost:8180/realms/guide-touristique
+      AUTH_JWK_SET_URI: http://keycloak:8080/realms/guide-touristique/protocol/openid-connect/certs
+    depends_on:
+      postgres: {condition: service_healthy}
+  keycloak-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_DB: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Run python scripts/setup-local-auth.py}
+    volumes: [keycloakdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  keycloak:
+    image: ${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.2.5}
+    command: ["start-dev", "--import-realm"]
+    ports: ["127.0.0.1:8180:8080"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Run python scripts/setup-local-auth.py}
+      KC_BOOTSTRAP_ADMIN_USERNAME: local-admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Run python scripts/setup-local-auth.py}
+      KEYCLOAK_DEMO_PASSWORD: ${KEYCLOAK_DEMO_PASSWORD:?Run python scripts/setup-local-auth.py}
+      KC_HOSTNAME: http://localhost:8180
+    volumes:
+      - ./infra/keycloak/guide-touristique-realm.json:/opt/keycloak/data/import/realm.json:ro
+      - ./infra/keycloak/themes/guide-touristique:/opt/keycloak/themes/guide-touristique:ro
+    depends_on:
+      keycloak-db: {condition: service_healthy}
   frontend:
     build: ./frontend
     ports: ["127.0.0.1:${FRONTEND_HOST_PORT:-4200}:80"]
@@ -46,3 +110,4 @@ services:
       - circuit-service
 volumes:
   pgdata:
+  keycloakdata:

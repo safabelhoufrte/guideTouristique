@@ -1,7 +1,9 @@
-<a class="skip-link" href="#main-content" (click)="mainContent.focus(); $event.preventDefault()">Aller au contenu</a>
+<a class="skip-link" href="#main-content" (click)="mainContent.focus(); $event.preventDefault()"
+  >Aller au contenu</a
+>
 <header class="site-header">
   <div class="header-inner">
-    <a class="brand" routerLink="/circuits">Guide Touristique</a>
+    <a class="brand" routerLink="/">Guide Touristique</a>
     <nav aria-label="Navigation principale">
       <a
         routerLink="/"
@@ -17,7 +19,21 @@
       >
       <a routerLink="/avis" routerLinkActive="active" ariaCurrentWhenActive="page">Avis</a>
     </nav>
+    <div class="header-account">
+      @if (auth.authenticated()) {
+        <a [routerLink]="auth.home()" routerLinkActive="active">Mon espace</a>
+        <button class="account-button" (click)="auth.logout()">Se déconnecter</button>
+      } @else {
+        <button class="connexion-button" type="button" aria-haspopup="dialog" (click)="openLogin()">
+          Connexion <span aria-hidden="true">→</span>
+        </button>
+      }
+    </div>
   </div>
 </header>
+@if (auth.problem()) {
+  <p class="auth-notice" role="status">{{ auth.problem() }}</p>
+}
 <div #mainContent id="main-content" tabindex="-1"><router-outlet /></div>
+<app-auth-dialog />
 <footer class="footer">Guide Touristique · Projet Web Services 2026</footer>

@@ -1,127 +1,65 @@
-# Contrats d'API – Guide Touristique
+# Contrats implémentés — branche circuit-service
 
-## Conventions
-- JSON, champs en camelCase, IDs en Long, dates ISO 8601
-- Format d'erreur : { timestamp, status, error, message, path }
-- Swagger de chaque service : http://localhost:<port>/swagger-ui.html
+HTTP/JSON, dates `YYYY-MM-DD`, montants MAD. Ports internes : Guide 8081, Circuit 8082, Réservation 8083, Avis 8084. Le frontend commun utilise `/api/...` ; le proxy transmet à chaque service.
 
-## Qui appelle qui
-- circuit-service  →  guide-service (GET /api/guides/{id})
-- reservation-service  →  guide-service et circuit-service
-- avis-service  →  guide-service et circuit-service
+Les routes protégées exigent `Authorization: Bearer <access_token>`. Chaque API vérifie signature, expiration, émetteur Keycloak et audience `guide-touristique-api`, puis les rôles de realm `USER`, `GUIDE`, `ADMIN`. Sans jeton : 401 ; sans permission : 403. Validation 400, absence 404, conflit 409, dépendance indisponible 503. La propriété dépend du `sub` signé, jamais d'un e-mail envoyé par le navigateur.
 
----
+## Guide — Safa
 
-## 1. Guide Service (port 8081) – Safa
+| Méthode et chemin | Accès | Comportement |
+|---|---|---|
+| GET `/api/guides?ville=&langue=` | Public | Profils actifs sans coordonnées ni UUID de compte |
+| GET `/api/guides/{id}` | Public | Profil public |
+| GET `/api/guides/admin` | ADMIN | Profils complets |
+| POST `/api/guides` | ADMIN | Créer (201) |
+| PUT `/api/guides/{id}` | ADMIN | Modifier, associer un compte |
+| DELETE `/api/guides/{id}` | ADMIN | Archiver et rendre indisponible (204) |
+| GET, PUT `/api/guides/me` | GUIDE | Son profil uniquement |
+| GET `/api/guides/me/circuits` | GUIDE | Appelle Circuit avec son guideId |
 
-### Modèle Guide
-```json
-{
-  "id": 1,
-  "nom": "Benali",
-  "prenom": "Youssef",
-  "ville": "Agadir",
-  "langues": ["français", "anglais", "arabe"],
-  "email": "youssef@example.com",
-  "telephone": "0600000000",
-  "tarifParJour": 400.0,
-  "disponible": true
-}
-```
+Corps ADMIN : `nom`, `ville`, `langues` (tableau non vide), `tarifParJour` (positif ou nul, deux décimales), `disponible`, `ownerSubject` (UUID Keycloak facultatif, unique), `email`, `telephone`. `/me` accepte les informations de profil **sans tarif ni UUID** : aucun changement d'association de compte par le guide.
 
-### Endpoints
-| Méthode | URL | Description | Réponse |
-|---|---|---|---|
-| GET | /api/guides | Liste (filtres : ?ville=, ?langue=) | 200 + liste |
-| GET | /api/guides/{id} | Détail d'un guide | 200 / 404 |
-| POST | /api/guides | Créer un guide | 201 / 400 |
-| PUT | /api/guides/{id} | Modifier | 200 / 404 |
-| DELETE | /api/guides/{id} | Supprimer | 204 / 404 |
-| GET | /api/guides/{id}/disponibilite | Disponibilité | 200 |
+## Circuit — Nada
 
----
+| Méthode et chemin | Accès | Comportement |
+|---|---|---|
+| GET `/api/circuits?ville=&guideId=` | Public | Catalogue filtré |
+| GET `/api/circuits/{id}` | Public | Détail |
+| POST `/api/circuits` | ADMIN | Créer (201) |
+| PUT `/api/circuits/{id}` | ADMIN | Modifier |
+| DELETE `/api/circuits/{id}` | ADMIN | Archiver (204) |
 
-## 2. Circuit Service (port 8082) – Nada
+Corps : `titre`, `description`, `ville`, `dureeHeures`, `prix`, **un seul `guideId`**. Circuit appelle GET Guide `/{id}` et exige un guide disponible. Aucun tableau de guides, aucune séance intermédiaire.
 
-### Modèle Circuit
-```json
-{
-  "id": 1,
-  "titre": "Médina et Kasbah",
-  "description": "Visite guidée de la vieille ville",
-  "ville": "Agadir",
-  "dureeHeures": 4,
-  "prix": 250.0,
-  "guideId": 1
-}
-```
+## Réservation — Mariem
 
-### Endpoints
-| Méthode | URL | Description | Réponse |
-|---|---|---|---|
-| GET | /api/circuits | Liste (filtres : ?ville=, ?guideId=) | 200 |
-| GET | /api/circuits/{id} | Détail | 200 / 404 |
-| POST | /api/circuits | Créer (vérifie que guideId existe) | 201 / 400 |
-| PUT | /api/circuits/{id} | Modifier | 200 / 404 |
-| DELETE | /api/circuits/{id} | Supprimer | 204 / 404 |
+| Méthode et chemin | Accès | Comportement |
+|---|---|---|
+| POST `/api/reservations` | USER | Créer pour le compte connecté (201) |
+| GET `/api/reservations` | ADMIN | Toutes, y compris les anciennes sans propriétaire |
+| GET `/api/reservations/me` | USER | Ses réservations |
+| GET `/api/reservations/guide` | GUIDE | Réservations du guide identifié par GET Guide `/me`, même jeton |
+| GET `/api/reservations/{id}` | Propriétaire USER ou ADMIN | Détail |
+| PATCH `/api/reservations/{id}/annuler` | Propriétaire USER ou ADMIN | Annuler une demande en attente/acceptée, date non passée |
+| PATCH `/api/reservations/{id}/accepter` ou `/refuser` | ADMIN | Décider une demande en attente, date non passée |
+| GET `/api/reservations/{id}/eligibilite` | Propriétaire USER ou ADMIN | Références et droit de déposer un avis |
 
-Consomme : GET guide-service /api/guides/{id}
+Création : `circuitId`, `dateVisite`, `nbPersonnes`, `nom`, `email`. Le serveur récupère le circuit, son guide et le prix via Circuit, vérifie le guide via Guide, calcule `prixTotal = prix × nbPersonnes`, conserve le `sub`. Le client ne choisit ni propriétaire, ni guide, ni prix total, ni statut.
 
----
+Réponse : `id`, champs de création, `guideId`, `prixTotal`, `statut`, `dateCreation`. Statuts : `EN_ATTENTE`, `ACCEPTEE`, `REFUSEE`, `ANNULEE`. Le verrou optimiste protège les décisions concurrentes. Éligibilité : `{reservationId,circuitId,guideId,eligible,raison}`, vraie après la date d'une visite acceptée (Africa/Casablanca).
 
-## 3. Réservation Service (port 8083) – Mariem
+## Avis — Hajar
 
-### Modèle Reservation
-```json
-{
-  "id": 1,
-  "circuitId": 1,
-  "guideId": 1,
-  "nomClient": "Sara Alami",
-  "emailClient": "sara@example.com",
-  "dateCircuit": "2026-12-10",
-  "nombrePersonnes": 3,
-  "statut": "EN_ATTENTE"
-}
-```
-Statuts possibles : EN_ATTENTE, CONFIRMEE, ANNULEE
+| Méthode et chemin | Accès | Comportement |
+|---|---|---|
+| GET `/api/avis?circuitId=&guideId=` | Public | Avis publiés |
+| POST `/api/avis` | USER | Avis sur sa visite éligible (201) |
+| GET `/api/avis/me` | USER | Ses avis |
+| GET `/api/avis/admin` | ADMIN | Tous les avis |
+| PATCH `/api/avis/{id}/publication` | ADMIN | `{ "publie": true/false }` |
 
-### Endpoints
-| Méthode | URL | Description | Réponse |
-|---|---|---|---|
-| GET | /api/reservations | Liste (?statut=, ?circuitId=) | 200 |
-| GET | /api/reservations/{id} | Détail | 200 / 404 |
-| POST | /api/reservations | Créer (vérifie circuit et guide) | 201 / 400 / 503 |
-| PUT | /api/reservations/{id}/statut | Changer le statut | 200 / 404 |
-| DELETE | /api/reservations/{id} | Annuler | 204 / 404 |
+Création : `{reservationId,noteGuide,noteCircuit,commentaire}`. Notes entières 1–5, commentaire non vide, maximum 2000 caractères. Avis transmet le jeton à Réservation pour vérifier propriété et éligibilité ; le serveur déduit circuit, guide et auteur. Une contrainte PostgreSQL garantit un avis par réservation.
 
-Consomme : guide-service et circuit-service (GET par id)
+Réponse : `id`, `reservationId`, `circuitId`, `guideId`, `auteur`, notes, commentaire, `dateCreation`, `publie`. Aucun identifiant de compte exposé.
 
----
-
-## 4. Avis Service (port 8084) – Hajar
-
-### Modèle Avis
-```json
-{
-  "id": 1,
-  "cibleType": "CIRCUIT",
-  "cibleId": 1,
-  "auteur": "Sara Alami",
-  "note": 5,
-  "commentaire": "Excellente visite !",
-  "dateCreation": "2026-11-05T14:30:00"
-}
-```
-cibleType : GUIDE ou CIRCUIT. note : entier de 1 à 5.
-
-### Endpoints
-| Méthode | URL | Description | Réponse |
-|---|---|---|---|
-| GET | /api/avis | Liste (?cibleType=, ?cibleId=) | 200 |
-| GET | /api/avis/{id} | Détail | 200 / 404 |
-| POST | /api/avis | Créer (vérifie que la cible existe) | 201 / 400 / 503 |
-| DELETE | /api/avis/{id} | Supprimer | 204 / 404 |
-| GET | /api/avis/moyenne?cibleType=&cibleId= | Note moyenne | 200 |
-
-Consomme : guide-service et circuit-service (GET par id)
+Ces contrats remplacent les exemples du planning initial sur cette branche. Faire relire les intégrations Guide, Réservation et Avis par leurs responsables avant fusion dans main2.

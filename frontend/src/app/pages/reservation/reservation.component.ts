@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { catchError, combineLatest, finalize, of, switchMap, tap } from 'rxjs';
 import { CircuitResume } from '../../models/reservation';
 import { ReservationService } from '../../services/reservation.service';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-reservation',
@@ -17,6 +18,7 @@ export class ReservationComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly auth = inject(AuthService);
   circuits: CircuitResume[] = [];
   nbOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   guideNom = '';
@@ -38,6 +40,7 @@ export class ReservationComponent implements OnInit {
   });
 
   ngOnInit() {
+    this.form.patchValue({nom:this.auth.name(),email:this.auth.email()});
     this.form.controls.circuitId.valueChanges
       .pipe(
         tap(() => {

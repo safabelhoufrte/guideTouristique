@@ -1,14 +1,12 @@
-# ---------- Étape 1 : compiler le projet avec Maven ----------
-FROM maven:3.9-eclipse-temurin-21 AS build
-WORKDIR /app
+FROM maven:3.9.11-eclipse-temurin-21 AS build
+WORKDIR /build
 COPY pom.xml .
-RUN mvn dependency:go-offline
-COPY src ./src
-RUN mvn package -DskipTests
-
-# ---------- Étape 2 : lancer l'application ----------
-FROM eclipse-temurin:21-jre
+COPY src src
+RUN mvn -B -ntp package -DskipTests
+FROM eclipse-temurin:21-jre-jammy
+RUN groupadd --system app && useradd --system --gid app app
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
-EXPOSE 8081
-ENTRYPOINT ["java", "-jar", "app.jar"]
+COPY --from=build /build/target/guide-service-1.0.0.jar app.jar
+USER app
+ENV SERVER_ADDRESS=0.0.0.0
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

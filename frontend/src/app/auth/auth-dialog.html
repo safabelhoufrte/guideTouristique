@@ -1,0 +1,68 @@
+<dialog
+  #modal
+  aria-labelledby="auth-title"
+  aria-describedby="auth-description"
+  (cancel)="close()"
+  (close)="close()"
+  (click)="dismissOutside($event)"
+>
+  <div class="dialog-banner">
+    <span class="eyebrow">GUIDE TOURISTIQUE</span
+    ><button
+      type="button"
+      class="close-button"
+      aria-label="Fermer la fenêtre de connexion"
+      (click)="close()"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        aria-hidden="true"
+      >
+        <path d="m6 6 12 12M18 6 6 18" />
+      </svg></button
+    ><img src="/images/circuit-landscape.svg" alt="" width="640" height="360" />
+  </div>
+  <div class="dialog-content">
+    <p class="eyebrow">VOTRE PROCHAINE DÉCOUVERTE VOUS ATTEND</p>
+    <h2 id="auth-title">Heureux de vous retrouver.</h2>
+    <p id="auth-description">
+      Connectez-vous pour retrouver vos réservations, partager vos avis et préparer votre prochaine
+      visite.
+    </p>
+    @if (auth.problem() || error()) {
+      <p class="error" role="alert">{{ auth.problem() || error() }}</p>
+    }
+    @if (auth.authenticated()) {
+      <a class="auth-action primary" [routerLink]="auth.home()" (click)="close()"
+        >Accéder à mon espace <span aria-hidden="true">→</span></a
+      >
+    } @else {
+      <button
+        type="button"
+        autofocus
+        class="auth-action primary"
+        [disabled]="busy() || !!auth.problem()"
+        (click)="continue()"
+      >
+        {{ busy() ? 'Ouverture de la connexion…' : 'Se connecter' }}
+        <span aria-hidden="true">→</span>
+      </button>
+      <div class="divider"><span></span>Première visite ?<span></span></div>
+      <button
+        type="button"
+        class="auth-action secondary"
+        [disabled]="busy() || !!auth.problem()"
+        (click)="continue(true)"
+      >
+        Créer mon compte touriste
+      </button>
+      <p class="account-hint">Guide ou administrateur ? Utilisez votre compte habituel.</p>
+    }
+    <button type="button" class="browse-button" (click)="close()">
+      Continuer à découvrir sans me connecter
+    </button>
+  </div>
+</dialog>

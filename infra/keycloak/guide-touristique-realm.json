@@ -1,0 +1,161 @@
+{
+  "realm": "guide-touristique",
+  "enabled": true,
+  "displayName": "Guide Touristique",
+  "loginTheme": "guide-touristique",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["fr", "en"],
+  "defaultLocale": "fr",
+  "registrationAllowed": true,
+  "resetPasswordAllowed": false,
+  "loginWithEmailAllowed": true,
+  "bruteForceProtected": true,
+  "sslRequired": "external",
+  "roles": {
+    "realm": [
+      {
+        "name": "default-roles-guide-touristique",
+        "composite": true,
+        "composites": { "realm": ["USER"] }
+      },
+      {
+        "name": "USER"
+      },
+      {
+        "name": "GUIDE"
+      },
+      {
+        "name": "ADMIN"
+      }
+    ]
+  },
+  "defaultRole": {
+    "name": "default-roles-guide-touristique",
+    "composite": true,
+    "composites": {
+      "realm": [
+        "USER"
+      ]
+    }
+  },
+  "clients": [
+    {
+      "clientId": "guide-touristique-web",
+      "name": "Guide Touristique Angular",
+      "baseUrl": "http://localhost:4200/",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:4200/*"
+      ],
+      "webOrigins": [
+        "http://localhost:4200"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "defaultClientScopes": [
+        "basic",
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "protocolMappers": [
+        {
+          "name": "api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "guide-touristique-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "username": "demo-touriste",
+      "email": "touriste@demo.example",
+      "emailVerified": true,
+      "firstName": "Sara",
+      "lastName": "Alami",
+      "enabled": true,
+      "realmRoles": [
+        "USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "username": "demo-guide",
+      "email": "guide@demo.example",
+      "emailVerified": true,
+      "firstName": "Youssef",
+      "lastName": "Benali",
+      "enabled": true,
+      "realmRoles": [
+        "GUIDE"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "33333333-3333-4333-8333-333333333333",
+      "username": "demo-admin",
+      "email": "admin@demo.example",
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "Tourisme",
+      "enabled": true,
+      "realmRoles": [
+        "ADMIN"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "44444444-4444-4444-8444-444444444444",
+      "username": "demo-autre",
+      "email": "autre@demo.example",
+      "emailVerified": true,
+      "firstName": "Autre",
+      "lastName": "Touriste",
+      "enabled": true,
+      "realmRoles": [
+        "USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_DEMO_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}
