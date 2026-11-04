@@ -23,9 +23,16 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @Import(ReservationSecurityIntegrationTest.TestJwt.class)
 class ReservationSecurityIntegrationTest {
 
-  static final PostgreSQLContainer<?> DB=new PostgreSQLContainer<>("postgres:16");
+  static final PostgreSQLContainer<?> DB=new PostgreSQLContainer<>("postgres:16")
+      .withEnv("GUIDE_DB_PASSWORD", "test-guide-only")
+      .withEnv("CIRCUIT_DB_PASSWORD", "test-circuit-only")
+      .withEnv("RESERVATION_DB_PASSWORD", "test-reservation-only")
+      .withEnv("AVIS_DB_PASSWORD", "test-avis-only")
+      .withCopyFileToContainer(org.testcontainers.utility.MountableFile.forHostPath(
+          java.nio.file.Path.of("../db/init.sql").toAbsolutePath()),
+          "/docker-entrypoint-initdb.d/init.sql");
   static { DB.start(); }
-  @DynamicPropertySource static void properties(DynamicPropertyRegistry r){r.add("spring.datasource.url",DB::getJdbcUrl);r.add("spring.datasource.username",DB::getUsername);r.add("spring.datasource.password",DB::getPassword);}
+  @DynamicPropertySource static void properties(DynamicPropertyRegistry r){r.add("spring.datasource.url",()->"jdbc:postgresql://"+DB.getHost()+":"+DB.getMappedPort(5432)+"/tourisme_db");r.add("spring.datasource.username",()->"reservation");r.add("spring.datasource.password",()->"test-reservation-only");}
   @LocalServerPort int port;
   @Autowired JdbcTemplate jdbc;
   final ObjectMapper json=new ObjectMapper();

@@ -160,7 +160,7 @@ AUTH_JWK_SET_URI: http://keycloak:8080/realms/guide-touristique/protocol/openid-
 
 Pourquoi deux adresses ? `iss` doit correspondre exactement à l’adresse écrite dans le jeton reçu par le navigateur. Pour télécharger les clés, le conteneur appelle Keycloak par son nom Docker `keycloak:8080`. Une API lancée depuis IntelliJ utilise au contraire l’adresse `localhost:8180` pour ces clés.
 
-Gardez aussi votre configuration de base. Sous Docker, chaque service utilise son utilisateur et son mot de passe, pas le compte PostgreSQL administrateur. Hors Docker, Réservation a encore des valeurs par défaut historiques : définissez explicitement `DB_URL=jdbc:postgresql://localhost:15433/reservation_db`, `DB_USER=reservation` et son `DB_PASSWORD` pour utiliser le PostgreSQL de ce projet.
+Gardez aussi votre configuration de base. Sous Docker, chaque service utilise son utilisateur et son mot de passe, pas le compte PostgreSQL administrateur. Les quatre services utilisent désormais la base partagée `tourisme_db`, avec un schéma par service. Hors Docker, les valeurs par défaut ciblent `localhost:15433/tourisme_db` ; fournissez le `DB_PASSWORD` du service. Voir [la configuration et la transition des données](docs/shared-database.md) avant de relancer avec un volume existant. La base technique de Keycloak reste séparée.
 
 ### Étape C — adapter `SecurityConfig`
 

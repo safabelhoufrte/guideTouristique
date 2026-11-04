@@ -23,7 +23,7 @@ services:
     ports: ["127.0.0.1:8081:8081"]
     environment:
       SERVER_PORT: 8081
-      DB_URL: jdbc:postgresql://postgres:5432/guide_db
+      DB_URL: jdbc:postgresql://postgres:5432/tourisme_db
       DB_USER: guide
       DB_PASSWORD: ${GUIDE_DB_PASSWORD:?Set GUIDE_DB_PASSWORD in .env}
       SERVER_ADDRESS: 0.0.0.0
@@ -37,7 +37,7 @@ services:
     ports: ["127.0.0.1:${CIRCUIT_HOST_PORT:-8082}:8082"]
     environment:
       SERVER_PORT: 8082
-      DB_URL: jdbc:postgresql://postgres:5432/circuit_db
+      DB_URL: jdbc:postgresql://postgres:5432/tourisme_db
       DB_USER: circuit
       DB_PASSWORD: ${CIRCUIT_DB_PASSWORD:?Set CIRCUIT_DB_PASSWORD in .env}
       GUIDE_SERVICE_URL: http://guide-service:8081
@@ -50,7 +50,7 @@ services:
     ports: ["127.0.0.1:${RESERVATION_HOST_PORT:-8083}:8083"]
     environment:
       SERVER_PORT: 8083
-      DB_URL: jdbc:postgresql://postgres:5432/reservation_db
+      DB_URL: jdbc:postgresql://postgres:5432/tourisme_db
       DB_USER: reservation
       DB_PASSWORD: ${RESERVATION_DB_PASSWORD:?Set RESERVATION_DB_PASSWORD in .env}
       GUIDE_SERVICE_URL: http://guide-service:8081
@@ -65,7 +65,7 @@ services:
     environment:
       SERVER_PORT: 8084
       SERVER_ADDRESS: 0.0.0.0
-      DB_URL: jdbc:postgresql://postgres:5432/avis_db
+      DB_URL: jdbc:postgresql://postgres:5432/tourisme_db
       DB_USER: avis
       DB_PASSWORD: ${AVIS_DB_PASSWORD:?Set AVIS_DB_PASSWORD in .env}
       RESERVATION_SERVICE_URL: http://reservation-service:8083

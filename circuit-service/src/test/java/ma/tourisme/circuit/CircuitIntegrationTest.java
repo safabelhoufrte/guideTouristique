@@ -139,7 +139,7 @@ class CircuitIntegrationTest {
             .run(
                 "--server.port=0",
                 "--server.address=127.0.0.1",
-                "--spring.datasource.url=" + databaseUrl("circuit_db"),
+                "--spring.datasource.url=" + databaseUrl("tourisme_db"),
                 "--spring.datasource.username=circuit",
                 "--spring.datasource.password=test-circuit-only",
                 "--services.guide-url=http://127.0.0.1:" + guide.getAddress().getPort(),
@@ -242,7 +242,7 @@ class CircuitIntegrationTest {
     for (JsonNode row : expect("GET", "/api/circuits", null, 200))
       assertNotEquals(id, row.path("id").asLong());
     try (var conn =
-            DriverManager.getConnection(databaseUrl("circuit_db"), "circuit", "test-circuit-only");
+            DriverManager.getConnection(databaseUrl("tourisme_db"), "circuit", "test-circuit-only");
         var query = conn.prepareStatement("SELECT disponible FROM circuit.circuits WHERE id=?")) {
       query.setLong(1, id);
       try (var row = query.executeQuery()) {
@@ -350,7 +350,7 @@ class CircuitIntegrationTest {
     startApplication();
     assertEquals(id, expect("GET", "/api/circuits/" + id, null, 200).path("id").asLong());
     try (var conn =
-            DriverManager.getConnection(databaseUrl("circuit_db"), "circuit", "test-circuit-only");
+            DriverManager.getConnection(databaseUrl("tourisme_db"), "circuit", "test-circuit-only");
         var statement = conn.createStatement();
         var row =
             statement.executeQuery(
@@ -362,11 +362,11 @@ class CircuitIntegrationTest {
   }
 
   @Test
-  void eachServiceOwnsItsDatabaseAndCannotConnectToTheOthers() throws Exception {
+  void servicesShareOneDatabaseWithSeparateSchemaPermissions() throws Exception {
     for (String role : new String[] {"guide", "circuit", "reservation", "avis"}) {
       try (var conn =
               DriverManager.getConnection(
-                  databaseUrl(role + "_db"), role, "test-" + role + "-only");
+                  databaseUrl("tourisme_db"), role, "test-" + role + "-only");
           var statement = conn.createStatement()) {
         try (var row =
             statement.executeQuery(
@@ -374,29 +374,59 @@ class CircuitIntegrationTest {
                     + " pg_roles WHERE rolname=current_user")) {
           assertTrue(row.next());
           assertEquals(role, row.getString(1));
-          assertEquals(role + "_db", row.getString(2));
+          assertEquals("tourisme_db", row.getString(2));
           assertFalse(row.getBoolean(3));
           assertFalse(row.getBoolean(4));
           assertFalse(row.getBoolean(5));
         }
         conn.setAutoCommit(false);
-        statement.execute("CREATE TABLE public.migration_access_probe(id integer PRIMARY KEY)");
-        statement.execute("INSERT INTO public.migration_access_probe VALUES(1)");
+        statement.execute("CREATE TABLE migration_access_probe(id integer PRIMARY KEY)");
+        statement.execute("INSERT INTO migration_access_probe VALUES(1)");
+        try (var row = statement.executeQuery("SELECT current_schema(), count(*) FROM migration_access_probe")) {
+          assertTrue(row.next());
+          assertEquals(role, row.getString(1));
+          assertEquals(1, row.getInt(2));
+        }
         conn.rollback();
-      }
-      for (String other : new String[] {"guide", "circuit", "reservation", "avis"}) {
-        if (role.equals(other)) continue;
-        SQLException error =
-            assertThrows(
-                SQLException.class,
-                () -> {
-                  try (var ignored =
-                      DriverManager.getConnection(
-                          databaseUrl(other + "_db"), role, "test-" + role + "-only")) {}
-                });
-        assertEquals("42501", error.getSQLState());
+        conn.setAutoCommit(true);
+        assertEquals("42501", assertThrows(SQLException.class,
+            () -> statement.execute("CREATE TABLE public.migration_access_probe(id integer)")).getSQLState());
+        assertEquals("42501", assertThrows(SQLException.class,
+            () -> statement.execute("CREATE SCHEMA forbidden_schema")).getSQLState());
+        for (String other : new String[] {"guide", "circuit", "reservation", "avis"}) {
+          if (role.equals(other)) continue;
+          assertEquals("42501", assertThrows(SQLException.class,
+              () -> statement.execute("CREATE TABLE " + other + ".migration_access_probe(id integer)")).getSQLState());
+          try (var row = statement.executeQuery("SELECT has_schema_privilege(current_user, '" + other + "', 'USAGE')")) {
+            assertTrue(row.next());
+            assertFalse(row.getBoolean(1));
+          }
+        }
       }
     }
+  }
+
+  @Test
+  void allServiceMigrationsCoexistInTheSharedDatabase() throws Exception {
+    for (String role : new String[] {"guide", "reservation", "avis"}) {
+      var flyway = Flyway.configure()
+          .dataSource(databaseUrl("tourisme_db"), role, "test-" + role + "-only")
+          .schemas(role)
+          .defaultSchema(role)
+          .table("flyway_" + role + "_history")
+          .locations("filesystem:../" + role + "-service/src/main/resources/db/migration/" + role)
+          .load();
+      int expectedMigrations = role.equals("reservation") ? 2 : 1;
+      assertEquals(expectedMigrations, flyway.migrate().migrationsExecuted);
+      assertEquals(0, flyway.migrate().migrationsExecuted);
+      try (var conn = DriverManager.getConnection(databaseUrl("tourisme_db"), role, "test-" + role + "-only");
+          var statement = conn.createStatement();
+          var row = statement.executeQuery("SELECT count(*) FROM flyway_" + role + "_history WHERE success")) {
+        assertTrue(row.next());
+        assertEquals(expectedMigrations, row.getInt(1));
+      }
+    }
+    create(1);
   }
 
   @Test
