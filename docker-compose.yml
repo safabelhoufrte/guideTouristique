@@ -23,8 +23,11 @@ services:
     ports: ["127.0.0.1:8081:8081"]
     environment:
       SERVER_PORT: 8081
-      DB_URL: jdbc:postgresql://postgres:5432/guide_db
+      DB_URL: jdbc:postgresql://postgres:5432/tourisme_db
       DB_USER: guide
+      SPRING_DATASOURCE_HIKARI_SCHEMA: guide
+      SPRING_FLYWAY_DEFAULT_SCHEMA: guide
+      SPRING_FLYWAY_SCHEMAS: guide
       DB_PASSWORD: ${GUIDE_DB_PASSWORD:?Set GUIDE_DB_PASSWORD in .env}
     depends_on:
       postgres: {condition: service_healthy}

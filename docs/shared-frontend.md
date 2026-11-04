@@ -28,19 +28,18 @@ Photo sources and fictional-preview behaviour are documented in `docs/landing-ph
 ## First-time database setup
 
 Copy `.env.example` to `.env` and replace all password placeholders. Keep `.env` out of Git.
-`db/init.sql` creates the four databases and their separate non-superuser login roles. Compose passes
-the matching passwords into PostgreSQL. Business tables are owned by each service's migrations;
-no business seed rows or image blobs are added to PostgreSQL initialization.
+`db/init.sql` creates one shared business database, `tourisme_db`, with four service roles and
+schemas (`guide`, `circuit`, `reservation`, `avis`). Each service connects with its own role,
+uses its schema for JDBC/Hibernate queries and keeps its Flyway history there. Business tables
+remain owned by service migrations. No business seed rows or image blobs are added here.
 
 ### Existing PostgreSQL volumes
 
-Initialization scripts do not rerun against existing data. Do not delete or recreate an existing
-volume and do not run `docker compose down -v` to adopt these changes. Existing installations need
-an administrator to create missing service roles, set the chosen passwords, assign database ownership
-and update each service's connection settings after taking a backup. Plan that migration with each
-database owner; the fresh-init script is not an upgrade script. Keep the previous Compose/env setup
-for that database until its migration is complete. The default host port is now 15433 to avoid clashes;
-the internal database endpoint remains `postgres:5432`.
+Initialization scripts do not rerun against existing data. Do not delete an existing volume
+or use `docker compose down -v`. Follow the backup, migration, verification and rollback steps
+in [shared-database.md](shared-database.md) before changing an existing installation.
+This configuration does not transfer existing data automatically.
+The default host port is 15433; containers connect to `postgres:5432/tourisme_db`.
 
 ### Branch ownership
 
