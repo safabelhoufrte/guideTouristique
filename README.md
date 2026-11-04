@@ -30,7 +30,7 @@ Application web distribuée de **guide touristique**, composée de 4 modules mé
 
 ## 1. Présentation du projet
 
-Le projet consiste à concevoir une application distribuée de guide touristique. Chaque module est **indépendant** : il a son propre code, sa propre base de données, son propre Dockerfile, et il **expose** et **consomme** des Web Services REST.
+Le projet consiste à concevoir une application distribuée de guide touristique. Chaque module est **indépendant** : il a son propre code, son schéma dans la base partagée `tourisme_db`, son propre Dockerfile, et il **expose** et **consomme** des Web Services REST.
 
 | Module | Rôle |
 |---|---|
@@ -55,10 +55,12 @@ Le projet consiste à concevoir une application distribuée de guide touristique
 |---|---|
 | Backend | Java 21, Spring Boot 3 (Spring Web, Spring Data JPA) |
 | Frontend | Angular |
-| Base de données | PostgreSQL 16 (une instance, **une base par service**) |
+| Base de données | PostgreSQL 16 (une instance, **une base partagée `tourisme_db`**) |
 | Conteneurisation | Docker et Docker Compose |
 | Documentation API | Swagger / OpenAPI (springdoc-openapi) |
 | Gestion de code | Git et GitHub (branches, Pull Requests, Projects) |
+
+Voir [la configuration de la base partagée et la migration des données](docs/shared-database.md).
 
 ## 4. Architecture
 
@@ -74,8 +76,9 @@ Le projet consiste à concevoir une application distribuée de guide touristique
   └──────┬───────┘ └──────┬───────┘ └───────┬───────┘ └──────┬───────┘
          │                │                 │                │
          ▼                ▼                 ▼                ▼
-     guide_db        circuit_db      reservation_db       avis_db
-                    └──────────── PostgreSQL :5432 ────────────┘
+       guide            circuit         reservation          avis
+         └─────────────── schémas de tourisme_db ─────────────┘
+                              PostgreSQL :5432
 ```
 
 ### Qui appelle qui (communication REST entre services)
@@ -101,7 +104,7 @@ guideTouristique/
 ├── avis-service/           # Hajar
 ├── frontend/               # Angular (Safa)
 ├── db/
-│   └── init.sql            # Création des 4 bases PostgreSQL
+│   └── init.sql            # Création de tourisme_db et des 4 schémas
 ├── docs/
 │   └── api-contracts.md    # Contrats d'API (à respecter !)
 ├── docker-compose.yml
@@ -180,7 +183,7 @@ Chaque développeuse ajoute **son bloc** en s'inspirant de `guide-service`. Exem
       - "8082:8082"
     environment:
       SERVER_PORT: 8082
-      DB_URL: jdbc:postgresql://postgres:5432/circuit_db
+      DB_URL: jdbc:postgresql://postgres:5432/tourisme_db
       DB_USER: circuit
       DB_PASSWORD: ${CIRCUIT_DB_PASSWORD}
       GUIDE_SERVICE_URL: http://guide-service:8081
@@ -209,13 +212,13 @@ guide.service.url=${GUIDE_SERVICE_URL:http://localhost:8081}
 
 ### État vérifié de Circuit sur cette branche
 
-- Circuit respecte `docs/api-contracts.md` : Java 21, port 8082, `/api/circuits`, JSON camelCase et base `circuit_db`. Le dépôt JDBC conserve la séparation contrôleur/service/repository et utilise Flyway.
+- Circuit respecte `docs/api-contracts.md` : Java 21, port 8082, `/api/circuits`, JSON camelCase et base partagée `tourisme_db` (schéma `circuit`). Le dépôt JDBC conserve la séparation contrôleur/service/repository et utilise Flyway.
 - La branche `guide` contient actuellement le squelette Docker et les contrats, sans `pom.xml` ni code Guide. Un test avec le vrai Guide reste à effectuer après son implémentation.
 - Pour tester maintenant : `docker compose -f docker-compose.yml -f compose.demo.yaml up --build -d`, puis `python circuit-service/scripts/demo-client.py`. Le mode démo remplace seulement le build Guide par un simulateur Python.
 - Dans `.env`, définir `DB_USER`, `DB_PASSWORD` administrateur et les quatre mots de passe `GUIDE_DB_PASSWORD`, `CIRCUIT_DB_PASSWORD`, `RESERVATION_DB_PASSWORD`, `AVIS_DB_PASSWORD`. Chaque application reçoit uniquement son propre compte limité.
 - PostgreSQL est accessible localement sur `localhost:15433` par défaut (`DB_HOST_PORT`), et sur `postgres:5432` entre conteneurs. Les anciennes bases et volumes locaux ne sont pas supprimés ni importés automatiquement.
 - Si le port local 8082 est occupé, régler `CIRCUIT_HOST_PORT` dans `.env` (par exemple 18092). Le port interne reste 8082 ; utiliser alors `python circuit-service/scripts/demo-client.py --url http://localhost:18092` et Swagger sur ce même port local.
-- `init.sql` crée les quatre bases et comptes uniquement pour un volume neuf. Les évolutions des tables Circuit passent par de nouvelles migrations Flyway, sans modifier V1 déjà appliquée ni utiliser `down -v`. Pour un volume existant provenant de main2, un administrateur doit créer les comptes et attribuer les bases avant de lancer cette configuration.
+- `init.sql` crée `tourisme_db`, quatre comptes limités et quatre schémas uniquement pour un volume neuf. Consulter [la transition des données](docs/shared-database.md) avant de relancer sur un volume existant ; ne pas utiliser `down -v`.
 - Les champs ajoutés par V2 restent null pour les anciens enregistrements dont ces informations sont inconnues ; ils deviennent obligatoires dans les nouvelles requêtes.
 
 ## 8. Stratégie de branches Git
