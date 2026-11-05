@@ -28,6 +28,20 @@ services:
       DB_PASSWORD: ${GUIDE_DB_PASSWORD:?Set GUIDE_DB_PASSWORD in .env}
     depends_on:
       postgres: {condition: service_healthy}
+  avis-service:
+    build: ./avis-service
+    ports: ["127.0.0.1:8084:8084"]
+    environment:
+      SERVER_PORT: 8084
+      SERVER_ADDRESS: 0.0.0.0
+      DB_URL: jdbc:postgresql://postgres:5432/avis_db
+      DB_USER: avis
+      DB_PASSWORD: ${AVIS_DB_PASSWORD:?Set AVIS_DB_PASSWORD in .env}
+      RESERVATION_SERVICE_URL: http://reservation-service:8083
+      AUTH_ISSUER_URI: http://localhost:8180/realms/guide-touristique
+      AUTH_JWK_SET_URI: http://keycloak:8080/realms/guide-touristique/protocol/openid-connect/certs
+    depends_on:
+      postgres: {condition: service_healthy}
   frontend:
     build: ./frontend
     ports: ["127.0.0.1:${FRONTEND_HOST_PORT:-4200}:80"]
