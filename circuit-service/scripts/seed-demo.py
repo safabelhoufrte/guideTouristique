@@ -1,11 +1,15 @@
 """Opt-in local demo data through the Circuit API. Existing records are never changed."""
 import argparse
 import json
+import os
 from urllib.request import Request, urlopen
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--url', default='http://localhost:8082')
 args = parser.parse_args()
+token = os.environ.get('DEMO_ADMIN_TOKEN')
+if not token:
+    parser.error('Set DEMO_ADMIN_TOKEN to a current ADMIN access token (never commit it).')
 endpoint = args.url.rstrip('/') + '/api/circuits'
 with urlopen(endpoint, timeout=10) as response:
     existing = {circuit['titre'] for circuit in json.load(response)}
@@ -22,6 +26,6 @@ for circuit in circuits:
     if circuit['titre'] in existing:
         continue
     request = Request(endpoint, data=json.dumps(circuit).encode('utf-8'),
-                      headers={'Content-Type': 'application/json'}, method='POST')
+                      headers={'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token}, method='POST')
     with urlopen(request, timeout=10) as response:
         print('Created', json.load(response)['id'], circuit['titre'])

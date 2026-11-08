@@ -40,6 +40,8 @@ services:
       DB_USER: circuit
       DB_PASSWORD: ${CIRCUIT_DB_PASSWORD:?Set CIRCUIT_DB_PASSWORD in .env}
       GUIDE_SERVICE_URL: http://guide-service:8081
+      AUTH_ISSUER_URI: ${AUTH_ISSUER_URI:-http://localhost:8180/realms/guide-touristique}
+      AUTH_JWK_SET_URI: ${AUTH_JWK_SET_URI:-http://keycloak:8080/realms/guide-touristique/protocol/openid-connect/certs}
     depends_on:
       postgres: {condition: service_healthy}
   frontend:
