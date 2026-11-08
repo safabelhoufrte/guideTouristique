@@ -20,4 +20,5 @@ export interface Guide {
   ville?: string;
   langues?: string[];
   disponible: boolean;
+  tarifParJour?: number;
 }

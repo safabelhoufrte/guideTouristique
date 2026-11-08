@@ -45,7 +45,5 @@ services:
   frontend:
     build: ./frontend
     ports: ["127.0.0.1:${FRONTEND_HOST_PORT:-4200}:80"]
-    depends_on:
-      - circuit-service
 volumes:
   pgdata:

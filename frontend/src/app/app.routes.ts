@@ -13,7 +13,17 @@ export const routes: Routes = [
     title: 'Détail du circuit | Guide Touristique',
   },
   { path: 'reservations', component: ReservationComponent },
-  { path: '', redirectTo: 'circuits', pathMatch: 'full' },
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./auth/landing').then((m) => m.Landing),
+    title: 'Découvrez le Maroc | Guide Touristique',
+  },
+  {
+    path: 'guides',
+    loadComponent: () => import('./pages/spaces/guide-directory').then((m) => m.GuideDirectory),
+  },
+  { path: 'avis', loadComponent: () => import('./pages/spaces/reviews').then((m) => m.Reviews) },
   {
     path: '**',
     loadComponent: () => import('./pages/unavailable').then((m) => m.Unavailable),

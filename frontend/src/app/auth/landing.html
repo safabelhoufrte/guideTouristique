@@ -1,0 +1,78 @@
+<main class="landing">
+  <section class="hero" aria-labelledby="welcome-title">
+    <div class="hero-copy">
+      <p class="eyebrow">
+        <span aria-hidden="true"></span> DES LIEUX. DES HISTOIRES. DES RENCONTRES.
+      </p>
+      <h1 id="welcome-title">Le Maroc,<br />à travers ses <em>rencontres.</em></h1>
+      <p class="intro">
+        Derrière chaque porte, une histoire. Au détour d’une ruelle, une rencontre. Découvrez le
+        Maroc avec celles et ceux qui le vivent, un pas après l’autre.
+      </p>
+      <div class="hero-actions">
+        <a class="landing-button primary" routerLink="/circuits"
+          >Explorer les circuits <span aria-hidden="true">↗</span></a
+        >
+        <a class="text-link" routerLink="/guides"
+          >Rencontrer nos guides <span aria-hidden="true">→</span></a
+        >
+      </div>
+      <div class="hero-note">
+        <span class="note-line" aria-hidden="true"></span> Prenez le temps. Le reste se découvre en
+        chemin.
+      </div>
+    </div>
+    <div class="hero-art">
+      <div class="welcome-stamp">
+        <span lang="ar" dir="rtl">مرحبا بكم</span><span>BIENVENUE AU MAROC</span>
+      </div>
+      <img
+        class="main-photo"
+        src="/images/morocco-zellige.jpg"
+        alt="Fontaine marocaine ornée de zellige bleu et de plâtre sculpté"
+        width="1100"
+        height="733"
+        fetchpriority="high"
+      />
+      <figure class="travel-note">
+        <img
+          src="/images/morocco-kasbah.jpg"
+          alt="Maisons en terre ocre devant une palmeraie et les montagnes"
+          width="700"
+          height="468"
+        />
+        <figcaption>Entre terre ocre et horizons bleus.</figcaption>
+      </figure>
+      <p class="photo-caption">L’ART DU DÉTAIL, L’ENVIE D’AILLEURS.</p>
+    </div>
+  </section>
+  <section class="local-story" aria-labelledby="story-title">
+    <span class="zellige-mark" aria-hidden="true"
+      ><svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="1.4">
+        <path
+          d="m40 4 10 12 16-2-2 16 12 10-12 10 2 16-16-2-10 12-10-12-16 2 2-16L4 40l12-10-2-16 16 2Z"
+        />
+        <path d="m40 17 23 23-23 23-23-23Z" />
+        <circle cx="40" cy="40" r="10" /></svg
+    ></span>
+    <div>
+      <p class="eyebrow">L’ESSENTIEL EST DANS LA RENCONTRE</p>
+      <h2 id="story-title">Au-delà des cartes postales.</h2>
+    </div>
+    <p>
+      Le geste d’un artisan, les couleurs d’un souk, une histoire transmise de génération en
+      génération. Avec un guide local, les lieux prennent une autre dimension.
+    </p>
+  </section>
+  <app-landing-showcase />
+  <section class="invitation" aria-labelledby="invitation-title">
+    <div>
+      <p class="eyebrow">UN ESPACE POUR VOS VOYAGES</p>
+      <h2 id="invitation-title">La prochaine histoire pourrait être la vôtre.</h2>
+      <p>Retrouvez vos réservations et partagez vos avis depuis votre espace personnel.</p>
+    </div>
+    <a class="landing-button primary" routerLink="/circuits"
+      >Explorer les circuits <span aria-hidden="true">→</span></a
+    >
+  </section>
+</main>
