@@ -1,5 +1,11 @@
 # 🧭 Guide Touristique
 
+> **Branche Circuit :** cette branche reprend le frontend public actuel de `main2`
+> et ajoute le backend Circuit. Les lectures restent publiques ; les créations,
+> modifications et archivages demandent un access token Keycloak avec le rôle ADMIN.
+> Voir [le lancement et la vérification de Circuit](docs/circuit-integration.md).
+> Les autres API et le frontend authentifié restent à intégrer séparément.
+
 > **État actuel de main2 :** frontend public et initialisation PostgreSQL partagés. Lire
 > [le guide de lancement et de compatibilité](docs/shared-frontend.md) avant de suivre le planning initial ci-dessous.
 > L’authentification et les espaces privés sont isolés sur `auth-integration` pour revue d’équipe.

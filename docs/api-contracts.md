@@ -61,9 +61,14 @@
 |---|---|---|---|
 | GET | /api/circuits | Liste (filtres : ?ville=, ?guideId=) | 200 |
 | GET | /api/circuits/{id} | Détail | 200 / 404 |
-| POST | /api/circuits | Créer (vérifie que guideId existe) | 201 / 400 |
-| PUT | /api/circuits/{id} | Modifier | 200 / 404 |
-| DELETE | /api/circuits/{id} | Supprimer | 204 / 404 |
+| POST | /api/circuits | ADMIN — créer (vérifie que guideId existe) | 201 / 400 / 401 / 403 |
+| PUT | /api/circuits/{id} | ADMIN — modifier | 200 / 404 / 401 / 403 |
+| DELETE | /api/circuits/{id} | ADMIN — archiver sans effacer l'historique | 204 / 404 / 401 / 403 |
+
+Les deux routes GET restent publiques. Les écritures exigent un access token signé :
+émetteur Keycloak attendu, audience `guide-touristique-api`, sujet non vide,
+dates valides et rôle `ADMIN` dans `realm_access.roles`. USER et GUIDE seuls
+ne peuvent pas écrire. Voir [la configuration Circuit](circuit-integration.md).
 
 Consomme : GET guide-service /api/guides/{id}
 

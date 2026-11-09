@@ -1,0 +1,4 @@
+# Temporary Guide simulator; the guide branch has no Java implementation yet.
+services:
+  guide-service:
+    build: ./circuit-service/tools/guide-stub
