@@ -57,7 +57,7 @@ class AvisSecurityIntegrationTest {
 
   @DynamicPropertySource
   static void properties(DynamicPropertyRegistry r) {
-    r.add("spring.datasource.url", () -> "jdbc:postgresql://" + DB.getHost() + ":" + DB.getMappedPort(5432) + "/avis_db");
+    r.add("spring.datasource.url", () -> "jdbc:postgresql://" + DB.getHost() + ":" + DB.getMappedPort(5432) + "/tourisme_db");
     r.add("spring.datasource.username", () -> "avis");
     r.add("spring.datasource.password", () -> "test-avis-only");
     r.add("spring.jackson.deserialization.fail-on-unknown-properties", () -> "false");
