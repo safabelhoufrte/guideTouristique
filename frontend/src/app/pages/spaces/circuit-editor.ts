@@ -85,12 +85,17 @@ export class CircuitEditor {
     titre: ['', [Validators.required, Validators.maxLength(160)]],
     description: ['', [Validators.required, Validators.maxLength(4000)]],
     ville: ['', [Validators.required, Validators.maxLength(120)]],
-    dureeHeures: [1, [Validators.min(1), Validators.pattern(/^\d+$/)]],
+    dureeHeures: [1, [Validators.required, Validators.min(1), Validators.pattern(/^\d+$/)]],
     prix: [
       0,
-      [Validators.min(0), Validators.max(99999999.99), Validators.pattern(/^\d+(\.\d{1,2})?$/)],
+      [
+        Validators.required,
+        Validators.min(0),
+        Validators.max(99999999.99),
+        Validators.pattern(/^\d+(\.\d{1,2})?$/),
+      ],
     ],
-    guideId: [0, Validators.min(1)],
+    guideId: [0, [Validators.required, Validators.min(1)]],
   });
   constructor() {
     if (this.id !== null && (!Number.isSafeInteger(this.id) || this.id < 1)) {

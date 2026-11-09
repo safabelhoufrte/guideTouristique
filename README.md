@@ -14,6 +14,9 @@ Ne fusionnez pas toute cette branche dans `main2` pour récupérer seulement la 
 
 ## Par où commencer ?
 
+Pour Nada : [démarrage et validation du parcours admin Circuit](docs/circuit-admin-validation.md),
+avec un scénario navigateur et un contrôle reproductible contre les vrais services.
+
 1. **Pour voir le résultat :** suivez [le démarrage local](#1-démarrer-la-version-avec-connexion).
 2. **Pour comprendre :** lisez [le parcours d’une connexion](#2-comment-la-connexion-fonctionne).
 3. **Pour coder :** appliquez [les étapes communes](#3-ce-que-chaque-service-spring-boot-doit-ajouter), puis [la partie de votre service](#4-la-partie-de-chacune).
