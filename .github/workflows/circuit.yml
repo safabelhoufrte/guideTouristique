@@ -15,6 +15,14 @@ jobs:
           cache: maven
           cache-dependency-path: circuit-service/pom.xml
       - run: mvn -B -ntp verify
+      - name: Retain Circuit test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: circuit-surefire-reports
+          path: circuit-service/target/surefire-reports/
+          if-no-files-found: warn
+          retention-days: 14
       - run: docker compose -f ../docker-compose.yml -f ../compose.demo.yaml config --quiet
         env:
           DB_USER: postgres

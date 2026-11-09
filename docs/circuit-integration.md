@@ -98,3 +98,21 @@ Ils ne remplacent pas le parcours final avec le vrai Guide et Keycloak.
 
 Dans `frontend` : `npm ci`, `npm test -- --watch=false`, puis `npm run build`.
 GitHub Actions vérifie Circuit et le frontend partagé.
+
+### Tests ciblés sans Docker
+
+Les 16 tests de `CircuitServiceTest` isolent la logique métier avec Mockito.
+Les 14 tests de `GuideClientTest` utilisent un petit serveur HTTP local : ils
+vérifient le contrat Guide, sans lancer Spring, PostgreSQL ou le vrai service Guide.
+
+```powershell
+cd circuit-service
+mvn -B -ntp "-Dtest=CircuitServiceTest,GuideClientTest" test
+```
+
+La commande `mvn -B -ntp verify` exécute aussi les 16 tests d'intégration
+Spring/PostgreSQL/JWT, soit 46 tests au total. Docker est nécessaire pour cette
+campagne complète. Le workflow `Verify Circuit` lance déjà toutes ces classes à
+chaque push et PR ; les rapports XML et texte sont conservés dans l'artefact
+`circuit-surefire-reports`, y compris après un échec de test. Les rapports locaux
+se trouvent dans `circuit-service/target/surefire-reports/`.
