@@ -8,8 +8,24 @@
   </div>
 </section>
 
+@if (confirmation; as r) {
+  <div class="container">
+    <div class="notice success">
+      <strong>✅ Réservation enregistrée !</strong>
+      <span>
+        N° {{ r.id }} · Total : {{ r.prixTotal }} MAD · Statut : {{ r.statut }}
+        (en attente de la réponse du guide)
+      </span>
+    </div>
+  </div>
+}
+@if (erreur) {
+  <div class="container">
+    <div class="notice failure">❌ {{ erreur }}</div>
+  </div>
+}
+
 <main class="container grid">
-  <!-- Formulaire -->
   <form class="panel" [formGroup]="form" (ngSubmit)="confirmer()">
     <h2 class="panel-title">👤 Votre réservation</h2>
 
@@ -76,7 +92,6 @@
     </div>
   </form>
 
-  <!-- Récapitulatif -->
   <aside class="panel">
     <h2 class="panel-title plain">📅 Récapitulatif</h2>
 
@@ -101,15 +116,16 @@
 
       <span class="badge">{{ statut }}</span>
 
-      <button type="button" class="btn-confirm" (click)="confirmer()">
-        📅 Confirmer la réservation
-      </button>
-
+      @if (confirmation) {
+        <p class="saved">✅ Réservation enregistrée !</p>
+      }
       @if (soumis && form.invalid) {
         <p class="err">Veuillez remplir tous les champs correctement.</p>
       }
-      @if (message) { <p class="ok">{{ message }}</p> }
-      @if (erreur) { <p class="err">{{ erreur }}</p> }
+
+      <button type="button" class="btn-confirm" [disabled]="envoiEnCours" (click)="confirmer()">
+        {{ envoiEnCours ? 'Envoi en cours…' : '📅 Confirmer la réservation' }}
+      </button>
     </div>
   </aside>
 </main>

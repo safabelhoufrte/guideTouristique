@@ -1,6 +1,6 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { CircuitResume } from '../../models/reservation';
+import { CircuitResume, Reservation } from '../../models/reservation';
 import { ReservationService } from '../../services/reservation.service';
 
 // Provisoire : en attendant un vrai service de codes promo côté backend
@@ -15,16 +15,18 @@ const CODES_PROMO: Record<string, number> = { PROMO10: 10, BIENVENUE: 15 };
 export class ReservationComponent implements OnInit {
   private fb = inject(FormBuilder);
   private service = inject(ReservationService);
+  private cdr = inject(ChangeDetectorRef);
 
   circuits: CircuitResume[] = [];
   nbOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   guideNom = '';
   statut = 'EN_ATTENTE';
-  message = '';
   erreur = '';
   soumis = false;
+  envoiEnCours = false;
+  confirmation: Reservation | null = null;
 
-  reduction = 0; // en %
+  reduction = 0;
   promoMessage = '';
   promoOk = false;
 
@@ -45,8 +47,12 @@ export class ReservationComponent implements OnInit {
           this.form.patchValue({ circuitId: c[0].id });
           this.chargerGuide();
         }
+        this.cdr.detectChanges();
       },
-      error: () => (this.erreur = 'Impossible de charger les circuits.'),
+      error: () => {
+        this.erreur = 'Impossible de charger les circuits.';
+        this.cdr.detectChanges();
+      },
     });
     this.form.controls.circuitId.valueChanges.subscribe(() => this.chargerGuide());
   }
@@ -71,8 +77,14 @@ export class ReservationComponent implements OnInit {
     const c = this.circuitChoisi;
     if (!c) return;
     this.service.getGuide(c.guideId).subscribe({
-      next: (g) => (this.guideNom = g.nom),
-      error: () => (this.guideNom = '—'),
+      next: (g) => {
+        this.guideNom = g.nom;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.guideNom = '—';
+        this.cdr.detectChanges();
+      },
     });
   }
 
@@ -93,23 +105,38 @@ export class ReservationComponent implements OnInit {
 
   confirmer() {
     this.soumis = true;
-    this.message = '';
     this.erreur = '';
+    this.confirmation = null;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
+    this.envoiEnCours = true;
     const { codePromo, ...requete } = this.form.getRawValue();
     this.service.creer(requete).subscribe({
       next: (r) => {
+        this.envoiEnCours = false;
         this.statut = r.statut;
-        this.message = 'Réservation enregistrée !';
+        this.confirmation = r;
+        this.soumis = false;
+        this.form.patchValue({ dateVisite: '', nom: '', email: '', codePromo: '' });
+        this.form.markAsUntouched();
+        this.cdr.detectChanges();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       },
-      error: (e) =>
-        (this.erreur =
-          e.status === 503
-            ? 'Un service est indisponible, réessayez plus tard.'
-            : 'Impossible de créer la réservation.'),
+      error: (e) => {
+        this.envoiEnCours = false;
+        this.erreur =
+          e.status === 409
+            ? 'Vous avez déjà réservé ce circuit à cette date.'
+            : e.status === 503
+              ? 'Un service est indisponible, réessayez plus tard.'
+              : e.status === 0
+                ? 'Serveur de réservation injoignable.'
+                : 'Impossible de créer la réservation.';
+        this.cdr.detectChanges();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
     });
   }
 }

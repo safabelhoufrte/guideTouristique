@@ -26,6 +26,10 @@ public class ReservationService {
   }
 
   public Reservation creer(ReservationRequest req) {
+    if (repo.existsByEmailAndCircuitIdAndDateVisiteAndStatutNot(
+        req.email(), req.circuitId(), req.dateVisite(), StatutReservation.ANNULEE)) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Réservation déjà existante pour ce circuit et cette date");
+    }
     var circuit = circuits.get(req.circuitId());
     guides.requireAvailable(circuit.guideId());
 

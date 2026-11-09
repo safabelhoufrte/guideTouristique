@@ -9,16 +9,17 @@ import {
   ReservationRequest,
 } from '../models/reservation';
 
-// true  = fausses données (circuits et guides pas encore prêts)
-// false = vrais appels vers les autres services
-const UTILISER_FAUSSES_DONNEES = true;
+// true  = circuits et guides simulés (services de Nada et Safa pas encore prêts)
+const FAUX_CIRCUITS_GUIDES = true;
+// false = vrai appel vers reservation-service (port 8083)
+const FAUSSE_RESERVATION = false;
 
 @Injectable({ providedIn: 'root' })
 export class ReservationService {
   private http = inject(HttpClient);
 
   getCircuits(): Observable<CircuitResume[]> {
-    if (UTILISER_FAUSSES_DONNEES) {
+    if (FAUX_CIRCUITS_GUIDES) {
       return of([
         { id: 1, titre: 'Médina et Kasbah', guideId: 1, dureeHeures: 4, prix: 250 },
         { id: 2, titre: 'Vallée du Paradis', guideId: 1, dureeHeures: 6, prix: 400 },
@@ -28,14 +29,14 @@ export class ReservationService {
   }
 
   getGuide(id: number): Observable<GuideResume> {
-    if (UTILISER_FAUSSES_DONNEES) {
+    if (FAUX_CIRCUITS_GUIDES) {
       return of({ id, nom: 'Youssef Benali' });
     }
     return this.http.get<GuideResume>(`${API.guides}/${id}`);
   }
 
   creer(r: ReservationRequest): Observable<Reservation> {
-    if (UTILISER_FAUSSES_DONNEES) {
+    if (FAUSSE_RESERVATION) {
       return of({
         ...r,
         id: Date.now(),
