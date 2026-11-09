@@ -9,15 +9,17 @@ CREATE ROLE guide LOGIN PASSWORD :'guide_password' NOSUPERUSER NOCREATEDB NOCREA
 CREATE ROLE circuit LOGIN PASSWORD :'circuit_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
 CREATE ROLE reservation LOGIN PASSWORD :'reservation_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
 CREATE ROLE avis LOGIN PASSWORD :'avis_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
-CREATE DATABASE guide_db OWNER guide;
-CREATE DATABASE circuit_db OWNER circuit;
-CREATE DATABASE reservation_db OWNER reservation;
-CREATE DATABASE avis_db OWNER avis;
-REVOKE ALL ON DATABASE guide_db FROM PUBLIC;
-REVOKE ALL ON DATABASE circuit_db FROM PUBLIC;
-REVOKE ALL ON DATABASE reservation_db FROM PUBLIC;
-REVOKE ALL ON DATABASE avis_db FROM PUBLIC;
-GRANT CONNECT ON DATABASE guide_db TO guide;
-GRANT CONNECT ON DATABASE circuit_db TO circuit;
-GRANT CONNECT ON DATABASE reservation_db TO reservation;
-GRANT CONNECT ON DATABASE avis_db TO avis;
+CREATE DATABASE tourisme_db;
+REVOKE ALL ON DATABASE tourisme_db FROM PUBLIC;
+GRANT CONNECT ON DATABASE tourisme_db TO guide, circuit, reservation, avis;
+
+\connect tourisme_db
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+CREATE SCHEMA guide AUTHORIZATION guide;
+CREATE SCHEMA circuit AUTHORIZATION circuit;
+CREATE SCHEMA reservation AUTHORIZATION reservation;
+CREATE SCHEMA avis AUTHORIZATION avis;
+ALTER ROLE guide IN DATABASE tourisme_db SET search_path = guide;
+ALTER ROLE circuit IN DATABASE tourisme_db SET search_path = circuit;
+ALTER ROLE reservation IN DATABASE tourisme_db SET search_path = reservation;
+ALTER ROLE avis IN DATABASE tourisme_db SET search_path = avis;
