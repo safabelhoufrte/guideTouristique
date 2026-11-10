@@ -3,7 +3,6 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CircuitResume, Reservation } from '../../models/reservation';
 import { ReservationService } from '../../services/reservation.service';
 
-// Provisoire : en attendant un vrai service de codes promo côté backend
 const CODES_PROMO: Record<string, number> = { PROMO10: 10, BIENVENUE: 15 };
 
 @Component({
@@ -61,6 +60,16 @@ export class ReservationComponent implements OnInit {
     return this.circuits.find((c) => c.id === this.form.controls.circuitId.value);
   }
 
+  get photoCircuit(): string {
+    const c = this.circuitChoisi as any;
+    return c?.image ?? c?.photo ?? '/images/medina.jpg';
+  }
+
+  get statutAffiche(): string {
+    const s = this.statut.replace('_', ' ').toLowerCase();
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
   get nbPersonnes(): number {
     return Number(this.form.controls.nbPersonnes.value) || 0;
   }
@@ -82,7 +91,7 @@ export class ReservationComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: () => {
-        this.guideNom = '—';
+        this.guideNom = '-';
         this.cdr.detectChanges();
       },
     });
@@ -95,7 +104,7 @@ export class ReservationComponent implements OnInit {
     if (pct) {
       this.reduction = pct;
       this.promoOk = true;
-      this.promoMessage = `Code appliqué : -${pct} %`;
+      this.promoMessage = `Code appliqu\u00e9 : -${pct} %`;
     } else {
       this.reduction = 0;
       this.promoOk = false;
@@ -128,12 +137,12 @@ export class ReservationComponent implements OnInit {
         this.envoiEnCours = false;
         this.erreur =
           e.status === 409
-            ? 'Vous avez déjà réservé ce circuit à cette date.'
+            ? 'Vous avez d\u00e9j\u00e0 r\u00e9serv\u00e9 ce circuit \u00e0 cette date.'
             : e.status === 503
-              ? 'Un service est indisponible, réessayez plus tard.'
+              ? 'Un service est indisponible, r\u00e9essayez plus tard.'
               : e.status === 0
-                ? 'Serveur de réservation injoignable.'
-                : 'Impossible de créer la réservation.';
+                ? 'Serveur de r\u00e9servation injoignable.'
+                : 'Impossible de cr\u00e9er la r\u00e9servation.';
         this.cdr.detectChanges();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
