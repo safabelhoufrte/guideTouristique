@@ -255,3 +255,15 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 18px 0 12px; }
 }
 
 
+/* Images reelles */
+.banner {
+  background: url('/images/banniere-reservation.jpg') center/cover no-repeat, linear-gradient(180deg, #b9ddfa, #e0f0fd);
+}
+.banner-deco { display: none; }
+.avatar {
+  width: 70px;
+  height: 46px;
+  background: url('/images/guide.jpg') center/cover no-repeat;
+  .ic { display: none; }
+}
+
