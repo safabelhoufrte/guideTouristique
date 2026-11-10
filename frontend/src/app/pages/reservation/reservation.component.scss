@@ -167,3 +167,28 @@ label {
   &:hover { background: #dcecfb; }
 }
 
+/* Recapitulatif */
+.photo {
+  height: 210px;
+  margin-top: 14px;
+  border-radius: 16px;
+  background-color: #bfdbfe;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 6px 16px rgba(30, 95, 168, 0.18);
+}
+h3 { margin: 18px 0 10px; font-size: 28px; font-weight: 800; color: var(--navy); }
+.info { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-size: 17px; .ic { color: var(--blue-d); } }
+hr { border: 0; border-top: 1px solid var(--line); margin: 18px 0 12px; }
+.line { display: flex; justify-content: space-between; margin: 10px 0; font-size: 18px; span:last-child { font-weight: 700; } }
+.total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding: 16px 20px;
+  background: var(--sky);
+  border-radius: 16px;
+  font-size: 21px;
+  strong { font-size: 36px; font-weight: 800; color: #0c3a8c; }
+}
