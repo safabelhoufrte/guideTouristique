@@ -87,3 +87,46 @@
 }
 .panel-body { padding: 10px 30px 30px; }
 
+label {
+  display: block;
+  margin: 18px 0 8px;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--navy);
+  small { font-weight: 400; font-size: 14px; }
+}
+
+/* Champs */
+.field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  min-height: 52px;
+  background: #fff;
+  border: 1.5px solid #d3e3f5;
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgba(30, 95, 168, 0.07);
+  color: var(--blue-d);
+  &:focus-within { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(47, 127, 224, 0.15); }
+  input, select {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    padding: 14px 0;
+    font: inherit;
+    font-size: 17px;
+    color: var(--navy);
+    background: transparent;
+    &:focus { outline: none; box-shadow: none; }
+    &::placeholder { color: #7b8fb0; }
+  }
+  select {
+    appearance: none;
+    cursor: pointer;
+    padding-right: 28px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f2f6e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 2px center / 20px;
+    &:disabled { opacity: 1; -webkit-text-fill-color: var(--navy); cursor: default; }
+  }
+}
