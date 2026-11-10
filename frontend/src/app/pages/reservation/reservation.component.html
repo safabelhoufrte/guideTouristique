@@ -18,3 +18,17 @@
   </div>
 </section>
 
+@if (confirmation; as r) {
+  <div class="container">
+    <div class="notice success">
+      <strong>R&eacute;servation enregistr&eacute;e !</strong>
+      <span>N&deg; {{ r.id }} &middot; Total : {{ r.prixTotal }} MAD &middot; Statut : {{ r.statut }} (en attente de la r&eacute;ponse du guide)</span>
+    </div>
+  </div>
+}
+@if (erreur) {
+  <div class="container">
+    <div class="notice failure"><strong>{{ erreur }}</strong></div>
+  </div>
+}
+
