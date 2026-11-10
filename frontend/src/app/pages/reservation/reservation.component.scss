@@ -130,3 +130,40 @@ label {
     &:disabled { opacity: 1; -webkit-text-fill-color: var(--navy); cursor: default; }
   }
 }
+.thumb {
+  flex: none;
+  width: 64px;
+  height: 46px;
+  margin-left: -10px;
+  border-radius: 10px;
+  background-color: #bfdbfe;
+  background-size: cover;
+  background-position: center;
+}
+.avatar {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  margin-left: -10px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #dcecfb;
+  color: var(--blue-d);
+}
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+.promo { display: flex; gap: 14px; align-items: stretch; .field { flex: 1; } }
+.btn-outline {
+  padding: 0 28px;
+  background: #eef6ff;
+  border: 1.5px solid #7db4ee;
+  color: var(--blue-d);
+  border-radius: 16px;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  &:hover { background: #dcecfb; }
+}
+
