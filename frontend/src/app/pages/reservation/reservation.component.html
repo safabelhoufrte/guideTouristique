@@ -91,3 +91,17 @@
         <input type="email" placeholder="exemple@email.com" formControlName="email" />
       </div>
 
+      <label>Code promo <small>(optionnel)</small></label>
+      <div class="promo">
+        <div class="field">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/></svg>
+          <input type="text" placeholder="Saisir un code promo" formControlName="codePromo" />
+        </div>
+        <button type="button" class="btn-outline" (click)="appliquerPromo()">Appliquer</button>
+      </div>
+      @if (promoMessage) {
+        <p [class.ok]="promoOk" [class.err]="!promoOk">{{ promoMessage }}</p>
+      }
+    </div>
+  </form>
+
