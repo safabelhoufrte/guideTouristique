@@ -1,131 +1,20 @@
 <section class="banner">
+  <div class="banner-deco" aria-hidden="true">
+    <svg class="plane-big" viewBox="0 0 24 24"><path fill="currentColor" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+    <svg class="hills" viewBox="0 0 600 160" preserveAspectRatio="none">
+      <path d="M0 160 L0 120 L90 70 L150 105 L240 45 L330 100 L410 60 L500 110 L600 80 L600 160 Z" fill="#a9c6e6" opacity=".75"/>
+      <path d="M0 160 L0 135 L120 100 L210 130 L330 90 L450 125 L600 105 L600 160 Z" fill="#8fb4de" opacity=".85"/>
+      <rect x="520" y="38" width="16" height="92" fill="#c49a72"/>
+      <rect x="522" y="28" width="12" height="12" fill="#b3855f"/>
+      <path d="M524 28 L528 16 L532 28 Z" fill="#b3855f"/>
+    </svg>
+  </div>
   <div class="container banner-inner">
-    <span class="banner-icon">📅</span>
+    <svg class="plane-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
     <div>
-      <h1>Réserver un circuit</h1>
+      <h1>R&eacute;server un circuit</h1>
       <p>Choisissez votre circuit, votre date et le nombre de participants.</p>
     </div>
   </div>
 </section>
 
-@if (confirmation; as r) {
-  <div class="container">
-    <div class="notice success">
-      <strong>✅ Réservation enregistrée !</strong>
-      <span>
-        N° {{ r.id }} · Total : {{ r.prixTotal }} MAD · Statut : {{ r.statut }}
-        (en attente de la réponse du guide)
-      </span>
-    </div>
-  </div>
-}
-@if (erreur) {
-  <div class="container">
-    <div class="notice failure">❌ {{ erreur }}</div>
-  </div>
-}
-
-<main class="container grid">
-  <form class="panel" [formGroup]="form" (ngSubmit)="confirmer()">
-    <h2 class="panel-title">👤 Votre réservation</h2>
-
-    <div class="panel-body">
-      <label>Circuit</label>
-      <div class="field">
-        <span class="icon">🗺️</span>
-        <select formControlName="circuitId">
-          @for (c of circuits; track c.id) {
-            <option [ngValue]="c.id">{{ c.titre }}</option>
-          }
-        </select>
-      </div>
-
-      <label>Guide touristique</label>
-      <div class="field">
-        <span class="icon">👤</span>
-        <select disabled>
-          <option>{{ guideNom }}</option>
-        </select>
-      </div>
-
-      <div class="row">
-        <div>
-          <label>Date de la visite</label>
-          <div class="field">
-            <span class="icon">📅</span>
-            <input type="date" formControlName="dateVisite" />
-          </div>
-        </div>
-        <div>
-          <label>Nombre de personnes</label>
-          <div class="field">
-            <span class="icon">👥</span>
-            <select formControlName="nbPersonnes">
-              @for (n of nbOptions; track n) {
-                <option [ngValue]="n">{{ n }} {{ n > 1 ? 'personnes' : 'personne' }}</option>
-              }
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <label>Nom complet</label>
-      <div class="field">
-        <span class="icon">👤</span>
-        <input type="text" placeholder="Votre nom" formControlName="nom" />
-      </div>
-
-      <label>Adresse e-mail</label>
-      <div class="field">
-        <span class="icon">✉️</span>
-        <input type="email" placeholder="exemple@email.com" formControlName="email" />
-      </div>
-
-      <label>🎟️ Code promo <small>(optionnel)</small></label>
-      <div class="promo">
-        <input type="text" placeholder="Saisir un code promo" formControlName="codePromo" />
-        <button type="button" class="btn-outline" (click)="appliquerPromo()">Appliquer</button>
-      </div>
-      @if (promoMessage) {
-        <p [class.ok]="promoOk" [class.err]="!promoOk">{{ promoMessage }}</p>
-      }
-    </div>
-  </form>
-
-  <aside class="panel">
-    <h2 class="panel-title plain">📅 Récapitulatif</h2>
-
-    <div class="panel-body">
-      <div class="photo" style="background-image: url('/images/medina.jpg')"></div>
-
-      @if (circuitChoisi; as c) {
-        <h3>{{ c.titre }}</h3>
-        <p class="info">👤 Guide : {{ guideNom }}</p>
-        <p class="info">🕒 Durée : {{ c.dureeHeures }} heures</p>
-
-        <hr />
-        <div class="line"><span>Prix par personne</span><span>{{ c.prix }} MAD</span></div>
-        <div class="line"><span>Participants</span><span>{{ nbPersonnes }}</span></div>
-        @if (reduction > 0) {
-          <div class="line"><span>Réduction</span><span>-{{ reduction }} %</span></div>
-        }
-        <hr />
-      }
-
-      <div class="total"><span>Total estimé</span><strong>{{ total }} MAD</strong></div>
-
-      <span class="badge">{{ statut }}</span>
-
-      @if (confirmation) {
-        <p class="saved">✅ Réservation enregistrée !</p>
-      }
-      @if (soumis && form.invalid) {
-        <p class="err">Veuillez remplir tous les champs correctement.</p>
-      }
-
-      <button type="button" class="btn-confirm" [disabled]="envoiEnCours" (click)="confirmer()">
-        {{ envoiEnCours ? 'Envoi en cours…' : '📅 Confirmer la réservation' }}
-      </button>
-    </div>
-  </aside>
-</main>
