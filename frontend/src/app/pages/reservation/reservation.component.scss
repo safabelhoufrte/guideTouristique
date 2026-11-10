@@ -18,3 +18,24 @@
   fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
 }
 
+/* Banniere : ciel, nuages, avion, montagnes.
+   Pour utiliser une vraie photo, ajoutez en premiere ligne de background :
+   url('/images/banniere-reservation.jpg') center/cover no-repeat, */
+.banner {
+  position: relative;
+  overflow: hidden;
+  padding: 34px 0 78px;
+  background:
+    radial-gradient(ellipse 300px 90px at 62% 45%, rgba(255, 255, 255, 0.95), transparent 70%),
+    radial-gradient(ellipse 360px 110px at 22% 85%, rgba(255, 255, 255, 0.85), transparent 70%),
+    radial-gradient(ellipse 260px 80px at 90% 25%, rgba(255, 255, 255, 0.8), transparent 70%),
+    linear-gradient(180deg, #b9ddfa, #e0f0fd);
+}
+.banner-deco { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.plane-big { position: absolute; top: 18px; left: 62%; width: 120px; height: 120px; color: #fff; transform: rotate(60deg); filter: drop-shadow(0 6px 8px rgba(30, 95, 168, 0.35)); }
+.hills { position: absolute; right: 0; bottom: 0; width: 52%; height: 100%; max-height: 190px; }
+.banner-inner { display: flex; align-items: center; gap: 22px; }
+.plane-icon { width: 64px; height: 64px; color: #4a9af0; transform: rotate(45deg); }
+.banner h1 { margin: 0; font-size: 52px; font-weight: 800; letter-spacing: -0.02em; color: var(--navy); }
+.banner p { margin: 8px 0 0; font-size: 20px; color: var(--navy); }
+
