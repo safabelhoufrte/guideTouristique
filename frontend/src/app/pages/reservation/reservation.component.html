@@ -58,3 +58,24 @@
         </select>
       </div>
 
+      <div class="row">
+        <div>
+          <label>Date de la visite</label>
+          <div class="field">
+            <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <input type="date" formControlName="dateVisite" />
+          </div>
+        </div>
+        <div>
+          <label>Nombre de personnes</label>
+          <div class="field">
+            <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14.5c3 0 5 1.5 5 4.5"/></svg>
+            <select formControlName="nbPersonnes">
+              @for (n of nbOptions; track n) {
+                <option [ngValue]="n">{{ n }} {{ n > 1 ? 'personnes' : 'personne' }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+
