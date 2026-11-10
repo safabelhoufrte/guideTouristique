@@ -105,3 +105,55 @@
     </div>
   </form>
 
+  <aside class="panel recap">
+    <h2 class="panel-title">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7"/></svg>
+      R&eacute;capitulatif
+    </h2>
+
+    <div class="panel-body">
+      <div class="photo" [style.background-image]="'url(' + photoCircuit + ')'"></div>
+
+      @if (circuitChoisi; as c) {
+        <h3>{{ c.titre }}</h3>
+        <p class="info">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 0 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          Guide : {{ guideNom }}
+        </p>
+        <p class="info">
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          Dur&eacute;e : {{ c.dureeHeures }} heures
+        </p>
+
+        <hr />
+        <div class="line"><span>Prix par personne</span><span>{{ c.prix }} MAD</span></div>
+        <div class="line"><span>Participants</span><span>{{ nbPersonnes }}</span></div>
+        @if (reduction > 0) {
+          <div class="line"><span>R&eacute;duction</span><span>-{{ reduction }} %</span></div>
+        }
+      }
+
+      <div class="total"><span>Total estim&eacute;</span><strong>{{ total }} MAD</strong></div>
+
+      <span class="badge">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>
+        {{ statutAffiche }}
+      </span>
+
+      @if (confirmation) {
+        <p class="saved">R&eacute;servation enregistr&eacute;e !</p>
+      }
+      @if (soumis && form.invalid) {
+        <p class="err">Veuillez remplir tous les champs correctement.</p>
+      }
+
+      <button type="button" class="btn-confirm" [disabled]="envoiEnCours" (click)="confirmer()">
+        <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        {{ envoiEnCours ? 'Envoi en cours...' : 'Confirmer la reservation' }}
+        <svg class="ic" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </aside>
+</main>
+
+
