@@ -1,0 +1,128 @@
+<section class="banner">
+  <div class="container banner-inner">
+    <div>
+      <h1>Réserver un circuit</h1>
+      <p>Choisissez votre date et le nombre de participants.</p>
+    </div>
+  </div>
+</section>
+<main class="container grid">
+  <form class="panel" [formGroup]="form" (ngSubmit)="confirmer()">
+    <h2 class="panel-title">Votre réservation</h2>
+    <div class="panel-body">
+      @if (chargement) {
+        <p role="status">Chargement des circuits…</p>
+      } @else if (!circuits.length && !erreur) {
+        <p role="status">Aucun circuit disponible pour le moment.</p>
+      }
+      <fieldset [disabled]="envoi || confirmationId !== null">
+        <label for="reservation-circuit">Circuit</label>
+        <div class="field">
+          <select id="reservation-circuit" formControlName="circuitId">
+            <option [ngValue]="0" disabled>Choisissez un circuit</option>
+            @for (c of circuits; track c.id) {
+              <option [ngValue]="c.id">{{ c.titre }}</option>
+            }
+          </select>
+        </div>
+        <label for="reservation-guide">Guide touristique</label>
+        <div class="field"><input id="reservation-guide" [value]="guideNom" readonly /></div>
+        <div class="row">
+          <div>
+            <label for="reservation-date">Date de la visite</label>
+            <div class="field">
+              <input
+                id="reservation-date"
+                type="date"
+                formControlName="dateVisite"
+                [min]="aujourdHui"
+              />
+            </div>
+          </div>
+          <div>
+            <label for="reservation-nombre">Nombre de personnes</label>
+            <div class="field">
+              <select id="reservation-nombre" formControlName="nbPersonnes">
+                @for (n of nbOptions; track n) {
+                  <option [ngValue]="n">{{ n }} {{ n > 1 ? 'personnes' : 'personne' }}</option>
+                }
+              </select>
+            </div>
+          </div>
+        </div>
+        <label for="reservation-nom">Nom complet</label>
+        <div class="field">
+          <input
+            id="reservation-nom"
+            type="text"
+            autocomplete="name"
+            placeholder="Votre nom"
+            formControlName="nom"
+          />
+        </div>
+        <label for="reservation-email">Adresse e-mail</label>
+        <div class="field">
+          <input
+            id="reservation-email"
+            type="email"
+            autocomplete="email"
+            placeholder="exemple@email.com"
+            formControlName="email"
+          />
+        </div>
+      </fieldset>
+      @if (soumis && form.invalid) {
+        <p class="err" role="alert">
+          Veuillez renseigner le circuit, la date, votre nom et une adresse e-mail valide.
+        </p>
+      }
+    </div>
+  </form>
+  <aside class="panel">
+    <h2 class="panel-title plain">Récapitulatif</h2>
+    <div class="panel-body">
+      <div class="photo" aria-hidden="true"></div>
+      @if (circuitChoisi; as c) {
+        <h3>{{ c.titre }}</h3>
+        <p class="info">Guide : {{ guideNom }}</p>
+        <p class="info">
+          Durée : {{ c.dureeHeures === null ? 'À confirmer' : c.dureeHeures + ' heures' }}
+        </p>
+        <hr />
+        <div class="line">
+          <span>Prix par personne</span><span>{{ c.prix }} MAD</span>
+        </div>
+        <div class="line">
+          <span>Participants</span><span>{{ nbPersonnes }}</span>
+        </div>
+        <hr />
+      }
+      <div class="total">
+        <span>Total estimé</span><strong>{{ total }} MAD</strong>
+      </div>
+      @if (statut) {
+        <span class="badge">{{ statut }}</span>
+      }
+      <button
+        type="button"
+        class="btn-confirm"
+        [disabled]="chargement || envoi || !circuitChoisi || confirmationId !== null"
+        (click)="confirmer()"
+      >
+        {{
+          envoi
+            ? 'Enregistrement…'
+            : confirmationId !== null
+              ? 'Réservation enregistrée'
+              : 'Confirmer la réservation'
+        }}
+      </button>
+      @if (message) {
+        <p class="ok" role="status">{{ message }}</p>
+      }
+      @if (erreur) {
+        <p class="err" role="alert">{{ erreur }}</p>
+      }
+    </div>
+  </aside>
+</main>

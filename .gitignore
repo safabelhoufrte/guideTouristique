@@ -1,7 +1,12 @@
 .env
+.local/
 target/
 node_modules/
 dist/
+.dist/
 .idea/
 .vscode/
 *.log
+**/data/
+**/__pycache__/
+*.iml
