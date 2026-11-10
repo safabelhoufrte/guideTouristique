@@ -267,3 +267,41 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 18px 0 12px; }
   .ic { display: none; }
 }
 
+/* ===== Couleur "Nos guides" + tailles plus petites ===== */
+:host {
+  --navy: #0e4a5c;
+  --blue: #0e7490;
+  --blue-d: #0e7490;
+  --sky: #e0f2f7;
+  --line: #bfe3ec;
+  background: linear-gradient(180deg, #d3eef4 0%, #eaf7fa 35%, #f5fbfd 100%);
+}
+
+.plane-icon { width: 44px; height: 44px; color: #0e7490; }
+.banner { padding: 26px 0 64px; }
+.banner h1 { font-size: 34px; color: #0e7490; }
+.banner p { font-size: 16px; color: #0e4a5c; }
+
+.panel { border-radius: 20px; }
+.panel-title { font-size: 20px; padding: 16px 26px; color: #0e7490; background: linear-gradient(180deg, #e0f2f7, #f5fbfd); }
+.panel-title .ic { width: 24px; height: 24px; }
+.recap .panel-title { color: #fff; background: linear-gradient(90deg, #0e7490, #38a3bd); }
+
+label { font-size: 14px; margin: 14px 0 6px; color: #0e7490; }
+label small { font-size: 12px; }
+
+.field { min-height: 46px; border-radius: 14px; border-color: #bfe3ec; }
+.field input, .field select { font-size: 15px; padding: 11px 0; }
+.field:focus-within { border-color: #0e7490; box-shadow: 0 0 0 4px rgba(14, 116, 144, 0.15); }
+.thumb { width: 56px; height: 38px; }
+.avatar { width: 56px; height: 38px; }
+.btn-outline { font-size: 15px; border-color: #0e7490; background: #e0f2f7; color: #0e7490; border-radius: 14px; }
+
+.photo { height: 170px; }
+h3 { font-size: 20px; margin: 14px 0 8px; color: #0e7490; }
+.info { font-size: 14px; }
+.line { font-size: 15px; }
+.total { font-size: 16px; padding: 12px 16px; }
+.total strong { font-size: 24px; color: #0e7490; }
+.badge { font-size: 13px; padding: 6px 14px; }
+.btn-confirm { font-size: 15px; padding: 14px; background: linear-gradient(90deg, #0e7490, #38a3bd); box-shadow: 0 8px 20px rgba(14, 116, 144, 0.35); }
