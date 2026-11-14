@@ -23,10 +23,14 @@ public class GuideService {
     // Liste : seuls les guides actifs sont visibles, avec filtres facultatifs
     @Transactional(readOnly = true)
     public List<GuideResponse> findAll(String ville, String langue) {
-        return repository.findByActifTrue().stream()
-                .filter(g -> ville == null || ville.isBlank() || ville.equalsIgnoreCase(g.getVille()))
-                .filter(g -> langue == null || langue.isBlank()
-                        || g.getLangues().stream().anyMatch(l -> l.equalsIgnoreCase(langue)))
+        String villeFiltre = (ville == null || ville.isBlank())
+                ? null : ville.trim();
+
+        String langueFiltre = (langue == null || langue.isBlank())
+                ? null : langue.trim();
+
+        return repository.rechercherGuides(villeFiltre, langueFiltre)
+                .stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -80,9 +84,20 @@ public class GuideService {
         }
     }
 
+
     private GuideResponse toResponse(Guide g) {
-        return new GuideResponse(g.getId(), g.getNom(), g.getPrenom(), g.getVille(),
-                new ArrayList<>(g.getLangues()), g.getEmail(), g.getTelephone(),
-                g.getTarifParJour(), g.isActif(), g.getNoteMoyenne());
+        return new GuideResponse(
+            g.getId(),
+            g.getNom(),
+            g.getPrenom(),
+            g.getVille(),
+            new ArrayList<>(g.getLangues()),
+            g.getEmail(),
+            g.getTelephone(),
+            g.getTarifParJour(),
+            g.isActif(),
+            g.getNoteMoyenne()
+        );
     }
+
 }
