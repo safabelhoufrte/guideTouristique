@@ -1,5 +1,4 @@
-@use 'app/pages/spaces/public';
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap');
+@use 'app/pages/spaces/spaces';
 
 :root {
   --primary: #0e7490;
@@ -26,6 +25,9 @@ body {
   color: var(--text);
   line-height: 1.5;
   font-size: 16px;
+}
+body:has(dialog[open]) {
+  overflow: hidden;
 }
 
 h1,
