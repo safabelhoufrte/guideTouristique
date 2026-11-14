@@ -50,7 +50,7 @@ export class SpaceShell {
   readonly links =
     this.mode === 'admin'
       ? [
-          { path: '/administration', label: 'Vue d’ensemble' },
+          { path: '/administration', label: 'Dashboard' },
           { path: '/administration/circuits', label: 'Circuits' },
           { path: '/administration/guides', label: 'Guides' },
           { path: '/administration/reservations', label: 'Réservations' },

@@ -83,7 +83,13 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/spaces/space-shell').then((m) => m.SpaceShell),
     children: [
       {
+        path: 'analyses',
+        redirectTo: '',
+        pathMatch: 'full',
+      },
+      {
         path: '',
+        title: 'Dashboard | Guide Touristique',
         loadComponent: () => import('./pages/spaces/admin-home').then((m) => m.AdminHome),
       },
       {
