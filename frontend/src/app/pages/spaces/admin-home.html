@@ -1,9 +1,13 @@
-<header class="section-header">
+<header class="welcome-banner">
   <div>
-    <h2>Dashboard</h2>
+    <span class="welcome-label">ADMINISTRATION</span>
+    <h2>Tableau de bord</h2>
     <p>Réservations, circuits et retours des voyageurs.</p>
   </div>
-  <button class="button secondary" (click)="reload()" [disabled]="!data()">Actualiser</button>
+  <div class="welcome-actions">
+    <span class="welcome-decoration" aria-hidden="true">✦</span>
+    <button class="button secondary" (click)="reload()" [disabled]="!data()">Actualiser</button>
+  </div>
 </header>
 <div class="analytics-filters">
   <div>
@@ -34,20 +38,29 @@
     }
     <div class="stats" aria-label="Indicateurs des réservations de la période">
       <div class="surface stat">
-        <strong>{{ source.reservations.error ? '—' : stats.bookings }}</strong>
-        <p>Réservations créées</p>
+        <span class="stat-icon" aria-hidden="true">▤</span>
+        <div>
+          <strong>{{ source.reservations.error ? '—' : stats.bookings }}</strong>
+          <p>Réservations créées</p>
+        </div>
       </div>
       <div class="surface stat">
-        <strong>{{ source.reservations.error ? '—' : stats.participants }}</strong>
-        <p>Participants confirmés</p>
+        <span class="stat-icon green" aria-hidden="true">✓</span>
+        <div>
+          <strong>{{ source.reservations.error ? '—' : stats.participants }}</strong>
+          <p>Participants confirmés</p>
+        </div>
       </div>
       <div class="surface stat">
-        <strong>{{
-          source.reservations.error
-            ? '—'
-            : (stats.acceptedAmount | currency: 'MAD' : 'code' : '1.2-2')
-        }}</strong>
-        <p>Montant des réservations acceptées</p>
+        <span class="stat-icon amber" aria-hidden="true">◷</span>
+        <div>
+          <strong>{{
+            source.reservations.error
+              ? '—'
+              : (stats.acceptedAmount | currency: 'MAD' : 'code' : '1.2-2')
+          }}</strong>
+          <p>Montant des réservations acceptées</p>
+        </div>
       </div>
     </div>
     <p class="analytics-note">Montant réservé, hors suivi des paiements.</p>
