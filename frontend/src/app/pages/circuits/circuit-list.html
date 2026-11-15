@@ -1,21 +1,17 @@
-<header class="page-heading">
-  <div class="heading-inner">
-    <h1>Nos circuits</h1>
+<header class="hero">
+  <div class="hero-inner">
+    <p class="hero-eyebrow">NOS CIRCUITS</p>
+    <h1>Le Maroc, avec ceux qui le connaissent.</h1>
     <p>Une ville, un guide local et de belles découvertes. Trouvez la visite qui vous ressemble.</p>
   </div>
 </header>
 <main class="circuit-page">
-  <form
-    class="filters surface"
-    [formGroup]="form"
-    (ngSubmit)="filter()"
-    aria-label="Filtrer les circuits"
-  >
-    <div>
-      <label for="circuit-ville">Ville</label>
-      <input id="circuit-ville" formControlName="ville" placeholder="Ex. Agadir" maxlength="120" />
+  <form class="finder" [formGroup]="form" (ngSubmit)="filter()" aria-label="Rechercher un circuit">
+    <div class="field">
+      <label for="circuit-ville">Destination</label>
+      <input id="circuit-ville" formControlName="ville" placeholder="Où voulez-vous aller ?" maxlength="120" />
     </div>
-    <div>
+    <div class="field">
       <label for="circuit-guide">Guide</label>
       <select
         id="circuit-guide"
@@ -28,10 +24,25 @@
         }
       </select>
     </div>
-    <button class="action primary" type="submit">Filtrer</button>
-    @if (filterParams['ville'] || filterParams['guideId']) {
-      <button class="action subtle" type="button" (click)="reset()">Réinitialiser</button>
-    }
+    <div class="field">
+      <label for="circuit-duree">Durée</label>
+      <select id="circuit-duree" [value]="duree()" (change)="setDuree($event)">
+        <option value="">Toutes</option>
+        <option value="court">Jusqu’à 4 h</option>
+        <option value="moyen">4 h à 8 h</option>
+        <option value="long">Plus de 8 h</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="circuit-budget">Budget</label>
+      <select id="circuit-budget" [value]="budget()" (change)="setBudget($event)">
+        <option value="0">Tous les prix</option>
+        <option value="300">Jusqu’à 300 MAD</option>
+        <option value="700">Jusqu’à 700 MAD</option>
+        <option value="1500">Jusqu’à 1 500 MAD</option>
+      </select>
+    </div>
+    <button class="search-button" type="submit">Rechercher</button>
   </form>
 
   @if (vm().loading) {
@@ -51,23 +62,58 @@
         circuits et filtrer par ville.
       </p>
     }
-    <p class="result-count" role="status">
-      {{ vm().circuits.length }} circuit{{ vm().circuits.length > 1 ? 's' : '' }} trouvé{{
-        vm().circuits.length > 1 ? 's' : ''
-      }}
-    </p>
-    @if (!vm().circuits.length) {
+    <div class="chips" aria-label="Choisir une ville">
+      <button
+        type="button"
+        class="chip"
+        [class.on]="!filterParams['ville']"
+        (click)="chooseCity(null)"
+      >
+        Toutes les villes
+      </button>
+      @for (ville of cities(); track ville) {
+        <button
+          type="button"
+          class="chip"
+          [class.on]="filterParams['ville'] === ville"
+          (click)="chooseCity(ville)"
+        >
+          {{ ville }}
+        </button>
+      }
+    </div>
+
+    <div class="results-bar">
+      <p class="result-count" role="status">
+        <strong>{{ visible().length }} circuit{{ visible().length > 1 ? 's' : '' }}</strong>
+        · guides locaux
+        @if (filterParams['ville'] || filterParams['guideId'] || duree() || budget()) {
+          <button class="reset" type="button" (click)="reset()">Réinitialiser</button>
+        }
+      </p>
+      <label class="sort">
+        <span>Trier :</span>
+        <select [value]="sort()" (change)="setSort($event)" aria-label="Trier les circuits">
+          <option value="pertinence">Pertinence</option>
+          <option value="prix-asc">Prix croissant</option>
+          <option value="prix-desc">Prix décroissant</option>
+          <option value="duree">Durée</option>
+        </select>
+      </label>
+    </div>
+
+    @if (!visible().length) {
       <section class="state surface">
         <h2>Aucun circuit pour cette recherche</h2>
-        <p>Essayez une autre ville ou consultez tous nos circuits.</p>
+        <p>Essayez une autre ville, une autre durée ou un autre budget.</p>
         <button class="action primary" type="button" (click)="reset()">
           Voir tous les circuits
         </button>
       </section>
     } @else {
       <div class="circuit-grid">
-        @for (circuit of vm().circuits; track circuit.id) {
-          <article class="circuit-card surface">
+        @for (circuit of visible(); track circuit.id) {
+          <article class="circuit-card">
             <div class="circuit-cover">
               <img
                 [src]="photoFor(circuit).src"
@@ -77,43 +123,56 @@
                 loading="lazy"
               />
               @if (circuit.ville) {
-                <span class="city-tag">{{ circuit.ville }}</span>
+                <span class="city-tag">📍 {{ circuit.ville }}</span>
               }
-            </div>
-            <div class="card-content">
-              <p class="card-meta">
+              <span class="duration-tag">
+                ⏱
                 {{
                   circuit.dureeHeures === null
                     ? 'Durée à confirmer'
                     : circuit.dureeHeures + ' h de découverte'
                 }}
-              </p>
+              </span>
+            </div>
+            <div class="card-content">
               <h2>{{ circuit.titre }}</h2>
-              <p class="description">
-                {{
-                  circuit.description || 'Découvrez ce circuit et les informations de votre visite.'
-                }}
-              </p>
-              <p class="guide-name">
-                <span class="guide-dot" aria-hidden="true"></span>{{ guideName(circuit.guideId) }}
-              </p>
-              <p class="price">
-                {{ circuit.prix | currency: 'MAD' : 'code' : '1.0-2' }} <span>/ personne</span>
-              </p>
-              <a
-                class="action primary wide"
-                [routerLink]="['/circuits', circuit.id]"
-                [queryParams]="filterParams"
-                [attr.aria-label]="'Voir le circuit ' + circuit.titre"
-                >Voir le circuit <span aria-hidden="true">→</span></a
-              >
+              @if (circuit.description) {
+                <p class="description">{{ circuit.description }}</p>
+              }
+              <div class="guide-row">
+                <span class="avatar" aria-hidden="true">{{ initials(guideName(circuit.guideId)) }}</span>
+                <div>
+                  <strong>{{ guideName(circuit.guideId) }}</strong>
+                  <small>Guide local{{ guideLangues(circuit.guideId) ? ' · ' + guideLangues(circuit.guideId) : '' }}</small>
+                </div>
+              </div>
+              <div class="card-foot">
+                <p class="price">
+                  <small>À partir de</small>
+                  <strong>{{ price(circuit.prix) }}</strong> <span>/ pers.</span>
+                </p>
+                <div class="card-actions">
+                  <a
+                    class="ghost"
+                    [routerLink]="['/circuits', circuit.id]"
+                    [queryParams]="filterParams"
+                    [attr.aria-label]="'Voir le circuit ' + circuit.titre"
+                    >Détails</a
+                  >
+                  <a
+                    class="book"
+                    routerLink="/reservations"
+                    [queryParams]="{ circuitId: circuit.id }"
+                    [attr.aria-label]="'Réserver ' + circuit.titre"
+                    >Réserver</a
+                  >
+                </div>
+              </div>
             </div>
           </article>
         }
       </div>
-      <p class="result-count">
-        Photos d’inspiration : consultez le programme détaillé de chaque circuit.
-      </p>
+      <p class="photo-note">Photos d’inspiration : consultez le programme détaillé de chaque circuit.</p>
     }
   }
 </main>

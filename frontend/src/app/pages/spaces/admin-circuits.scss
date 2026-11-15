@@ -1,0 +1,327 @@
+// Admin "Gérer les circuits" — same tokens as the admin console (admin-console.scss).
+:host {
+  display: block;
+  --accent: #0d7895;
+  --ink: #17252f;
+  --muted: #5f7380;
+  --line: #e3eaed;
+}
+
+
+// Nested under :host so these rules win over the global .workspace-ui form/button styles.
+:host {
+  .catalogue-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    margin-bottom: 22px;
+  }
+  .eyebrow {
+    margin: 0 0 8px;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+  }
+  .catalogue-head h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: clamp(26px, 3vw, 32px);
+  }
+  .lead {
+    margin: 8px 0 0;
+    color: var(--muted);
+  }
+  .create {
+    padding: 12px 18px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  // KPI cards
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 15px;
+    margin-bottom: 18px;
+  }
+  .kpi {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+  .kpi strong {
+    display: block;
+    color: var(--ink);
+    font-size: 22px;
+    white-space: nowrap;
+  }
+  .kpi small {
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .kpi-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    background: #e7f7fa;
+    color: #117c91;
+    font-size: 18px;
+  }
+  .kpi-icon.green {
+    background: #e9f9f0;
+    color: #208663;
+  }
+  .kpi-icon.amber {
+    background: #fff5db;
+    color: #a67d21;
+  }
+  .kpi-icon.blue {
+    background: #ebf2ff;
+    color: #3d72a4;
+  }
+
+  // Toolbar
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 22px;
+    padding: 12px !important;
+  }
+  .search {
+    margin: 0;
+    display: flex;
+    flex: 1;
+    gap: 10px;
+    align-items: center;
+    min-width: 0;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--muted);
+  }
+  .search input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+  }
+  .toolbar select {
+    flex: none;
+    width: 190px;
+    min-width: 0;
+    min-height: 0;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 14px;
+  }
+  .view-toggle {
+    display: flex;
+    flex: none;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .view-toggle button {
+    margin: 0;
+    padding: 9px 13px;
+    white-space: nowrap;
+    border: 0;
+    background: #fff;
+    color: var(--muted);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .view-toggle button.on {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  // Cards
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 4px 15px #0c35410a;
+  }
+  .cover {
+    position: relative;
+    height: 150px;
+  }
+  .cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .status {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #e5f6ea;
+    color: #1f7a4f;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .tags {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    display: flex;
+    gap: 8px;
+  }
+  .tags span {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #ffffffe8;
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .card-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 16px 18px;
+  }
+  .card-body h3 {
+    margin: 0 0 8px;
+    color: var(--ink);
+    font-size: 17px;
+  }
+  .desc {
+    display: -webkit-box;
+    margin: 0 0 14px;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .guide {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: auto;
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .guide small {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e7f7fa;
+    color: #117c91;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .card-price {
+    margin: 0;
+  }
+  .card-price strong {
+    color: var(--ink);
+    font-size: 18px;
+  }
+  .card-price span {
+    margin-left: 4px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .card-actions {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+  .edit,
+  .archive {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .edit {
+    color: var(--accent);
+  }
+  .archive {
+    color: #b42318;
+  }
+  .archive:disabled {
+    opacity: 0.5;
+  }
+
+  @media (max-width: 1100px) {
+    .kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .toolbar {
+      flex-wrap: wrap;
+    }
+  }
+  @media (max-width: 700px) {
+    .catalogue-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .kpis,
+    .cards {
+      grid-template-columns: 1fr;
+    }
+    .toolbar select,
+    .search {
+      flex-basis: 100%;
+    }
+  }
+}
