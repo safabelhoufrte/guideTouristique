@@ -8,7 +8,7 @@ import { AuthDialog, AuthDialogService } from './auth/auth-dialog';
 
 /** Personal spaces with their own full-screen layout (sidebar + topbar). */
 function isConsoleUrl(url: string) {
-  return ['/administration', '/espace-guide', '/espace-touriste'].some((space) =>
+  return ['/administration', '/espace-guide'].some((space) =>
     url.startsWith(space),
   );
 }
