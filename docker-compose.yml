@@ -29,6 +29,8 @@ services:
       SPRING_FLYWAY_DEFAULT_SCHEMA: guide
       SPRING_FLYWAY_SCHEMAS: guide
       DB_PASSWORD: ${GUIDE_DB_PASSWORD:?Set GUIDE_DB_PASSWORD in .env}
+      AUTH_ISSUER_URI: ${AUTH_ISSUER_URI:-http://localhost:8180/realms/guide-touristique}
+      AUTH_JWK_SET_URI: ${AUTH_JWK_SET_URI:-http://keycloak:8080/realms/guide-touristique/protocol/openid-connect/certs}
     depends_on:
       postgres: {condition: service_healthy}
   circuit-service:

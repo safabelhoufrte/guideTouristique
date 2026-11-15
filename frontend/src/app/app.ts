@@ -6,6 +6,11 @@ import { NavigationEnd, RouterLink, RouterLinkActive, RouterOutlet } from '@angu
 import { Router } from '@angular/router';
 import { AuthDialog, AuthDialogService } from './auth/auth-dialog';
 
+/** Personal spaces with their own full-screen layout (sidebar + topbar). */
+function isConsoleUrl(url: string) {
+  return url.startsWith('/administration') || url.startsWith('/espace-guide');
+}
+
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, AuthDialog],
@@ -20,9 +25,9 @@ export class App {
   readonly consoleSpace = toSignal(
     this.router.events.pipe(
       filter((event) => event instanceof NavigationEnd),
-      map(() => this.router.url.startsWith('/administration')),
+      map(() => isConsoleUrl(this.router.url)),
     ),
-    { initialValue: this.router.url.startsWith('/administration') },
+    { initialValue: isConsoleUrl(this.router.url) },
   );
 
   openLogin() {

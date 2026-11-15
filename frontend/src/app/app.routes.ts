@@ -56,25 +56,18 @@ export const routes: Routes = [
     ],
   },
   {
+    // Guide dashboard (Safa): profile, circuits, reservations, reviews in one page.
     path: 'espace-guide',
     canActivate: [roleGuard],
-    data: { roles: ['GUIDE'], space: 'guide' },
-    loadComponent: () => import('./pages/spaces/space-shell').then((m) => m.SpaceShell),
-    children: [
-      {
-        path: '',
-        loadComponent: () => import('./pages/spaces/guide-profile').then((m) => m.GuideProfilePage),
-      },
-      {
-        path: 'circuits',
-        loadComponent: () => import('./pages/spaces/guide-circuits').then((m) => m.GuideCircuits),
-      },
-      {
-        path: 'reservations',
-        loadComponent: () => import('./pages/spaces/reservations').then((m) => m.SpaceReservations),
-        data: { scope: 'guide' },
-      },
-    ],
+    data: { roles: ['GUIDE'] },
+    loadComponent: () =>
+      import('./pages/guide/dashboard/dashboard').then((m) => m.GuideDashboard),
+    title: 'Mon espace Guide | Guide Touristique',
+  },
+  {
+    // Old local guide login address: Keycloak login now.
+    path: 'connexion-guide',
+    redirectTo: 'connexion',
   },
   {
     path: 'administration',
