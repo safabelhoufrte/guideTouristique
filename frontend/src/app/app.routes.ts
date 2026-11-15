@@ -41,8 +41,8 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/spaces/reservations').then((m) => m.SpaceReservations),
-        data: { scope: 'me' },
+        loadComponent: () =>
+          import('./pages/spaces/tourist-reservations').then((m) => m.TouristReservations),
       },
       {
         path: 'avis',

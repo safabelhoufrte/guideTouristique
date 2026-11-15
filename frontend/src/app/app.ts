@@ -8,7 +8,9 @@ import { AuthDialog, AuthDialogService } from './auth/auth-dialog';
 
 /** Personal spaces with their own full-screen layout (sidebar + topbar). */
 function isConsoleUrl(url: string) {
-  return url.startsWith('/administration') || url.startsWith('/espace-guide');
+  return ['/administration', '/espace-guide', '/espace-touriste'].some((space) =>
+    url.startsWith(space),
+  );
 }
 
 @Component({
@@ -21,7 +23,7 @@ export class App {
   readonly auth = inject(AuthService);
   readonly dialog = inject(AuthDialogService);
   private readonly router = inject(Router);
-  /** Back-office pages use their own full-screen layout (sidebar + topbar), like the Guide dashboard. */
+  /** Personal spaces use their own full-screen layout (sidebar + topbar), like the Guide dashboard. */
   readonly consoleSpace = toSignal(
     this.router.events.pipe(
       filter((event) => event instanceof NavigationEnd),
