@@ -28,6 +28,10 @@
     position: sticky;
     top: 0;
     height: 100vh;
+    // Short windows: scroll inside the sidebar instead of spilling the logout button below it.
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #2b6170 transparent;
   }
   .console-brand {
     display: flex;
