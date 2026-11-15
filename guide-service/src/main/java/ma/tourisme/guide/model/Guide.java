@@ -28,6 +28,13 @@ public class Guide {
     @Column(name = "note_moyenne")
     private Double noteMoyenne;
 
+    /** Keycloak account (claim "sub") linked to this guide, or null. Set by an admin. */
+    @Column(name = "owner_subject", length = 36)
+    private String ownerSubject;
+
+    public String getOwnerSubject() { return ownerSubject; }
+    public void setOwnerSubject(String ownerSubject) { this.ownerSubject = ownerSubject; }
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
         name = "guide_langues",

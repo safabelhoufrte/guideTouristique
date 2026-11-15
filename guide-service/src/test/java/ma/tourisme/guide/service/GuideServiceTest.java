@@ -297,4 +297,54 @@ class GuideServiceTest {
 
         assertTrue(r.langues().isEmpty());
     }
+
+    // ==========================================
+    // TESTS KEYCLOAK (compte lie au profil guide)
+    // ==========================================
+
+    private static final String SUB = "3f2a1b9c-0d4e-4f5a-8b6c-7d8e9f0a1b2c";
+
+    @Test
+    void testMonProfilTrouveParLeCompteKeycloak() {
+        benali.setOwnerSubject(SUB);
+        when(repository.findByOwnerSubject(SUB)).thenReturn(Optional.of(benali));
+
+        assertEquals(1L, service.findByOwner(SUB).id());
+    }
+
+    @Test
+    void testMonProfilSansCompteLieRenvoie404() {
+        when(repository.findByOwnerSubject(SUB)).thenReturn(Optional.empty());
+
+        var erreur = assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> service.findByOwner(SUB));
+        assertEquals(404, erreur.getStatusCode().value());
+    }
+
+    @Test
+    void testCompteDejaLieAUnAutreGuideRenvoie409() {
+        when(repository.existsByOwnerSubject(SUB)).thenReturn(true);
+        GuideRequest req = new GuideRequest("Nouveau", null, "Agadir", List.of("français"),
+                null, null, 300.0, SUB, true);
+
+        var erreur = assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> service.create(req));
+        assertEquals(409, erreur.getStatusCode().value());
+        verify(repository, never()).save(any(Guide.class));
+    }
+
+    @Test
+    void testLeGuideNePeutPasChangerSonCompteNiSaDisponibilite() {
+        benali.setOwnerSubject(SUB);
+        benali.setActif(true);
+        when(repository.findByOwnerSubject(SUB)).thenReturn(Optional.of(benali));
+        GuideRequest req = new GuideRequest("Benali", "Youssef", "Agadir", List.of("français"),
+                null, null, 500.0, "11111111-2222-3333-4444-555555555555", false);
+
+        service.updateMine(SUB, req);
+
+        assertEquals(SUB, benali.getOwnerSubject());
+        assertTrue(benali.isActif());
+        assertEquals(500.0, benali.getTarifParJour(), 0.001);
+    }
 }

@@ -1,10 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Circuit } from '../../../models/circuit';
 import { Avis } from '../../../services/workspace.service';
-import { GuideAuthService } from '../../../services/guide-auth.service';
+import { AuthService } from '../../../auth/auth.service';
 import { GuideProfile, GuideProfileUpdate, GuideWorkspaceService } from '../../../services/guide-workspace.service';
 
 type Page = 'dashboard' | 'profil' | 'circuits' | 'reservations' | 'avis';
@@ -18,7 +18,10 @@ type Page = 'dashboard' | 'profil' | 'circuits' | 'reservations' | 'avis';
 })
 export class GuideDashboard implements OnInit {
   private workspace = inject(GuideWorkspaceService);
-  private auth = inject(GuideAuthService);
+  private auth = inject(AuthService);
+  // The app is zoneless: values changed inside subscribe() must be signalled to Angular,
+  // otherwise the screen stays on "Chargement de votre profil…" until the next click.
+  private cdr = inject(ChangeDetectorRef);
 
   page: Page = 'dashboard';
   loading = true;
@@ -99,14 +102,22 @@ export class GuideDashboard implements OnInit {
         this.loading = false;
         this.loadCircuits(guide.id);
         this.loadAvis(guide.id);
+        this.cdr.markForCheck();
       },
       error: (error: HttpErrorResponse) => {
         this.loading = false;
-        if (error.status === 401 || error.status === 403) {
-          this.logout();
+        if (error.status === 401) {
+          // Session expired: back to the Keycloak login page.
+          void this.auth.login('/espace-guide');
           return;
         }
-        this.errorMessage = `Profil indisponible (HTTP ${error.status || 'réseau'}). Vérifiez le backend sur le port 8081 et l'endpoint /api/guides/me.`;
+        this.errorMessage =
+          error.status === 404
+            ? 'Aucun profil guide n’est encore lié à votre compte. Demandez à un administrateur de le relier.'
+            : error.status === 403
+              ? 'Ce compte n’a pas le rôle Guide.'
+              : `Profil indisponible (HTTP ${error.status || 'réseau'}). Vérifiez le service Guide (port 8081).`;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -120,16 +131,16 @@ export class GuideDashboard implements OnInit {
   loadCircuits(guideId: number): void {
     this.circuitsLoading = true; this.circuitsError = '';
     this.workspace.circuits(guideId).subscribe({
-      next: rows => { this.circuits = rows.filter(c => c.guideId === guideId); this.circuitsLoading = false; },
-      error: () => { this.circuitsLoading = false; this.circuitsError = 'Service Circuit inaccessible : les circuits ne peuvent pas être affichés.'; }
+      next: rows => { this.circuits = rows.filter(c => c.guideId === guideId); this.circuitsLoading = false; this.cdr.markForCheck(); },
+      error: () => { this.circuitsLoading = false; this.circuitsError = 'Service Circuit inaccessible : les circuits ne peuvent pas être affichés.'; this.cdr.markForCheck(); }
     });
   }
 
   loadAvis(guideId: number): void {
     this.avisLoading = true; this.avisError = '';
     this.workspace.publicReviews().subscribe({
-      next: rows => { this.avis = rows.filter(a => a.guideId === guideId && a.publie); this.avisLoading = false; },
-      error: () => { this.avisLoading = false; this.avisError = 'Service Avis inaccessible : aucun avis chargé.'; }
+      next: rows => { this.avis = rows.filter(a => a.guideId === guideId && a.publie); this.avisLoading = false; this.cdr.markForCheck(); },
+      error: () => { this.avisLoading = false; this.avisError = 'Service Avis inaccessible : aucun avis chargé.'; this.cdr.markForCheck(); }
     });
   }
 
@@ -168,10 +179,10 @@ export class GuideDashboard implements OnInit {
       langues: [...this.form.langues]
     };
     this.workspace.updateMe(body).subscribe({
-      next: g => { this.guide = g; this.saving = false; this.edit = false; this.saveMessage = 'Profil enregistré avec succès.'; },
-      error: (e: HttpErrorResponse) => { this.saving = false; this.saveMessage = `Modification refusée (HTTP ${e.status || 'réseau'}). Vérifiez les champs et l'API.`; }
+      next: g => { this.guide = g; this.saving = false; this.edit = false; this.saveMessage = 'Profil enregistré avec succès.'; this.cdr.markForCheck(); },
+      error: (e: HttpErrorResponse) => { this.saving = false; this.saveMessage = `Modification refusée (HTTP ${e.status || 'réseau'}). Vérifiez les champs et l'API.`; this.cdr.markForCheck(); }
     });
   }
 
-  logout(): void { this.auth.logout(); }
+  logout(): void { void this.auth.logout(); }
 }

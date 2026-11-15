@@ -9,7 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import org.springframework.security.core.Authentication;
+import ma.tourisme.guide.dto.GuideAdminResponse;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @Validated
 @RestController
@@ -50,32 +52,22 @@ public class GuideController {
     }
 
 
+    /** ADMIN: every guide, including inactive ones and the linked Keycloak account. */
+    @GetMapping("/admin")
+    public List<GuideAdminResponse> admin() {
+        return service.findAllForAdmin();
+    }
+
+    /** GUIDE: the profile linked to the caller's Keycloak account (never an id sent by the client). */
     @GetMapping("/me")
-    public GuideResponse monProfil(Authentication authentication) {
-        Long guideId = getConnectedGuideId(authentication);
-        return service.findById(guideId);
+    public GuideResponse monProfil(@AuthenticationPrincipal Jwt jwt) {
+        return service.findByOwner(jwt.getSubject());
     }
 
     @PutMapping("/me")
     public GuideResponse modifierMonProfil(
-            Authentication authentication,
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody GuideRequest request) {
-
-        Long guideId = getConnectedGuideId(authentication);
-        return service.update(guideId, request);
-    }
-
-    private Long getConnectedGuideId(Authentication authentication) {
-        if (authentication == null
-                || !authentication.getName().startsWith("guide:")) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.UNAUTHORIZED,
-                "Authentification requise"
-            );
-        }
-
-        return Long.valueOf(
-            authentication.getName().substring(6)
-        );
+        return service.updateMine(jwt.getSubject(), request);
     }
 }

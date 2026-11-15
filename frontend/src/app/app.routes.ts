@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { ReservationComponent } from './pages/reservation/reservation.component';
-import { guideAuthGuard } from './auth/guide-auth.guard';
+import { accountRedirect, roleGuard } from './auth/auth.guard';
 
 export const routes: Routes = [
   {
@@ -38,17 +38,30 @@ export const routes: Routes = [
   },
 
 
+  // Keycloak: same login routes as main2.
   {
+    path: 'connexion',
+    loadComponent: () => import('./auth/login').then((m) => m.Login),
+    title: 'Connexion | Guide Touristique',
+  },
+  {
+    path: 'acces-refuse',
+    loadComponent: () => import('./auth/forbidden').then((m) => m.Forbidden),
+  },
+  {
+    path: 'mon-espace',
+    canActivate: [accountRedirect],
+    loadComponent: () => import('./auth/login').then((m) => m.Login),
+  },
+  {
+    // Old local login address: send people to the Keycloak login.
     path: 'connexion-guide',
-    loadComponent: () =>
-      import('./auth/guide-login').then(
-        m => m.GuideLogin
-      ),
-    title: 'Connexion Guide | Guide Touristique'
+    redirectTo: 'connexion',
   },
   {
     path: 'espace-guide',
-    canActivate: [guideAuthGuard],
+    canActivate: [roleGuard],
+    data: { roles: ['GUIDE'] },
     loadComponent: () =>
       import('./pages/guide/dashboard/dashboard').then(
         m => m.GuideDashboard

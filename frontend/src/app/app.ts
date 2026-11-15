@@ -12,6 +12,6 @@ export class App {
   private readonly router = inject(Router);
 
   get isGuideSpace(): boolean {
-    return this.router.url.startsWith('/espace-guide') || this.router.url.startsWith('/connexion-guide');
+    return this.router.url.startsWith('/espace-guide');
   }
 }
