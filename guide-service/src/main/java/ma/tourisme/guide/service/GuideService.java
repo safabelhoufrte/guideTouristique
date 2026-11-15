@@ -76,11 +76,11 @@ public class GuideService {
 
     private void apply(Guide guide, GuideRequest request) {
 
-        guide.setNom(request.nom());
-        guide.setPrenom(request.prenom());
-        guide.setVille(request.ville());
-        guide.setEmail(request.email());
-        guide.setTelephone(request.telephone());
+        guide.setNom(request.nom().trim());
+        guide.setPrenom(trimOrNull(request.prenom()));
+        guide.setVille(trimOrNull(request.ville()));
+        guide.setEmail(trimOrNull(request.email()));
+        guide.setTelephone(trimOrNull(request.telephone()));
         guide.setTarifParJour(request.tarifParJour());
 
         guide.getLangues().clear();
@@ -94,6 +94,10 @@ public class GuideService {
                     .toList()
             );
         }
+    }
+
+    private String trimOrNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private GuideResponse toResponse(Guide guide) {

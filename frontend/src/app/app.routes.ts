@@ -1,6 +1,6 @@
-
 import { Routes } from '@angular/router';
 import { ReservationComponent } from './pages/reservation/reservation.component';
+import { guideAuthGuard } from './auth/guide-auth.guard';
 
 export const routes: Routes = [
   {
@@ -29,17 +29,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/spaces/reviews').then((m) => m.Reviews),
   },
-
-  // Dashboard personnel du guide
-  {
-    path: 'espace-guide/:guideId',
-    loadComponent: () =>
-      import('./pages/guide/dashboard/dashboard').then(
-        (m) => m.GuideDashboard
-      ),
-    title: 'Mon espace guide | Guide Touristique',
-  },
-
   {
     path: '',
     pathMatch: 'full',
@@ -48,6 +37,26 @@ export const routes: Routes = [
     title: 'Découvrez le Maroc | Guide Touristique',
   },
 
+
+  {
+    path: 'connexion-guide',
+    loadComponent: () =>
+      import('./auth/guide-login').then(
+        m => m.GuideLogin
+      ),
+    title: 'Connexion Guide | Guide Touristique'
+  },
+  {
+    path: 'espace-guide',
+    canActivate: [guideAuthGuard],
+    loadComponent: () =>
+      import('./pages/guide/dashboard/dashboard').then(
+        m => m.GuideDashboard
+      ),
+    title: 'Mon espace Guide | Guide Touristique'
+  },
+
+  
   // Toujours garder cette route à la fin
   {
     path: '**',

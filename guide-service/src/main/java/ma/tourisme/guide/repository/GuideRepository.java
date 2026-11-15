@@ -11,22 +11,37 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
 
     List<Guide> findByActifTrue();
 
-    @Query("""
-        SELECT DISTINCT g
-        FROM Guide g
-        LEFT JOIN g.langues l
-        WHERE g.actif = true
-        AND (
-            CAST(:ville AS string) IS NULL
-            OR LOWER(g.ville) = LOWER(CAST(:ville AS string))
-        )
-        AND (
-            CAST(:langue AS string) IS NULL
-            OR LOWER(l) = LOWER(CAST(:langue AS string))
-        )
-        """)
-    List<Guide> rechercherGuides(
+    List<Guide> findByActifTrueAndVilleIgnoreCase(String ville);
+
+    @Query("SELECT DISTINCT g FROM Guide g JOIN g.langues l " +
+           "WHERE g.actif = true AND LOWER(l) = LOWER(:langue)")
+    List<Guide> findActifsParLangue(
+            @Param("langue") String langue
+    );
+
+    @Query("SELECT DISTINCT g FROM Guide g JOIN g.langues l " +
+           "WHERE g.actif = true " +
+           "AND LOWER(g.ville) = LOWER(:ville) " +
+           "AND LOWER(l) = LOWER(:langue)")
+    List<Guide> findActifsParVilleEtLangue(
             @Param("ville") String ville,
             @Param("langue") String langue
     );
+
+    default List<Guide> rechercherGuides(String ville, String langue) {
+
+        if (ville == null && langue == null) {
+            return findByActifTrue();
+        }
+
+        if (ville != null && langue == null) {
+            return findByActifTrueAndVilleIgnoreCase(ville);
+        }
+
+        if (ville == null) {
+            return findActifsParLangue(langue);
+        }
+
+        return findActifsParVilleEtLangue(ville, langue);
+    }
 }

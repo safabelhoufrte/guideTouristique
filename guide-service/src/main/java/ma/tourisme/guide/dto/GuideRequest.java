@@ -1,3 +1,4 @@
+
 package ma.tourisme.guide.dto;
 
 import jakarta.validation.constraints.Email;
@@ -19,7 +20,12 @@ public record GuideRequest(
     @Size(max = 100)
     String ville,
 
-    List<String> langues,
+    @Size(max = 30)
+    List<
+        @NotBlank(message = "Une langue ne peut pas etre vide")
+        @Size(max = 50)
+        String
+    > langues,
 
     @Email(message = "Adresse email invalide")
     @Size(max = 150)
@@ -28,7 +34,7 @@ public record GuideRequest(
     @Size(max = 30)
     String telephone,
 
-    @PositiveOrZero(message = "Le tarif doit être positif ou nul")
+    @PositiveOrZero(message = "Le tarif doit etre positif ou nul")
     double tarifParJour
 
 ) {}

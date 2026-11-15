@@ -1,85 +1,177 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { GuideService } from '../../../services/guide.service';
-import { CircuitService } from '../../../services/circuit.service';
-import { Guide, Circuit } from '../../../models/circuit';
+import { Component, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Circuit } from '../../../models/circuit';
+import { Avis } from '../../../services/workspace.service';
+import { GuideAuthService } from '../../../services/guide-auth.service';
+import { GuideProfile, GuideProfileUpdate, GuideWorkspaceService } from '../../../services/guide-workspace.service';
+
+type Page = 'dashboard' | 'profil' | 'circuits' | 'reservations' | 'avis';
 
 @Component({
   selector: 'app-guide-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.scss',
+  styleUrl: './dashboard.scss'
 })
-export class GuideDashboard {
-  private readonly route = inject(ActivatedRoute);
-  private readonly guideService = inject(GuideService);
-  private readonly circuitService = inject(CircuitService);
+export class GuideDashboard implements OnInit {
+  private workspace = inject(GuideWorkspaceService);
+  private auth = inject(GuideAuthService);
 
-  guideId = 0;
-  guide: Guide | null = null;
-  circuits: Circuit[] = [];
-
+  page: Page = 'dashboard';
   loading = true;
   errorMessage = '';
+  guide: GuideProfile | null = null;
+  circuits: Circuit[] = [];
+  avis: Avis[] = [];
+  circuitsLoading = false;
+  avisLoading = false;
+  circuitsError = '';
+  avisError = '';
+  edit = false;
+  saving = false;
+  saveMessage = '';
+  form: GuideProfileUpdate = { nom:'', prenom:'', ville:'', langues:[], email:'', telephone:'', tarifParJour:0 };
+  
+    afficherAjoutLangue = false;
+    langueSelectionnee = '';
 
-  ngOnInit(): void {
-    this.route.paramMap.subscribe({
-      next: (params) => {
-        const id = Number(params.get('guideId'));
+    languesDisponibles: string[] = [
+    'Français',
+    'Anglais',
+    'Arabe',
+    'Amazigh',
+    'Espagnol',
+    'Allemand',
+    'Italien',
+    'Portugais',
+    'Chinois',
+    'Japonais',
+    'Russe',
+    'Turc',
+    'Néerlandais',
+    'Hindi',
+    'Coréen',
+    'Suédois'
+    ];
 
-        if (!Number.isInteger(id) || id <= 0) {
-          this.loading = false;
-          this.errorMessage = 'Identifiant du guide invalide.';
-          return;
-        }
+    get languesAjoutables(): string[] {
+    return this.languesDisponibles.filter(langue =>
+        !this.form.langues.some(
+        existante =>
+            existante.toLowerCase() === langue.toLowerCase()
+        )
+    );
+    }
 
-        this.guideId = id;
-        this.loadDashboard();
-      },
-    });
-  }
+    ajouterLangue(): void {
+    const langue = this.langueSelectionnee;
 
-  private loadDashboard(): void {
+    if (!this.edit || !langue ||
+        !this.languesAjoutables.includes(langue)) {
+        return;
+    }
+
+    this.form.langues = [...this.form.langues, langue];
+    this.langueSelectionnee = '';
+    this.afficherAjoutLangue = false;
+    }
+
+    supprimerLangue(langue: string): void {
+    if (!this.edit) return;
+
+    this.form.langues = this.form.langues.filter(
+        l => l !== langue
+    );
+    }
+  circuitFilter = '';
+
+  ngOnInit(): void { this.reload(); }
+
+  reload(): void {
     this.loading = true;
     this.errorMessage = '';
-
-    this.guideService.get(this.guideId).subscribe({
-      next: (guide) => {
+    this.workspace.me().subscribe({
+      next: guide => {
         this.guide = guide;
         this.loading = false;
+        this.loadCircuits(guide.id);
+        this.loadAvis(guide.id);
       },
-      error: () => {
+      error: (error: HttpErrorResponse) => {
         this.loading = false;
-        this.errorMessage =
-          'Impossible de récupérer les informations du guide. Vérifiez que le service Guide est démarré.';
-      },
-    });
-
-    this.circuitService.list({ guideId: this.guideId }).subscribe({
-      next: (circuits) => {
-        this.circuits = circuits;
-      },
-      error: (error) => {
-        console.error('Erreur de chargement des circuits :', error);
-      },
+        if (error.status === 401 || error.status === 403) {
+          this.logout();
+          return;
+        }
+        this.errorMessage = `Profil indisponible (HTTP ${error.status || 'réseau'}). Vérifiez le backend sur le port 8081 et l'endpoint /api/guides/me.`;
+      }
     });
   }
 
-  get totalCircuits(): number {
-    return this.circuits.length;
+  get pageTitle(): string {
+    return {dashboard:'Tableau de bord',profil:'Mon profil',circuits:'Mes circuits',reservations:'Réservations',avis:'Mes avis'}[this.page];
   }
 
-  get totalPrix(): number {
-    return this.circuits.reduce((total, circuit) => total + circuit.prix, 0);
+  select(page: Page): void { this.page = page; this.saveMessage = ''; }
+
+  loadCircuits(guideId: number): void {
+    this.circuitsLoading = true; this.circuitsError = '';
+    this.workspace.circuits(guideId).subscribe({
+      next: rows => { this.circuits = rows.filter(c => c.guideId === guideId); this.circuitsLoading = false; },
+      error: () => { this.circuitsLoading = false; this.circuitsError = 'Service Circuit inaccessible : les circuits ne peuvent pas être affichés.'; }
+    });
   }
 
-  get statutGuide(): string {
-    return this.guide?.disponible ? 'Disponible' : 'Indisponible';
+  loadAvis(guideId: number): void {
+    this.avisLoading = true; this.avisError = '';
+    this.workspace.publicReviews().subscribe({
+      next: rows => { this.avis = rows.filter(a => a.guideId === guideId && a.publie); this.avisLoading = false; },
+      error: () => { this.avisLoading = false; this.avisError = 'Service Avis inaccessible : aucun avis chargé.'; }
+    });
   }
 
-  get initiale(): string {
-    return this.guide?.nom?.charAt(0).toUpperCase() || 'G';
+  get visibleCircuits(): Circuit[] {
+    const text = this.circuitFilter.trim().toLocaleLowerCase();
+    return this.circuits.filter(c => !text || (c.titre + ' ' + (c.ville ?? '')).toLocaleLowerCase().includes(text));
   }
+  get initiale(): string { return (this.guide?.prenom || this.guide?.nom || 'G').charAt(0).toUpperCase(); }
+  get fullName(): string { return [this.guide?.prenom, this.guide?.nom].filter(Boolean).join(' ') || 'Guide'; }
+  get noteMoyenne(): string {
+    if (!this.avis.length) return '—';
+    return (this.avis.reduce((s,a) => s + a.noteGuide,0)/this.avis.length).toFixed(1);
+  }
+
+  startEdit(): void {
+    if (!this.guide) return;
+    const g = this.guide;
+    this.form = {nom:g.nom, prenom:g.prenom, ville:g.ville, langues:[...g.langues], email:g.email,
+      telephone:g.telephone, tarifParJour:g.tarifParJour};
+    this.afficherAjoutLangue = false;
+    this.langueSelectionnee = '';
+    this.edit = true; this.saveMessage = '';
+  }
+  cancelEdit(): void { this.edit = false; this.saveMessage = ''; }
+
+  saveProfile(): void {
+    if (this.saving || !this.form.nom.trim() || this.form.tarifParJour < 0) return;
+    this.saving = true; this.saveMessage = '';
+    const body: GuideProfileUpdate = {
+      ...this.form,
+      nom:this.form.nom.trim(),
+      prenom:this.form.prenom?.trim() || null,
+      ville:this.form.ville?.trim() || null,
+      email:this.form.email?.trim() || null,
+      telephone:this.form.telephone?.trim() || null,
+      langues: [...this.form.langues]
+    };
+    this.workspace.updateMe(body).subscribe({
+      next: g => { this.guide = g; this.saving = false; this.edit = false; this.saveMessage = 'Profil enregistré avec succès.'; },
+      error: (e: HttpErrorResponse) => { this.saving = false; this.saveMessage = `Modification refusée (HTTP ${e.status || 'réseau'}). Vérifiez les champs et l'API.`; }
+    });
+  }
+
+  logout(): void { this.auth.logout(); }
 }
