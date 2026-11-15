@@ -1,0 +1,275 @@
+// Admin back-office layout. Mirrors the Guide dashboard design (branch `guide`,
+// pages/guide/dashboard): dark teal sidebar, white topbar, gradient banner, card surfaces.
+// Keep these tokens in sync with that dashboard so both professional spaces look identical.
+.admin-console {
+  --console-sidebar: #073946;
+  --console-sidebar-soft: #1b4e59;
+  --console-accent: #0d7895;
+  --console-bg: #f4f7f8;
+  --console-text: #21323b;
+  --console-muted: #63778b;
+  --console-border: #e1e9ec;
+
+  min-height: 100vh;
+  display: flex;
+  background: var(--console-bg);
+  color: var(--console-text);
+
+  // Sidebar
+  .console-sidebar {
+    width: 222px;
+    min-width: 222px;
+    background: var(--console-sidebar);
+    color: #fff;
+    padding: 22px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .console-brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    font-size: 13px;
+  }
+  .console-brand small {
+    display: block;
+    font-size: 10px;
+    color: #bdcdd1;
+    margin-top: 5px;
+  }
+  .console-brand-icon,
+  .console-avatar {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--console-accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 20px;
+  }
+  .console-menu-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #9bb6be;
+    margin: 20px 7px 0;
+  }
+  .console-navigation {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .console-nav-item {
+    padding: 14px;
+    border-radius: 7px;
+    color: #e8f0f2;
+    font-weight: 600;
+    font-size: 12px;
+    text-decoration: none;
+  }
+  .console-nav-item span {
+    display: inline-block;
+    width: 18px;
+  }
+  .console-nav-item:hover,
+  .console-nav-item.active {
+    background: var(--console-accent);
+  }
+  .console-nav-item:focus-visible,
+  .console-logout:focus-visible,
+  .console-help a:focus-visible {
+    outline: 2px solid #ffd15a;
+    outline-offset: 2px;
+  }
+  .console-help {
+    background: var(--console-sidebar-soft);
+    padding: 14px;
+    border-radius: 9px;
+    font-size: 12px;
+    margin-top: auto;
+  }
+  .console-help p {
+    font-size: 11px;
+    color: #d6e4e8;
+    line-height: 1.6;
+  }
+  .console-help a {
+    color: #fff;
+    font-weight: 600;
+  }
+  .console-footer {
+    font-size: 10px;
+    color: #acc6cd;
+    text-align: center;
+  }
+  .console-logout {
+    background: transparent;
+    color: #fff;
+    border: 1px solid #77939c;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font: inherit;
+  }
+
+  // Main column
+  .console-main {
+    flex: 1;
+    min-width: 0;
+  }
+  .console-topbar {
+    height: 70px;
+    background: #fff;
+    border-bottom: 1px solid #dce5e8;
+    padding: 0 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+  .console-breadcrumb {
+    color: #708398;
+  }
+  .console-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .console-avatar {
+    font-size: 14px;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+  }
+  .console-content {
+    padding: 26px 30px;
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+
+  // Shared card look for every admin page (dashboard, circuits, guides, reservations, avis)
+  .surface {
+    background: #fff;
+    border: 1px solid var(--console-border);
+    border-radius: 11px;
+    padding: 21px;
+    box-shadow: 0 4px 15px #0c35410a;
+  }
+  .button:not(.secondary) {
+    background: var(--console-accent);
+    border-color: var(--console-accent);
+  }
+
+  // Dashboard banner and stat cards
+  .welcome-banner {
+    min-height: 150px;
+    background: linear-gradient(115deg, #045467, #108ca8);
+    color: #fff;
+    padding: 26px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .welcome-banner h2 {
+    margin: 8px 0;
+    color: #fff;
+    font-size: 26px;
+  }
+  .welcome-banner p {
+    margin: 0;
+    color: #daeff2;
+  }
+  .welcome-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .welcome-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+  .welcome-decoration {
+    font-size: 46px;
+    color: #ffd15a;
+    line-height: 1;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 15px;
+  }
+  .stat {
+    display: flex;
+    gap: 15px;
+    min-height: 110px;
+  }
+  .stat p {
+    font-size: 12px;
+    color: var(--console-muted);
+    margin: 6px 0 0;
+  }
+  .stat-icon {
+    width: 37px;
+    height: 37px;
+    flex: none;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: #e7f7fa;
+    color: #117c91;
+  }
+  .stat-icon.green {
+    background: #e9f9f0;
+    color: #208663;
+  }
+  .stat-icon.amber {
+    background: #fff5db;
+    color: #a67d21;
+  }
+
+  @media (max-width: 1000px) {
+    .stats {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 700px) {
+    display: block;
+    .console-sidebar {
+      width: 100%;
+      min-width: 0;
+      height: auto;
+      position: static;
+    }
+    .console-navigation {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .console-help,
+    .console-footer,
+    .console-user {
+      display: none;
+    }
+    .console-topbar {
+      padding: 0 12px;
+    }
+    .console-content {
+      padding: 15px;
+    }
+    .welcome-banner {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .welcome-actions {
+      align-items: flex-start;
+    }
+  }
+}
