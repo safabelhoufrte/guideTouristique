@@ -196,4 +196,49 @@ class CircuitServiceTest {
     assertStatus(404, () -> service.archive(99));
     verifyNoInteractions(guideClient);
   }
+
+  // ---- Rôle GUIDE : uniquement ses propres circuits (circuit(1) appartient au guide 7) ----
+
+  @Test
+  void testRegleProprieteGuide() {
+    assertDoesNotThrow(() -> CircuitService.requireOwnership(7, null, 7));
+    assertDoesNotThrow(() -> CircuitService.requireOwnership(7, 7L, 7));
+    assertStatus(403, () -> CircuitService.requireOwnership(7, null, 8));
+    assertStatus(403, () -> CircuitService.requireOwnership(7, 7L, 8));
+    assertStatus(403, () -> CircuitService.requireOwnership(7, 8L, 7));
+    assertStatus(403, () -> CircuitService.requireOwnership(7, 8L, 8));
+  }
+
+  @Test
+  void testGuideCreeSonCircuit() {
+    when(guideClient.currentGuideId("jwt")).thenReturn(7L);
+    when(repository.insert(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    assertEquals(7, service.createAsGuide(request(new BigDecimal("250.00")), "jwt").guideId());
+    verify(guideClient).requireExisting(7);
+  }
+
+  @Test
+  void testGuideNeModifiePasLeCircuitDUnAutre() {
+    when(repository.findById(1)).thenReturn(Optional.of(circuit(1)));
+    when(guideClient.currentGuideId("jwt")).thenReturn(8L);
+    assertStatus(403, () -> service.updateAsGuide(1, request(new BigDecimal("250.00")), "jwt"));
+    verify(repository, never()).update(any());
+  }
+
+  @Test
+  void testGuideArchiveSonCircuitLogiquement() {
+    when(repository.findById(1)).thenReturn(Optional.of(circuit(1)));
+    when(guideClient.currentGuideId("jwt")).thenReturn(7L);
+    when(repository.archive(1)).thenReturn(true);
+    service.archiveAsGuide(1, "jwt");
+    verify(repository).archive(1);
+    verify(repository, never()).update(any());
+  }
+
+  @Test
+  void testGuideCircuitInexistantRenvoie404SansAppelerGuide() {
+    when(repository.findById(99)).thenReturn(Optional.empty());
+    assertStatus(404, () -> service.archiveAsGuide(99, "jwt"));
+    verifyNoInteractions(guideClient);
+  }
 }
