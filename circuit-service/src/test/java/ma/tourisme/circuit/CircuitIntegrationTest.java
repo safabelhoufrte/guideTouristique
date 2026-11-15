@@ -47,8 +47,17 @@ class CircuitIntegrationTest {
   }
 
   static String token(String role, String audience, java.time.Instant expires, String issuer) throws Exception {
+    return token(role, audience, expires, issuer, role.equals("NO_SUB") ? null : "test-" + role);
+  }
+
+  /** GUIDE token whose subject the Guide simulator maps to a profile via /api/guides/me. */
+  static String guideAccount(String subject) throws Exception {
+    return token("GUIDE", "guide-touristique-api", java.time.Instant.now().plusSeconds(3600), "http://test-issuer", subject);
+  }
+
+  static String token(String role, String audience, java.time.Instant expires, String issuer, String subject) throws Exception {
     var claims = new com.nimbusds.jwt.JWTClaimsSet.Builder().issuer(issuer)
-        .subject(role.equals("NO_SUB") ? null : "test-" + role).audience(audience).issueTime(java.util.Date.from(java.time.Instant.now()))
+        .subject(subject).audience(audience).issueTime(java.util.Date.from(java.time.Instant.now()))
         .expirationTime(java.util.Date.from(expires)).claim("realm_access", java.util.Map.of("roles", java.util.List.of(role))).build();
     var jwt = new com.nimbusds.jwt.SignedJWT(new com.nimbusds.jose.JWSHeader.Builder(com.nimbusds.jose.JWSAlgorithm.RS256).keyID("test").build(), claims);
     jwt.sign(new com.nimbusds.jose.crypto.RSASSASigner(signingKey));
@@ -79,6 +88,33 @@ class CircuitIntegrationTest {
     });
     workers = Executors.newCachedThreadPool();
     guide.setExecutor(workers);
+    // Simulates Guide's GET /api/guides/me: the account (JWT subject) decides the profile.
+    guide.createContext(
+        "/api/guides/me",
+        exchange -> {
+          String auth = exchange.getRequestHeaders().getFirst("Authorization");
+          String subject = null;
+          try {
+            subject = com.nimbusds.jwt.SignedJWT.parse(auth.substring("Bearer ".length()))
+                .getJWTClaimsSet().getSubject();
+          } catch (Exception ignored) {
+            /* missing or malformed token: treated as unknown account */
+          }
+          int status = 200;
+          String body;
+          if ("guide-one".equals(subject)) body = "{\"id\":1,\"nom\":\"Benali\",\"disponible\":true}";
+          else if ("guide-two".equals(subject)) body = "{\"id\":2,\"disponible\":false}";
+          else if ("guide-broken".equals(subject)) body = "{\"id\":\"1\"}";
+          else {
+            status = 404;
+            body = "{\"message\":\"Profil guide introuvable\"}";
+          }
+          byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+          exchange.getResponseHeaders().add("Content-Type", "application/json; charset=utf-8");
+          exchange.sendResponseHeaders(status, bytes.length);
+          exchange.getResponseBody().write(bytes);
+          exchange.close();
+        });
     guide.createContext(
         "/api/guides/",
         exchange -> {
@@ -163,11 +199,15 @@ class CircuitIntegrationTest {
   }
 
   static HttpResponse<String> request(String method, String path, String body) throws Exception {
+    return as(adminToken, method, path, body);
+  }
+
+  static HttpResponse<String> as(String bearer, String method, String path, String body) throws Exception {
     return HTTP.send(
         HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
             .timeout(Duration.ofSeconds(12))
             .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + adminToken)
+            .header("Authorization", "Bearer " + bearer)
             .method(
                 method,
                 body == null
@@ -208,9 +248,10 @@ class CircuitIntegrationTest {
   }
 
   @Test
-  void everyWriteRequiresAdminAndPublicDetailsRemainReadable() throws Exception {
+  void foreignAccountsCannotWriteAndPublicDetailsRemainReadable() throws Exception {
     long id = create(1);
-    String guideToken = token("GUIDE", "guide-touristique-api", java.time.Instant.now().plusSeconds(3600));
+    // A GUIDE who does not own circuit `id` (guide 2) is refused like USER or no role.
+    String guideToken = guideAccount("guide-two");
     String noRoleToken = token("OTHER", "guide-touristique-api", java.time.Instant.now().plusSeconds(3600));
     int before = expect("GET", "/api/circuits", null, 200).size();
     for (String bearer : new String[] {null, userToken, guideToken, noRoleToken}) {
@@ -231,6 +272,30 @@ class CircuitIntegrationTest {
         .GET().build(), HttpResponse.BodyHandlers.ofString());
     assertEquals(200, publicDetail.statusCode());
     assertEquals("Tour Agadir", JSON.readTree(publicDetail.body()).path("titre").asText());
+  }
+
+  @Test
+  void guideManagesOnlyOwnCircuits() throws Exception {
+    String one = guideAccount("guide-one");
+    var created = as(one, "POST", "/api/circuits", input(1));
+    assertEquals(201, created.statusCode(), created.body());
+    long id = JSON.readTree(created.body()).get("id").asLong();
+    assertEquals(403, as(one, "POST", "/api/circuits", input(2)).statusCode(), "create for another guide");
+
+    var updated = as(one, "PUT", "/api/circuits/" + id, input(1).replace("Tour Agadir", "Tour modifié"));
+    assertEquals(200, updated.statusCode(), updated.body());
+    assertEquals("Tour modifié", JSON.readTree(updated.body()).path("titre").asText());
+    assertEquals(403, as(one, "PUT", "/api/circuits/" + id, input(2)).statusCode(), "hand over to another guide");
+
+    long foreign = create(2);
+    assertEquals(403, as(one, "PUT", "/api/circuits/" + foreign, input(1)).statusCode(), "take over a foreign circuit");
+    assertEquals(403, as(one, "DELETE", "/api/circuits/" + foreign, null).statusCode(), "archive a foreign circuit");
+    assertEquals(403, as(guideAccount("guide-unlinked"), "POST", "/api/circuits", input(1)).statusCode());
+    assertEquals(503, as(guideAccount("guide-broken"), "POST", "/api/circuits", input(1)).statusCode());
+
+    assertEquals(204, as(one, "DELETE", "/api/circuits/" + id, null).statusCode());
+    expect("GET", "/api/circuits/" + id, null, 404);
+    assertEquals("Tour Agadir", expect("GET", "/api/circuits/" + foreign, null, 200).path("titre").asText());
   }
 
   @Test

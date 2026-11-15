@@ -2,6 +2,7 @@ package ma.tourisme.circuit.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -44,6 +45,38 @@ public class GuideClient {
       throw unavailable();
     }
     // An unavailable guide still exists; Reservation checks booking availability.
+  }
+
+  /**
+   * Resolves the Guide profile of the caller. Guide owns the link between a Keycloak account and a
+   * guideId, so Circuit forwards the caller's own token instead of trusting a client-sent id.
+   */
+  public long currentGuideId(String bearerToken) {
+    JsonNode me;
+    try {
+      me =
+          http.get()
+              .uri("/api/guides/me")
+              .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken)
+              .retrieve()
+              .body(JsonNode.class);
+    } catch (RestClientResponseException error) {
+      int status = error.getStatusCode().value();
+      if (status == 401 || status == 403 || status == 404) {
+        throw new ResponseStatusException(
+            HttpStatus.FORBIDDEN, "Aucun profil guide lié à ce compte");
+      }
+      throw unavailable();
+    } catch (RestClientException error) {
+      throw unavailable();
+    }
+    if (me == null
+        || !me.isObject()
+        || !me.path("id").isIntegralNumber()
+        || !me.path("id").canConvertToLong()) {
+      throw unavailable();
+    }
+    return me.path("id").longValue();
   }
 
   private ResponseStatusException unavailable() {
