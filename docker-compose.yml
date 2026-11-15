@@ -31,6 +31,19 @@ services:
       DB_PASSWORD: ${GUIDE_DB_PASSWORD:?Set GUIDE_DB_PASSWORD in .env}
     depends_on:
       postgres: {condition: service_healthy}
+  circuit-service:
+    build: ./circuit-service
+    ports: ["127.0.0.1:${CIRCUIT_HOST_PORT:-8082}:8082"]
+    environment:
+      SERVER_PORT: 8082
+      DB_URL: jdbc:postgresql://postgres:5432/tourisme_db
+      DB_USER: circuit
+      DB_PASSWORD: ${CIRCUIT_DB_PASSWORD:?Set CIRCUIT_DB_PASSWORD in .env}
+      GUIDE_SERVICE_URL: http://guide-service:8081
+      AUTH_ISSUER_URI: ${AUTH_ISSUER_URI:-http://localhost:8180/realms/guide-touristique}
+      AUTH_JWK_SET_URI: ${AUTH_JWK_SET_URI:-http://keycloak:8080/realms/guide-touristique/protocol/openid-connect/certs}
+    depends_on:
+      postgres: {condition: service_healthy}
   frontend:
     build: ./frontend
     ports: ["127.0.0.1:${FRONTEND_HOST_PORT:-4200}:80"]
