@@ -20,9 +20,7 @@ export const appConfig: ApplicationConfig = {
     { provide: LOCALE_ID, useValue: 'fr-MA' },
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })),
-    // Keycloak: one interceptor adds the access token to every /api/... request.
     provideHttpClient(withInterceptors([authInterceptor])),
-    // Restores the Keycloak session (silent check) before the first route is resolved.
     provideAppInitializer(() => inject(AuthService).init()),
   ],
 };

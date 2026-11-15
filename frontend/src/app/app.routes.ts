@@ -1,44 +1,24 @@
 import { Routes } from '@angular/router';
 import { ReservationComponent } from './pages/reservation/reservation.component';
-import { accountRedirect, roleGuard } from './auth/auth.guard';
+import { roleGuard, accountRedirect } from './auth/auth.guard';
 
 export const routes: Routes = [
   {
     path: 'circuits',
-    loadComponent: () =>
-      import('./pages/circuits/circuit-list').then((m) => m.CircuitList),
+    loadComponent: () => import('./pages/circuits/circuit-list').then((m) => m.CircuitList),
     title: 'Nos circuits | Guide Touristique',
   },
   {
     path: 'circuits/:id',
-    loadComponent: () =>
-      import('./pages/circuits/circuit-detail').then((m) => m.CircuitDetail),
+    loadComponent: () => import('./pages/circuits/circuit-detail').then((m) => m.CircuitDetail),
     title: 'Détail du circuit | Guide Touristique',
   },
   {
     path: 'reservations',
     component: ReservationComponent,
+    canActivate: [roleGuard],
+    data: { roles: ['USER'] },
   },
-  {
-    path: 'guides',
-    loadComponent: () =>
-      import('./pages/spaces/guide-directory').then((m) => m.GuideDirectory),
-  },
-  {
-    path: 'avis',
-    loadComponent: () =>
-      import('./pages/spaces/reviews').then((m) => m.Reviews),
-  },
-  {
-    path: '',
-    pathMatch: 'full',
-    loadComponent: () =>
-      import('./auth/landing').then((m) => m.Landing),
-    title: 'Découvrez le Maroc | Guide Touristique',
-  },
-
-
-  // Keycloak: same login routes as main2.
   {
     path: 'connexion',
     loadComponent: () => import('./auth/login').then((m) => m.Login),
@@ -54,27 +34,111 @@ export const routes: Routes = [
     loadComponent: () => import('./auth/login').then((m) => m.Login),
   },
   {
-    // Old local login address: send people to the Keycloak login.
-    path: 'connexion-guide',
-    redirectTo: 'connexion',
+    path: 'espace-touriste',
+    canActivate: [roleGuard],
+    data: { roles: ['USER'], space: 'user' },
+    loadComponent: () => import('./pages/spaces/space-shell').then((m) => m.SpaceShell),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./pages/spaces/reservations').then((m) => m.SpaceReservations),
+        data: { scope: 'me' },
+      },
+      {
+        path: 'avis',
+        loadComponent: () => import('./pages/spaces/reviews').then((m) => m.Reviews),
+        data: { scope: 'me' },
+      },
+      {
+        path: 'avis/nouveau/:id',
+        loadComponent: () => import('./pages/spaces/review-form').then((m) => m.ReviewForm),
+      },
+    ],
   },
   {
+    // Guide dashboard (Safa): profile, circuits, reservations, reviews in one page.
     path: 'espace-guide',
     canActivate: [roleGuard],
     data: { roles: ['GUIDE'] },
     loadComponent: () =>
-      import('./pages/guide/dashboard/dashboard').then(
-        m => m.GuideDashboard
-      ),
-    title: 'Mon espace Guide | Guide Touristique'
+      import('./pages/guide/dashboard/dashboard').then((m) => m.GuideDashboard),
+    title: 'Mon espace Guide | Guide Touristique',
   },
-
-  
-  // Toujours garder cette route à la fin
+  {
+    // Old local guide login address: Keycloak login now.
+    path: 'connexion-guide',
+    redirectTo: 'connexion',
+  },
+  {
+    path: 'administration',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'], space: 'admin' },
+    loadComponent: () => import('./pages/spaces/space-shell').then((m) => m.SpaceShell),
+    children: [
+      {
+        path: 'analyses',
+        redirectTo: '',
+        pathMatch: 'full',
+      },
+      {
+        path: '',
+        title: 'Dashboard | Guide Touristique',
+        loadComponent: () => import('./pages/spaces/admin-home').then((m) => m.AdminHome),
+      },
+      {
+        path: 'circuits',
+        loadComponent: () => import('./pages/spaces/admin-circuits').then((m) => m.AdminCircuits),
+      },
+      {
+        path: 'circuits/nouveau',
+        loadComponent: () => import('./pages/spaces/circuit-editor').then((m) => m.CircuitEditor),
+      },
+      {
+        path: 'circuits/:id',
+        loadComponent: () => import('./pages/spaces/circuit-editor').then((m) => m.CircuitEditor),
+      },
+      {
+        path: 'guides',
+        loadComponent: () => import('./pages/spaces/admin-guides').then((m) => m.AdminGuides),
+      },
+      {
+        path: 'guides/nouveau',
+        loadComponent: () => import('./pages/spaces/guide-editor').then((m) => m.GuideEditor),
+      },
+      {
+        path: 'guides/:id',
+        loadComponent: () => import('./pages/spaces/guide-editor').then((m) => m.GuideEditor),
+      },
+      {
+        path: 'reservations',
+        loadComponent: () => import('./pages/spaces/reservations').then((m) => m.SpaceReservations),
+        data: { scope: 'admin' },
+      },
+      {
+        path: 'avis',
+        loadComponent: () => import('./pages/spaces/reviews').then((m) => m.Reviews),
+        data: { scope: 'admin' },
+      },
+    ],
+  },
+  {
+    path: 'avis',
+    loadComponent: () => import('./pages/spaces/reviews').then((m) => m.Reviews),
+    data: { scope: 'public' },
+  },
+  {
+    path: 'guides',
+    loadComponent: () => import('./pages/spaces/guide-directory').then((m) => m.GuideDirectory),
+  },
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./auth/landing').then((m) => m.Landing),
+    title: 'Découvrez le Maroc | Guide Touristique',
+  },
   {
     path: '**',
-    loadComponent: () =>
-      import('./pages/unavailable').then((m) => m.Unavailable),
-    title: 'Page introuvable | Guide Touristique',
+    loadComponent: () => import('./pages/unavailable').then((m) => m.Unavailable),
+    title: 'Guide Touristique',
   },
 ];

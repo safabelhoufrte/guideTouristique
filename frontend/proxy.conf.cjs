@@ -6,10 +6,6 @@ module.exports = {
   },
   '/api/guides': { target: process.env.GUIDE_API_URL || 'http://localhost:8081', secure: false },
 
-  '/api/guide-auth': {
-    target: process.env.GUIDE_API_URL || 'http://localhost:8081',
-    secure: false
-  },
   '/api/reservations': {
     target: process.env.RESERVATION_API_URL || 'http://localhost:8083',
     secure: false,

@@ -71,8 +71,19 @@
       <h2 id="invitation-title">La prochaine histoire pourrait être la vôtre.</h2>
       <p>Retrouvez vos réservations et partagez vos avis depuis votre espace personnel.</p>
     </div>
-    <a class="landing-button primary" routerLink="/circuits"
-      >Explorer les circuits <span aria-hidden="true">→</span></a
-    >
+    @if (auth.authenticated()) {
+      <a class="landing-button primary" [routerLink]="auth.home()"
+        >Mon espace <span aria-hidden="true">→</span></a
+      >
+    } @else {
+      <button
+        class="landing-button primary"
+        type="button"
+        (click)="dialog.open()"
+        aria-haspopup="dialog"
+      >
+        Rejoindre l’aventure <span aria-hidden="true">→</span>
+      </button>
+    }
   </section>
 </main>
