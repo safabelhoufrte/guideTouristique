@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap');
+
+:root {
+  --primary: #0e7490;
+  --primary-hover: #095d73;
+  --panel-tint: #eef8fa;
+  --panel-border: #d5e4e8;
+  --text: #1e293b;
+  --muted: #64748b;
+}
+html.login-pf, .login-pf body { background: #f8f9fb; color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; min-height: 100%; }
+.login-pf body { margin: 0; background-image: none; }
+.login-pf-page { padding: 0 20px 48px; }
+#kc-header { margin: 0 -20px 48px; padding: 0 24px; background: white; border-bottom: 1px solid var(--panel-border); color: var(--primary); }
+#kc-header-wrapper { max-width: 1152px; min-height: 76px; padding: 24px 0; margin: auto; font-family: 'Poppins', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0; line-height: 28px; text-transform: none; text-align: left; white-space: normal; }
+.login-pf-page .card-pf { position: relative; background: white; border: 1px solid var(--panel-border); border-top: 0; border-radius: 20px; box-shadow: 0 12px 48px #153b4a0d; max-width: 480px; margin: 0 auto; padding: 136px 36px 28px; overflow: visible; }
+.login-pf-page .card-pf::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 108px; background: var(--panel-tint) url('../img/circuit-landscape.svg') center 55% / cover; border-radius: 20px 20px 0 0; }
+.login-pf-page .login-pf-header { margin-bottom: 26px; }
+#kc-page-title { font-family: 'Poppins', sans-serif; color: var(--primary-hover); font-size: 26px; font-weight: 600; line-height: 1.4; letter-spacing: -.035em; margin: 0; text-align: left; }
+#kc-content { margin-top: 0; }
+#kc-content-wrapper { margin-top: 0; }
+.login-pf-page .form-group { margin-bottom: 20px; }
+.login-pf-page .pf-c-form__label, .login-pf-page label { color: var(--text); font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.login-pf-page .pf-c-form-control { height: 48px; min-height: 48px; border: 1px solid #a8bcc6; border-radius: 10px; background: white; color: var(--text); font: inherit; padding: 12px 14px; box-shadow: none; }
+.login-pf-page .pf-c-form-control:hover { border-color: var(--primary); }
+.login-pf-page .pf-c-form-control[aria-invalid='true'] { border-color: #b42318; }
+.login-pf-page .pf-c-input-group { gap: 8px; }
+.login-pf-page .pf-c-input-group .pf-c-button { border-radius: 10px; border: 1px solid var(--panel-border); width: 48px; min-height: 48px; background: var(--panel-tint); color: var(--primary); }
+.login-pf-page .pf-c-button::after { border: 0; }
+.login-pf-page .pf-c-button.pf-m-primary { font: inherit; font-size: 14px; font-weight: 600; color: white; background: var(--primary); min-height: 48px; padding: 13px 20px; border-radius: 10px; border: 0; box-shadow: none; }
+.login-pf-page .pf-c-button.pf-m-primary:hover { background: var(--primary-hover); }
+.login-pf-page .pf-c-button:disabled { opacity: .6; cursor: not-allowed; }
+.login-pf-page a { color: var(--primary); font-weight: 500; text-underline-offset: 3px; }
+.login-pf-page a:hover { color: var(--primary-hover); text-decoration: underline; }
+.login-pf-page a:focus-visible, .login-pf-page button:focus-visible, .login-pf-page input:focus-visible, .login-pf-page select:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.login-pf-page .pf-c-form-control:focus { border-color: var(--primary); }
+#kc-form-buttons { margin-top: 20px; }
+#kc-info { margin: 26px -36px -28px; }
+#kc-info-wrapper { background: var(--panel-tint); border-top: 1px solid var(--panel-border); padding: 22px 24px; color: var(--muted); font-size: 13px; border-radius: 0 0 20px 20px; }
+#kc-registration span { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; }
+#kc-locale { position: absolute; z-index: 1; top: 12px; right: 12px; float: none; text-align: right; margin: 0; }
+#kc-locale-dropdown button { color: var(--primary); background: white; font: inherit; min-height: 44px; padding: 8px 12px; border-radius: 8px; }
+.login-pf-page .subtitle { color: var(--muted); font-size: 12px; text-align: left; padding: 0; margin-bottom: 10px; }
+.login-pf-page .login-pf-header > div > .col-md-10 { width: 100%; padding: 0; float: none; }
+.login-pf-page .alert { border-radius: 10px; font-size: 13px; margin-bottom: 20px; }
+.login-pf-page .pf-c-form__helper-text.pf-m-error { color: #b42318; font-size: 12px; }
+#kc-form-options { padding: 0; }
+#kc-form-options .checkbox label { font-weight: 400; }
+#kc-form-options input[type='checkbox'] { width: 16px; height: 16px; accent-color: var(--primary); }
+.login-pf-page .login-pf-settings { margin: 0; }
+#kc-form-buttons, #kc-registration-container { padding-left: 0; padding-right: 0; }
+.brand-return { display: block; text-align: center; margin-top: 24px; padding: 12px; min-height: 44px; font-size: 13px; }
+@media (max-width: 520px) {
+  .login-pf-page { padding: 0 16px 24px; }
+  #kc-header { margin: 0 -16px 24px; padding: 0 20px; }
+  #kc-header-wrapper { font-size: 18px; min-height: 68px; padding: 20px 0; }
+  .login-pf-page .card-pf { padding: 124px 24px 24px; width: 100%; }
+  #kc-page-title { font-size: 23px; }
+  #kc-info { margin: 24px -24px -24px; }
+  #kc-info-wrapper { padding: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
