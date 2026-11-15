@@ -5,6 +5,7 @@ import ma.tourisme.guide.dto.GuideResponse;
 import ma.tourisme.guide.exception.NotFoundException;
 import ma.tourisme.guide.model.Guide;
 import ma.tourisme.guide.repository.GuideRepository;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,23 +21,21 @@ public class GuideService {
         this.repository = repository;
     }
 
-    // Liste : seuls les guides actifs sont visibles, avec filtres facultatifs
     @Transactional(readOnly = true)
     public List<GuideResponse> findAll(String ville, String langue) {
-        String villeFiltre = (ville == null || ville.isBlank())
-                ? null : ville.trim();
 
-        String langueFiltre = (langue == null || langue.isBlank())
-                ? null : langue.trim();
+        String villeFiltre =
+            (ville == null || ville.isBlank()) ? null : ville.trim();
+
+        String langueFiltre =
+            (langue == null || langue.isBlank()) ? null : langue.trim();
 
         return repository.rechercherGuides(villeFiltre, langueFiltre)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+            .stream()
+            .map(this::toResponse)
+            .toList();
     }
 
-    // Détail : renvoie aussi un guide inactif (avec son statut), pour que les
-    // autres modules puissent vérifier existence, statut et note moyenne
     @Transactional(readOnly = true)
     public GuideResponse findById(Long id) {
         return toResponse(getOrThrow(id));
@@ -47,6 +46,7 @@ public class GuideService {
         Guide guide = new Guide();
         apply(guide, request);
         guide.setActif(true);
+
         return toResponse(repository.save(guide));
     }
 
@@ -54,11 +54,10 @@ public class GuideService {
     public GuideResponse update(Long id, GuideRequest request) {
         Guide guide = getOrThrow(id);
         apply(guide, request);
+
         return toResponse(repository.save(guide));
     }
 
-    // Règle : un guide n'est pas détruit, il est désactivé
-    // (la vérification des circuits et réservations à venir viendra ensuite)
     @Transactional
     public void desactiver(Long id) {
         Guide guide = getOrThrow(id);
@@ -68,36 +67,47 @@ public class GuideService {
 
     private Guide getOrThrow(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Guide avec id " + id + " introuvable"));
+            .orElseThrow(() ->
+                new NotFoundException(
+                    "Guide avec id " + id + " introuvable"
+                )
+            );
     }
 
-    private void apply(Guide g, GuideRequest r) {
-        g.setNom(r.nom());
-        g.setPrenom(r.prenom());
-        g.setVille(r.ville());
-        g.setEmail(r.email());
-        g.setTelephone(r.telephone());
-        g.setTarifParJour(r.tarifParJour());
-        g.getLangues().clear();
-        if (r.langues() != null) {
-            g.getLangues().addAll(r.langues());
+    private void apply(Guide guide, GuideRequest request) {
+
+        guide.setNom(request.nom());
+        guide.setPrenom(request.prenom());
+        guide.setVille(request.ville());
+        guide.setEmail(request.email());
+        guide.setTelephone(request.telephone());
+        guide.setTarifParJour(request.tarifParJour());
+
+        guide.getLangues().clear();
+
+        if (request.langues() != null) {
+            guide.getLangues().addAll(
+                request.langues().stream()
+                    .filter(langue -> langue != null && !langue.isBlank())
+                    .map(String::trim)
+                    .distinct()
+                    .toList()
+            );
         }
     }
 
-
-    private GuideResponse toResponse(Guide g) {
+    private GuideResponse toResponse(Guide guide) {
         return new GuideResponse(
-            g.getId(),
-            g.getNom(),
-            g.getPrenom(),
-            g.getVille(),
-            new ArrayList<>(g.getLangues()),
-            g.getEmail(),
-            g.getTelephone(),
-            g.getTarifParJour(),
-            g.isActif(),
-            g.getNoteMoyenne()
+            guide.getId(),
+            guide.getNom(),
+            guide.getPrenom(),
+            guide.getVille(),
+            new ArrayList<>(guide.getLangues()),
+            guide.getEmail(),
+            guide.getTelephone(),
+            guide.getTarifParJour(),
+            guide.isActif(),
+            guide.getNoteMoyenne()
         );
     }
-
 }

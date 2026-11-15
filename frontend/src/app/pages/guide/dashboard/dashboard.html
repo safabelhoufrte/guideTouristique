@@ -1,0 +1,232 @@
+<div class="guide-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">G</div>
+      <div>
+        <strong>Guide Touristique</strong>
+        <small>Espace professionnel</small>
+      </div>
+    </div>
+
+    <div class="menu-label">MENU PRINCIPAL</div>
+
+    <nav class="navigation">
+      <a class="nav-item active">
+        <span class="nav-icon">▦</span>
+        Tableau de bord
+      </a>
+
+      <a class="nav-item" [routerLink]="['/guides']">
+        <span class="nav-icon">♙</span>
+        Mon profil
+      </a>
+
+      <a class="nav-item" [routerLink]="['/circuits']">
+        <span class="nav-icon">⌖</span>
+        Mes circuits
+      </a>
+
+      <span class="nav-item disabled">
+        <span class="nav-icon">▤</span>
+        Réservations
+      </span>
+
+      <a class="nav-item" [routerLink]="['/avis']">
+        <span class="nav-icon">☆</span>
+        Mes avis
+      </a>
+    </nav>
+
+    <div class="sidebar-help">
+      <div class="help-icon">?</div>
+      <strong>Besoin d'aide ?</strong>
+      <p>Contactez notre équipe pour toute assistance.</p>
+      <a href="mailto:support@guidetouristique.ma">
+        Contacter le support →
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      © 2026 Guide Touristique
+    </div>
+  </aside>
+
+  <!-- CONTENU PRINCIPAL -->
+  <main class="main-content">
+
+    <header class="topbar">
+      <div>
+        <span class="breadcrumb">Espace professionnel /</span>
+        <strong> Tableau de bord</strong>
+      </div>
+
+      <div class="user-info" *ngIf="guide">
+        <div class="avatar">{{ initiale }}</div>
+        <div>
+          <strong>{{ guide.nom }}</strong>
+          <small>Guide touristique</small>
+        </div>
+      </div>
+    </header>
+
+    <section class="page-content">
+
+      <div class="welcome-banner" *ngIf="guide">
+        <div>
+          <span class="welcome-label">VOTRE ESPACE PERSONNEL</span>
+          <h1>Bienvenue, {{ guide.nom }} !</h1>
+          <p>
+            Gérez votre activité touristique et retrouvez
+            toutes vos informations au même endroit.
+          </p>
+          <span class="city-label" *ngIf="guide.ville">
+            📍 {{ guide.ville }}
+          </span>
+        </div>
+        <div class="welcome-decoration">✦</div>
+      </div>
+
+      <div class="loading" *ngIf="loading">
+        Chargement de votre espace...
+      </div>
+
+      <div class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <ng-container *ngIf="guide && !loading">
+
+        <div class="section-heading">
+          <div>
+            <h2>Vue d'ensemble</h2>
+            <p>Voici le résumé de votre activité.</p>
+          </div>
+        </div>
+
+        <!-- STATISTIQUES -->
+        <section class="stats-grid">
+
+          <article class="stat-card">
+            <div class="stat-icon turquoise">⌖</div>
+            <div>
+              <span>Total des circuits</span>
+              <h3>{{ totalCircuits }}</h3>
+              <small>Circuits associés à votre compte</small>
+            </div>
+          </article>
+
+          <article class="stat-card">
+            <div class="stat-icon green">✓</div>
+            <div>
+              <span>Disponibilité</span>
+              <h3 class="status-text">{{ statutGuide }}</h3>
+              <small>Votre statut actuel</small>
+            </div>
+          </article>
+
+          <article class="stat-card">
+            <div class="stat-icon amber">MAD</div>
+            <div>
+              <span>Tarif par jour</span>
+              <h3>{{ guide.tarifParJour ?? '—' }}</h3>
+              <small>Dirhams marocains</small>
+            </div>
+          </article>
+
+          <article class="stat-card">
+            <div class="stat-icon blue">★</div>
+            <div>
+              <span>Ville</span>
+              <h3 class="city-stat">{{ guide.ville || 'Non renseignée' }}</h3>
+              <small>Votre zone d'activité</small>
+            </div>
+          </article>
+
+        </section>
+
+        <!-- CIRCUITS -->
+        <section class="content-card circuits-section">
+
+          <div class="card-heading">
+            <div>
+              <h2>Mes derniers circuits</h2>
+              <p>Les circuits associés à votre compte.</p>
+            </div>
+
+            <a routerLink="/circuits" class="view-link">
+              Voir les circuits →
+            </a>
+          </div>
+
+          <div class="empty-state" *ngIf="circuits.length === 0">
+            <div class="empty-icon">⌖</div>
+            <h3>Aucun circuit trouvé</h3>
+            <p>Vos circuits apparaîtront ici lorsqu'ils seront créés.</p>
+          </div>
+
+          <div class="circuit-list" *ngIf="circuits.length > 0">
+
+            <article class="circuit-item"
+              *ngFor="let circuit of circuits.slice(0, 4)">
+
+              <div class="circuit-image">
+                <span>⌖</span>
+              </div>
+
+              <div class="circuit-info">
+                <h3>{{ circuit.titre }}</h3>
+                <p>{{ circuit.ville || 'Ville non renseignée' }}</p>
+                <small>
+                  {{ circuit.dureeHeures ?? '—' }} heures
+                </small>
+              </div>
+
+              <div class="circuit-price">
+                <strong>{{ circuit.prix }} MAD</strong>
+                <small>Prix du circuit</small>
+              </div>
+
+            </article>
+
+          </div>
+
+        </section>
+
+        <!-- INFORMATIONS -->
+        <section class="content-card profile-summary">
+
+          <div class="card-heading">
+            <div>
+              <h2>Informations de votre compte</h2>
+              <p>Résumé de votre profil professionnel.</p>
+            </div>
+          </div>
+
+          <div class="profile-row">
+            <div class="profile-avatar">{{ initiale }}</div>
+
+            <div class="profile-details">
+              <strong>{{ guide.nom }}</strong>
+              <span>Guide touristique</span>
+              <span>{{ guide.ville || 'Ville non renseignée' }}</span>
+            </div>
+
+            <span class="availability-badge"
+              [class.unavailable]="!guide.disponible">
+              {{ statutGuide }}
+            </span>
+          </div>
+
+        </section>
+
+      </ng-container>
+
+      <footer class="page-footer">
+        Guide Touristique · Espace professionnel
+      </footer>
+
+    </section>
+  </main>
+</div>
