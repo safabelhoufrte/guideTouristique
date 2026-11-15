@@ -15,17 +15,17 @@ import { AuthService } from '../../auth/auth.service';
   selector: 'app-space-shell',
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
   host: { class: 'workspace-ui' },
-  template: `@if (mode === 'admin') {
+  template: `@if (mode === 'admin' || mode === 'user') {
       <div class="admin-console">
         <aside class="console-sidebar">
           <div class="console-brand">
             <div class="console-brand-icon" aria-hidden="true">G</div>
             <div>
-              <strong>Guide Touristique</strong><small>Administration</small>
+              <strong>Guide Touristique</strong><small>{{ area }}</small>
             </div>
           </div>
           <p class="console-menu-label">MENU PRINCIPAL</p>
-          <nav class="console-navigation" aria-label="Navigation de l’administration">
+          <nav class="console-navigation" [attr.aria-label]="'Navigation : ' + area">
             @for (item of links; track item.path) {
               <a
                 class="console-nav-item"
@@ -38,8 +38,13 @@ import { AuthService } from '../../auth/auth.service';
             }
           </nav>
           <div class="console-help">
-            <strong>Catalogue public</strong>
-            <p>Vérifiez le rendu des circuits tel que les voyageurs le voient.</p>
+            @if (mode === 'admin') {
+              <strong>Catalogue public</strong>
+              <p>Vérifiez le rendu des circuits tel que les voyageurs le voient.</p>
+            } @else {
+              <strong>Envie d’une nouvelle découverte ?</strong>
+              <p>Parcourez les circuits et réservez votre prochaine visite.</p>
+            }
             <a routerLink="/circuits">Découvrir les circuits ›</a>
           </div>
           <div class="console-footer">© 2026 Guide Touristique</div>
@@ -50,7 +55,7 @@ import { AuthService } from '../../auth/auth.service';
         <div class="console-main">
           <header class="console-topbar">
             <div>
-              <span class="console-breadcrumb">Administration / </span
+              <span class="console-breadcrumb">{{ area }} / </span
               ><strong>{{ pageTitle() }}</strong>
             </div>
             <div class="console-user">
@@ -121,9 +126,11 @@ export class SpaceShell {
             { path: '/espace-guide/reservations', label: 'Mes visiteurs', icon: '' },
           ]
         : [
-            { path: '/espace-touriste', label: 'Mes réservations', icon: '' },
-            { path: '/espace-touriste/avis', label: 'Mes avis', icon: '' },
+            { path: '/espace-touriste', label: 'Mes réservations', icon: '▤' },
+            { path: '/espace-touriste/avis', label: 'Mes avis', icon: '☆' },
           ];
+  /** Name of the space, shown under the brand and in the topbar breadcrumb. */
+  readonly area = this.mode === 'admin' ? 'Administration' : 'Espace personnel';
   private readonly url = toSignal(
     this.router.events.pipe(
       filter((event) => event instanceof NavigationEnd),
