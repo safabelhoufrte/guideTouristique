@@ -6,8 +6,11 @@ import { NavigationEnd, RouterLink, RouterLinkActive, RouterOutlet } from '@angu
 import { Router } from '@angular/router';
 import { AuthDialog, AuthDialogService } from './auth/auth-dialog';
 
+/** Personal spaces with their own full-screen layout (sidebar + topbar). */
 function isConsoleUrl(url: string) {
-  return url.startsWith('/administration') || url.startsWith('/espace-touriste');
+  return ['/administration', '/espace-guide', '/espace-touriste'].some((space) =>
+    url.startsWith(space),
+  );
 }
 
 @Component({
