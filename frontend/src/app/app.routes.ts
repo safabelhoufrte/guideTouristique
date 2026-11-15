@@ -34,15 +34,15 @@ export const routes: Routes = [
     loadComponent: () => import('./auth/login').then((m) => m.Login),
   },
   {
+    // Protected entry point only (role USER). The Reservation team builds the content.
     path: 'espace-touriste',
     canActivate: [roleGuard],
-    data: { roles: ['USER'], space: 'user' },
-    loadComponent: () => import('./pages/spaces/space-shell').then((m) => m.SpaceShell),
+    data: { roles: ['USER'] },
     children: [
       {
         path: '',
-        loadComponent: () =>
-          import('./pages/spaces/tourist-reservations').then((m) => m.TouristReservations),
+        title: 'Espace Touriste | Guide Touristique',
+        loadComponent: () => import('./pages/spaces/tourist-space').then((m) => m.TouristSpace),
       },
       {
         path: 'avis',
