@@ -1,0 +1,172 @@
+<header class="catalogue-head">
+  <div>
+    <p class="eyebrow">CATALOGUE</p>
+    <h2>Gérer les circuits</h2>
+    <p class="lead">
+      Chaque circuit est associé à un guide. L’archivage retire le circuit du catalogue sans effacer
+      l’historique.
+    </p>
+  </div>
+  <a class="create" routerLink="nouveau">＋ Créer un circuit</a>
+</header>
+
+@if (error()) {
+  <p class="error" role="alert">{{ error() }}</p>
+}
+@if (pending(); as c) {
+  <section class="confirm-box">
+    <h3>Archiver « {{ c.titre }} » ?</h3>
+    <p>Le circuit sera retiré du catalogue. Les anciennes réservations seront conservées.</p>
+    <div class="actions">
+      <button class="button danger" [disabled]="busy()" (click)="archive(c)">Archiver</button
+      ><button class="button secondary" [disabled]="busy()" (click)="pending.set(null)">
+        Conserver
+      </button>
+    </div>
+  </section>
+}
+
+@if (vm().loading) {
+  <p class="surface" role="status">Chargement…</p>
+} @else if (vm().error) {
+  <p class="error" role="alert">{{ vm().error }}</p>
+  <button class="button secondary" (click)="refresh.next()">Réessayer</button>
+} @else if (!vm().rows.length) {
+  <section class="surface empty">
+    <h3>Votre catalogue est vide</h3>
+    <a class="button primary" routerLink="nouveau">Créer le premier circuit</a>
+  </section>
+} @else {
+  <div class="kpis">
+    <div class="kpi surface">
+      <span class="kpi-icon" aria-hidden="true">⌖</span>
+      <div><strong>{{ stats().count }}</strong><small>Circuits au catalogue</small></div>
+    </div>
+    <div class="kpi surface">
+      <span class="kpi-icon green" aria-hidden="true">◎</span>
+      <div><strong>{{ stats().cities }}</strong><small>Villes couvertes</small></div>
+    </div>
+    <div class="kpi surface">
+      <span class="kpi-icon amber" aria-hidden="true">♙</span>
+      <div><strong>{{ stats().guides }}</strong><small>Guides associés</small></div>
+    </div>
+    <div class="kpi surface">
+      <span class="kpi-icon blue" aria-hidden="true">₥</span>
+      <div><strong>{{ price(stats().average) }}</strong><small>Prix moyen</small></div>
+    </div>
+  </div>
+
+  <div class="toolbar surface">
+    <label class="search">
+      <span aria-hidden="true">⌕</span>
+      <input
+        type="search"
+        placeholder="Rechercher un circuit, une ville ou un guide"
+        aria-label="Rechercher un circuit, une ville ou un guide"
+        [value]="search()"
+        (input)="search.set(value($event))"
+      />
+    </label>
+    <select aria-label="Filtrer par ville" [value]="ville()" (change)="ville.set(value($event))">
+      <option value="">Toutes les villes</option>
+      @for (v of cities(); track v) {
+        <option [value]="v">{{ v }}</option>
+      }
+    </select>
+    <select
+      aria-label="Filtrer par guide"
+      [value]="guideId()"
+      (change)="guideId.set(+value($event))"
+    >
+      <option value="0">Tous les guides</option>
+      @for (g of guideOptions(); track g.id) {
+        <option [value]="g.id">{{ g.nom }}</option>
+      }
+    </select>
+    <div class="view-toggle" role="group" aria-label="Affichage">
+      <button type="button" [class.on]="view() === 'cards'" [attr.aria-pressed]="view() === 'cards'" (click)="view.set('cards')">
+        ▦ Cartes
+      </button>
+      <button type="button" [class.on]="view() === 'list'" [attr.aria-pressed]="view() === 'list'" (click)="view.set('list')">
+        ☰ Liste
+      </button>
+    </div>
+  </div>
+
+  @if (!visible().length) {
+    <section class="surface empty"><h3>Aucun circuit ne correspond à ces filtres.</h3></section>
+  } @else if (view() === 'cards') {
+    <div class="cards">
+      @for (c of visible(); track c.id) {
+        <article class="card">
+          <div class="cover">
+            <img [src]="photoFor(c).src" [alt]="photoFor(c).alt" loading="lazy" />
+            <span class="status">Au catalogue</span>
+            <div class="tags">
+              @if (c.ville) {
+                <span>📍 {{ c.ville }}</span>
+              }
+              @if (c.dureeHeures !== null) {
+                <span>⏱ {{ c.dureeHeures }} h</span>
+              }
+            </div>
+          </div>
+          <div class="card-body">
+            <h3>{{ c.titre }}</h3>
+            @if (c.description) {
+              <p class="desc">{{ c.description }}</p>
+            }
+            <div class="guide">
+              <span class="avatar" aria-hidden="true">{{ initials(guideName(c.guideId)) }}</span>
+              <div>
+                {{ guideName(c.guideId) }}
+                <small>Guide n° {{ c.guideId }}{{ guideCity(c.guideId) ? ' · ' + guideCity(c.guideId) : '' }}</small>
+              </div>
+            </div>
+            <div class="foot">
+              <p class="card-price"><strong>{{ price(c.prix) }}</strong> <span>/ pers.</span></p>
+              <div class="card-actions">
+                <a class="edit" [routerLink]="[c.id]">Modifier</a>
+                <button type="button" class="archive" [disabled]="busy()" (click)="pending.set(c)">
+                  Archiver
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="surface table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Circuit</th>
+            <th>Guide</th>
+            <th>Prix</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of visible(); track c.id) {
+            <tr>
+              <td>
+                <strong>{{ c.titre }}</strong><small>{{ c.ville }} · {{ c.dureeHeures }} h</small>
+              </td>
+              <td>{{ guideName(c.guideId) }}</td>
+              <td>{{ price(c.prix) }}</td>
+              <td>
+                <div class="table-actions">
+                  <a class="button secondary" [routerLink]="[c.id]">Modifier</a
+                  ><button class="button danger" [disabled]="busy()" (click)="pending.set(c)">
+                    Archiver
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}

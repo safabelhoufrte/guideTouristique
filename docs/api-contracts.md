@@ -6,7 +6,7 @@
 - Swagger de chaque service : http://localhost:<port>/swagger-ui.html
 
 ## Qui appelle qui
-- circuit-service  →  guide-service (GET /api/guides/{id})
+- circuit-service  →  guide-service (GET /api/guides/{id} ; GET /api/guides/me avec le token du guide connecté)
 - reservation-service  →  guide-service et circuit-service
 - avis-service  →  guide-service et circuit-service
 
@@ -61,9 +61,23 @@
 |---|---|---|---|
 | GET | /api/circuits | Liste (filtres : ?ville=, ?guideId=) | 200 |
 | GET | /api/circuits/{id} | Détail | 200 / 404 |
-| POST | /api/circuits | Créer (vérifie que guideId existe) | 201 / 400 |
-| PUT | /api/circuits/{id} | Modifier | 200 / 404 |
-| DELETE | /api/circuits/{id} | Supprimer | 204 / 404 |
+| POST | /api/circuits | ADMIN ou GUIDE — créer (vérifie que guideId existe) | 201 / 400 / 401 / 403 / 503 |
+| PUT | /api/circuits/{id} | ADMIN ou GUIDE — modifier | 200 / 404 / 401 / 403 / 503 |
+| DELETE | /api/circuits/{id} | ADMIN ou GUIDE — archiver sans effacer l'historique | 204 / 404 / 401 / 403 / 503 |
+
+Les deux routes GET restent publiques. Les écritures exigent un access token signé :
+émetteur Keycloak attendu, audience `guide-touristique-api`, sujet non vide,
+dates valides et rôle `ADMIN` ou `GUIDE` dans `realm_access.roles`. USER ne peut
+pas écrire. Voir [la configuration Circuit](circuit-integration.md).
+
+Règles du rôle GUIDE (contrôlées par le serveur, jamais par le frontend) :
+- Circuit identifie le guide connecté en appelant `GET /api/guides/me` du service
+  Guide avec le même token. Réponse attendue : au moins `{ "id": <long> }`.
+  401/403/404 de Guide → 403 « Aucun profil guide lié à ce compte » ; autre erreur → 503.
+- Un guide ne crée un circuit que pour lui-même (`guideId` = son id), sinon 403.
+- Un guide ne modifie ou n'archive que ses propres circuits, et ne peut pas
+  les transférer à un autre guide, sinon 403.
+- Pour afficher « Mes circuits » : `GET /api/circuits?guideId=<id de /api/guides/me>`.
 
 Consomme : GET guide-service /api/guides/{id}
 

@@ -1,0 +1,171 @@
+<div class="guide-layout">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon">G</div><div><strong>Guide Touristique</strong><small>Espace professionnel</small></div></div>
+    <div class="menu-label">MENU PRINCIPAL</div>
+    <nav class="navigation" aria-label="Menu espace guide">
+      <button type="button" class="nav-item" [class.active]="page==='dashboard'" (click)="select('dashboard')">▦ &nbsp; Tableau de bord</button>
+      <button type="button" class="nav-item" [class.active]="page==='profil'" (click)="select('profil')">♙ &nbsp; Mon profil</button>
+      <button type="button" class="nav-item" [class.active]="page==='circuits'" (click)="select('circuits')">⌖ &nbsp; Mes circuits</button>
+      <button type="button" class="nav-item" [class.active]="page==='reservations'" (click)="select('reservations')">▤ &nbsp; Réservations</button>
+      <button type="button" class="nav-item" [class.active]="page==='avis'" (click)="select('avis')">☆ &nbsp; Mes avis</button>
+    </nav>
+    <div class="sidebar-help"><strong>Besoin d'aide ?</strong><p>Contactez l'équipe si une fonctionnalité est indisponible.</p></div>
+    <div class="sidebar-footer">© 2026 Guide Touristique</div>
+    <button type="button" class="logout-button" (click)="logout()">⎋ Se déconnecter</button>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar"><div><span class="breadcrumb">Espace professionnel / </span><strong>{{ pageTitle }}</strong></div><div class="user-info" *ngIf="guide"><span class="avatar">{{initiale}}</span><strong>{{fullName}}</strong></div></header>
+    <section class="page-content">
+      <div class="loading" *ngIf="loading">Chargement de votre profil…</div>
+      <div class="error-message" *ngIf="errorMessage" role="alert">{{errorMessage}} <button (click)="reload()">Réessayer</button></div>
+      <ng-container *ngIf="guide && !loading">
+        <ng-container *ngIf="page==='dashboard'">
+          <div class="welcome-banner"><div><span class="welcome-label">VOTRE ESPACE PERSONNEL</span><h1>Bonjour {{guide.prenom || guide.nom}} !</h1><p>Retrouvez les informations de votre activité.</p></div><div class="welcome-decoration">✦</div></div>
+          <section class="stats-grid">
+            <article class="stat-card"><div class="stat-icon turquoise">⌖</div><div><span>Circuits actifs</span><h3>{{circuitsLoading ? '…' : (circuitsError ? '—' : circuits.length)}}</h3><small>Circuits associés</small></div></article>
+            <article class="stat-card"><div class="stat-icon amber">◷</div><div><span>Demandes en attente</span><h3>—</h3><small>Service Réservation à connecter</small></div></article>
+            <article class="stat-card"><div class="stat-icon green">✓</div><div><span>Réservations confirmées</span><h3>—</h3><small>Service Réservation à connecter</small></div></article>
+            <article class="stat-card"><div class="stat-icon blue">☆</div><div><span>Note moyenne</span><h3>{{avisLoading || avisError ? '—' : noteMoyenne}}</h3><small>Avis publiés</small></div></article>
+          </section>
+          <div class="dashboard-panels">
+            <section class="content-card request-panel">
+              <div class="card-heading"><div><h2>Demandes récentes</h2><p class="section-subtitle">Les dernières demandes de vos voyageurs</p></div><button class="text-action" type="button" (click)="select('reservations')">Voir tout ›</button></div>
+              <div class="empty-state"><span class="empty-icon">▤</span><strong>Demandes non chargées</strong><p>Les demandes apparaîtront ici lorsque le service Réservation fournira une API sécurisée pour ce guide.</p><button type="button" (click)="select('reservations')">Consulter les demandes</button></div>
+            </section>
+            <section class="content-card recent-panel">
+              <div class="card-heading"><div><h2>Mes derniers circuits</h2><p class="section-subtitle">Retrouvez vos circuits publiés</p></div><button class="text-action" type="button" (click)="select('circuits')">Voir tout ›</button></div>
+              <p *ngIf="circuitsError" class="note">{{circuitsError}}</p>
+              <p *ngIf="circuitsLoading" class="hint">Chargement des circuits…</p>
+              <div *ngFor="let c of circuits.slice(0,3); let i=index" class="recent-circuit">
+                <div class="circuit-thumbnail" [class.thumb-two]="i===1" [class.thumb-three]="i===2"></div>
+                <div class="recent-circuit-info"><strong>{{c.titre}}</strong><small>{{c.ville || 'Maroc'}} · {{c.dureeHeures ?? '—'}} h</small></div>
+                <span class="circuit-status">Circuit</span>
+              </div>
+              <p *ngIf="!circuitsLoading && !circuitsError && circuits.length===0" class="hint">Aucun circuit associé à ce guide.</p>
+              <button type="button" class="full-action" (click)="select('circuits')">Voir mes circuits</button>
+            </section>
+          </div>
+        </ng-container>
+
+        <div *ngIf="page==='profil'" class="profile-head"><div><span class="eyebrow">VOTRE ESPACE</span><h1>Mon profil</h1><p>Gérez vos informations personnelles et professionnelles.</p></div><button type="button" *ngIf="!edit" (click)="startEdit()">✎ Modifier mon profil</button></div>
+        <div *ngIf="page==='profil'" class="profile-cover"><div class="profile-cover-band"></div><div class="profile-identity"><div class="profile-avatar">{{initiale}}</div><div><strong>{{fullName}}</strong><small>⌖ {{guide.ville || 'Maroc'}} · Guide touristique</small></div><div class="profile-rating">★ {{noteMoyenne}} / 5</div></div></div>
+        <div *ngIf="page==='profil'" class="profile-columns">
+                <section *ngIf="page==='profil'" class="content-card">
+          <div class="card-heading"><div><h2>Informations personnelles</h2><p>Ces informations sont visibles sur votre profil.</p></div></div>
+          <p class="note" *ngIf="saveMessage" role="status">{{saveMessage}}</p>
+          <div *ngIf="!edit" class="profile-grid"><div><label>Nom</label><p>{{guide.nom}}</p></div><div><label>Prénom</label><p>{{guide.prenom || '—'}}</p></div><div><label>Ville</label><p>{{guide.ville || '—'}}</p></div><div><label>Email public</label><p>{{guide.email || '—'}}</p></div><div><label>Téléphone</label><p>{{guide.telephone || '—'}}</p></div><div><label>Tarif par jour</label><p>{{guide.tarifParJour}} MAD</p></div><div class="full"><label>Langues parlées</label><p>{{guide.langues.join(', ') || '—'}}</p></div></div>
+          <form *ngIf="edit" (ngSubmit)="saveProfile()" class="profile-grid" #f="ngForm">
+            <div><label for="nom">Nom *</label><input id="nom" name="nom" required maxlength="100" [(ngModel)]="form.nom"></div>
+            <div><label for="prenom">Prénom</label><input id="prenom" name="prenom" maxlength="100" [(ngModel)]="form.prenom"></div>
+            <div><label for="ville">Ville</label><input id="ville" name="ville" maxlength="100" [(ngModel)]="form.ville"></div>
+            <div><label for="email">Email public</label><input id="email" name="email" type="email" maxlength="150" [(ngModel)]="form.email"></div>
+            <div><label for="telephone">Téléphone</label><input id="telephone" name="telephone" maxlength="30" [(ngModel)]="form.telephone"></div>
+            <div><label for="tarif">Tarif / jour (MAD)</label><input id="tarif" name="tarif" type="number" min="0" required [(ngModel)]="form.tarifParJour"></div>
+            <div class="full"><button type="submit" [disabled]="saving || f.invalid">{{saving ? 'Enregistrement…' : 'Enregistrer'}}</button> <button type="button" class="secondary" (click)="cancelEdit()">Annuler</button></div>
+          </form>
+          <p class="hint">Le mot de passe de connexion n'est pas votre email public : ils sont gérés séparément.</p>
+        </section>
+
+        <aside class="profile-side content-card">
+
+        <div class="language-header">
+            <div>
+            <h2>Langues parlées</h2>
+            <p>Vos langues de communication</p>
+            </div>
+
+            <button
+            *ngIf="edit"
+            type="button"
+            class="add-language-btn"
+            (click)="afficherAjoutLangue = !afficherAjoutLangue">
+            + Ajouter
+            </button>
+        </div>
+
+        <div
+            class="language-pill language-item"
+            *ngFor="let langue of (edit ? form.langues : guide.langues)">
+
+            <span>◉ {{ langue }}</span>
+
+            <button
+            *ngIf="edit"
+            type="button"
+            class="remove-language-btn"
+            [attr.aria-label]="'Supprimer ' + langue"
+            (click)="supprimerLangue(langue)">
+            ✕
+            </button>
+
+        </div>
+
+        <p
+            *ngIf="(edit ? form.langues : guide.langues).length === 0"
+            class="language-empty">
+            Aucune langue renseignée.
+        </p>
+
+        <div
+            *ngIf="edit && afficherAjoutLangue"
+            class="add-language-panel">
+
+            <label for="nouvelleLangue">
+            Sélectionner une langue
+            </label>
+
+            <select
+            id="nouvelleLangue"
+            name="nouvelleLangue"
+            [(ngModel)]="langueSelectionnee">
+
+            <option value="">
+                Choisir une langue
+            </option>
+
+            <option
+                *ngFor="let langue of languesAjoutables"
+                [value]="langue">
+                {{ langue }}
+            </option>
+
+            </select>
+
+            <button
+            type="button"
+            class="confirm-language-btn"
+            [disabled]="!langueSelectionnee"
+            (click)="ajouterLangue()">
+            Ajouter la langue
+            </button>
+
+        </div>
+
+        <h2 class="secondary-title">
+            Statut du profil
+        </h2>
+
+        <div class="status-row">
+            <span>
+            {{ guide.disponible ? 'Profil actif' : 'Profil inactif' }}
+            </span>
+
+            <strong>
+            {{ guide.disponible ? 'Actif' : 'Inactif' }}
+            </strong>
+        </div>
+
+        </aside>
+
+        </div>
+
+        <section *ngIf="page==='circuits'" class="content-card"><div class="card-heading"><div><h1>Mes circuits</h1><p>Circuits associés à votre identifiant Guide</p></div></div><input class="filter" type="search" placeholder="Rechercher un circuit" [(ngModel)]="circuitFilter" aria-label="Rechercher un circuit"><p *ngIf="circuitsLoading">Chargement des circuits…</p><p *ngIf="circuitsError" class="note">{{circuitsError}}</p><div class="circuit-cards" *ngIf="!circuitsError"><article class="circuit-card" *ngFor="let c of visibleCircuits"><div class="circuit-art"></div><div class="circuit-body"><h3>{{c.titre}}</h3><p>{{c.description || 'Aucune description'}}</p><p>📍 {{c.ville || '—'}} · {{c.dureeHeures ?? '—'}} h</p><strong>{{c.prix}} MAD</strong></div></article></div><p *ngIf="!circuitsLoading && !circuitsError && visibleCircuits.length===0">Aucun circuit trouvé.</p><p class="hint">L'ajout, la modification et la suppression des circuits doivent passer par des endpoints sécurisés du service Circuit.</p></section>
+
+        <section *ngIf="page==='reservations'" class="content-card"><h1>Mes demandes de réservation</h1><p>Les demandes doivent être fournies par une API authentifiée du service Réservation.</p><div class="note">La gestion « Accepter / Refuser » n'est pas encore activée. Les routes actuellement connues ne garantissent pas l'autorisation par guide. Il faut exposer un endpoint serveur « mes réservations » et vérifier que chaque réservation appartient au guide connecté avant toute décision.</div><p class="hint">Aucune réservation fictive n'est affichée.</p></section>
+
+        <section *ngIf="page==='avis'" class="content-card"><h1>Mes avis publiés</h1><p>Avis publics correspondant à votre guide.</p><p *ngIf="avisLoading">Chargement des avis…</p><p *ngIf="avisError" class="note">{{avisError}}</p><div class="review" *ngFor="let a of avis"><div class="review-heading"><strong>{{a.auteur}}</strong><span>★ {{a.noteGuide}} / 5</span></div><p>{{a.commentaire || 'Sans commentaire'}}</p><small>{{a.dateCreation | date:'dd/MM/yyyy'}}</small></div><p *ngIf="!avisLoading && !avisError && avis.length===0">Aucun avis publié pour le moment.</p></section>
+      </ng-container>
+    </section>
+  </main>
+</div>

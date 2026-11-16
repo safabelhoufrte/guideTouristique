@@ -1,0 +1,274 @@
+<header class="welcome-banner">
+  <div>
+    <span class="welcome-label">ADMINISTRATION</span>
+    <h2>Tableau de bord</h2>
+    <p>Réservations, circuits et retours des voyageurs.</p>
+  </div>
+  <div class="welcome-actions">
+    <span class="welcome-decoration" aria-hidden="true">✦</span>
+    <button class="button secondary" (click)="reload()" [disabled]="!data()">Actualiser</button>
+  </div>
+</header>
+<div class="analytics-filters">
+  <div>
+    <label for="analytics-period">Période d’analyse</label
+    ><select id="analytics-period" [value]="period()" (change)="setPeriod($event)">
+      <option value="30">30 derniers jours</option>
+      <option value="90">90 derniers jours</option>
+      <option value="365">365 derniers jours</option>
+    </select>
+  </div>
+</div>
+@if (data(); as source) {
+  @if (report(); as stats) {
+    <p class="analytics-range" role="status">
+      Du {{ stats.from.split('-').reverse().join('/') }} au
+      {{ stats.until.split('-').reverse().join('/') }}.
+    </p>
+    @if (errors().length) {
+      <section class="notice" role="status">
+        <strong>Certaines données sont indisponibles.</strong>
+        <ul>
+          @for (item of errors(); track item.name) {
+            <li>{{ item.name }} : {{ item.error }}</li>
+          }
+        </ul>
+        <button class="button secondary" (click)="reload()">Réessayer</button>
+      </section>
+    }
+    <div class="stats" aria-label="Indicateurs des réservations de la période">
+      <div class="surface stat">
+        <span class="stat-icon" aria-hidden="true">▤</span>
+        <div>
+          <strong>{{ source.reservations.error ? '—' : stats.bookings }}</strong>
+          <p>Réservations créées</p>
+        </div>
+      </div>
+      <div class="surface stat">
+        <span class="stat-icon green" aria-hidden="true">✓</span>
+        <div>
+          <strong>{{ source.reservations.error ? '—' : stats.participants }}</strong>
+          <p>Participants confirmés</p>
+        </div>
+      </div>
+      <div class="surface stat">
+        <span class="stat-icon amber" aria-hidden="true">◷</span>
+        <div>
+          <strong>{{
+            source.reservations.error
+              ? '—'
+              : (stats.acceptedAmount | currency: 'MAD' : 'code' : '1.2-2')
+          }}</strong>
+          <p>Montant des réservations acceptées</p>
+        </div>
+      </div>
+    </div>
+    <p class="analytics-note">Montant réservé, hors suivi des paiements.</p>
+
+    <section class="surface analytics-section" aria-labelledby="volume-title">
+      <h3 id="volume-title">Évolution des réservations</h3>
+      <p class="muted">Nombre de demandes créées par mois dans la période sélectionnée.</p>
+      @if (source.reservations.error) {
+        <p class="error">Le graphique sera disponible au retour des données Réservation.</p>
+      } @else {
+        <div class="chart-scroll" aria-hidden="true">
+          <div class="monthly-chart">
+            @for (month of stats.months; track month.key) {
+              <div class="month-column">
+                <div class="bar-area">
+                  <div
+                    class="month-bar"
+                    [style.height.%]="(month.count / stats.maxMonthlyCount) * 100"
+                  ></div>
+                  <span class="bar-value">{{ month.count }}</span>
+                </div>
+                <span class="month-label">{{ month.label }}</span>
+              </div>
+            }
+          </div>
+        </div>
+        @if (!stats.bookings) {
+          <p class="empty-caption">Aucune réservation créée durant cette période.</p>
+        }
+        <details class="chart-data">
+          <summary>Voir les données du graphique</summary>
+          <table>
+            <caption>
+              Réservations créées par mois
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Mois</th>
+                <th scope="col">Réservations</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (month of stats.months; track month.key) {
+                <tr>
+                  <th scope="row">{{ month.label }}</th>
+                  <td>{{ month.count }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </details>
+      }
+    </section>
+
+    <div class="analytics-grid">
+      <section class="surface" aria-labelledby="status-title">
+        <h3 id="status-title">Répartition des statuts</h3>
+        @if (source.reservations.error) {
+          <p class="error">Données Réservation indisponibles.</p>
+        } @else {
+          <div class="status-visual">
+            <div class="donut" aria-hidden="true">
+              <svg viewBox="0 0 42 42">
+                <circle class="donut-track" cx="21" cy="21" r="15.9155" />
+                @for (segment of statusSegments(); track segment.status) {
+                  <circle
+                    class="donut-segment"
+                    cx="21"
+                    cy="21"
+                    r="15.9155"
+                    [attr.data-status]="segment.status"
+                    [attr.stroke-dasharray]="segment.share + ' ' + (100 - segment.share)"
+                    [attr.stroke-dashoffset]="-segment.offset"
+                  />
+                }
+              </svg>
+              <div class="donut-label">
+                <strong>{{ stats.bookings }}</strong
+                ><span>demandes</span>
+              </div>
+            </div>
+            <ul class="status-distribution">
+              @for (item of stats.statuses; track item.status) {
+                <li>
+                  <div>
+                    <span class="badge" [attr.data-status]="item.status">{{ item.label }}</span
+                    ><strong
+                      >{{ item.count }}
+                      <small
+                        >({{
+                          (stats.bookings ? item.count / stats.bookings : 0) | percent: '1.0-1'
+                        }})</small
+                      ></strong
+                    >
+                  </div>
+                </li>
+              }
+            </ul>
+          </div>
+          <p class="analytics-note">
+            Taux d’annulation :
+            <strong>{{
+              stats.cancellationRate === null ? '—' : (stats.cancellationRate | percent: '1.0-1')
+            }}</strong>
+            des demandes de la période.
+          </p>
+        }
+      </section>
+      <section class="surface" aria-labelledby="reviews-title">
+        <h3 id="reviews-title">Satisfaction des voyageurs</h3>
+        @if (source.reviews.error) {
+          <p class="error">Données Avis indisponibles.</p>
+        } @else if (!stats.publishedReviews) {
+          <div class="analytics-empty">
+            <p>Aucun avis publié créé durant cette période.</p>
+            <a class="button secondary" routerLink="/administration/avis">Consulter les avis</a>
+          </div>
+        } @else {
+          <dl class="rating-list">
+            <div>
+              <dt>Circuits</dt>
+              <dd>{{ stats.circuitRating | number: '1.1-1' }} <small>/ 5</small></dd>
+              <div class="rating-track" aria-hidden="true">
+                <span [style.width.%]="(stats.circuitRating ?? 0) * 20"></span>
+              </div>
+            </div>
+            <div>
+              <dt>Guides</dt>
+              <dd>{{ stats.guideRating | number: '1.1-1' }} <small>/ 5</small></dd>
+              <div class="rating-track" aria-hidden="true">
+                <span [style.width.%]="(stats.guideRating ?? 0) * 20"></span>
+              </div>
+            </div>
+          </dl>
+          <p class="analytics-note">
+            Calcul sur {{ stats.publishedReviews }} avis publié(s) créé(s) dans la période. Les avis
+            masqués sont exclus.
+          </p>
+        }
+      </section>
+    </div>
+
+    <section class="surface analytics-section" aria-labelledby="ranking-title">
+      <h3 id="ranking-title">Circuits les plus demandés</h3>
+      <p class="muted">Les cinq premiers circuits, tous statuts confondus.</p>
+      @if (source.reservations.error) {
+        <p class="error">Classement indisponible.</p>
+      } @else if (!stats.topCircuits.length) {
+        <p class="analytics-empty">Le classement apparaîtra avec les premières réservations.</p>
+      } @else {
+        <div class="ranking-table">
+          <table>
+            <caption class="visually-hidden">
+              Classement des circuits pour la période sélectionnée
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Circuit</th>
+                <th scope="col">Demandes</th>
+                <th scope="col">Acceptées</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (circuit of stats.topCircuits; track circuit.id) {
+                <tr>
+                  <th scope="row">{{ circuitTitle(circuit.id) }}</th>
+                  <td>
+                    <div class="rank-value">
+                      <span class="rank-track" aria-hidden="true"
+                        ><i
+                          [style.width.%]="(circuit.count / stats.topCircuits[0].count) * 100"
+                        ></i></span
+                      >{{ circuit.count }}
+                    </div>
+                  </td>
+                  <td>{{ circuit.accepted }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="surface analytics-section" aria-labelledby="catalogue-title">
+      <h3 id="catalogue-title">Catalogue actuel</h3>
+      <p class="muted">À ce jour, toutes périodes confondues.</p>
+      <dl class="catalogue-summary">
+        <div>
+          <dt>Circuits au catalogue</dt>
+          <dd>{{ source.circuits.error ? '—' : source.circuits.rows.length }}</dd>
+        </div>
+        <div>
+          <dt>Guides actifs</dt>
+          <dd>{{ source.guides.error ? '—' : source.guides.rows.length }}</dd>
+        </div>
+      </dl>
+    </section>
+    <details class="calculation-notes">
+      <summary>À propos des statistiques</summary>
+      <p>
+        Réservations et avis regroupés par date de création, selon le calendrier du Maroc. Les
+        statuts sont les statuts actuels. Participants et montants : réservations acceptées
+        uniquement. Les notes excluent les avis masqués. Aucun paiement n’est suivi dans
+        l’application.
+      </p>
+    </details>
+  }
+} @else {
+  <p class="surface" role="status">Chargement des statistiques…</p>
+}

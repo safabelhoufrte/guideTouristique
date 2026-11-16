@@ -62,6 +62,25 @@ describe('Circuit pages with real HTTP contracts', () => {
     );
   });
 
+  it('refines by duration and budget and sorts by price in the browser', async () => {
+    const page = await harness.navigateByUrl('/circuits', CircuitList);
+    http.expectOne('/api/circuits').flush([
+      circuit,
+      { ...circuit, id: 11, titre: 'Nuit Sahara', dureeHeures: 20, prix: 1240 },
+      { ...circuit, id: 12, titre: 'Jardins', dureeHeures: 3, prix: 200 },
+    ]);
+    http.expectOne('/api/guides').flush([guide]);
+    page.duree.set('court');
+    expect(page.visible().map((c) => c.id)).toEqual([10, 12]);
+    page.duree.set('');
+    page.budget.set(300);
+    expect(page.visible().map((c) => c.id)).toEqual([12]);
+    page.budget.set(0);
+    page.sort.set('prix-desc');
+    expect(page.visible().map((c) => c.id)).toEqual([11, 10, 12]);
+    expect(page.price(1240)).toBe('1 240 MAD');
+  });
+
   it('renders an empty result rather than fake circuits', async () => {
     await harness.navigateByUrl('/circuits?ville=Inconnue', CircuitList);
     http.expectOne('/api/circuits?ville=Inconnue').flush([]);

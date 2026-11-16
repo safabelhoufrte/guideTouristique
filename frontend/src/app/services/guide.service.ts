@@ -6,6 +6,13 @@ import { Guide } from '../models/circuit';
 export class GuideService {
   private readonly http = inject(HttpClient);
 
+  me() {
+    return this.http.get<Guide>(
+      '/api/guides/me',
+      { timeout: 10000 }
+    );
+  }
+
   list(filters: { ville?: string; langue?: string } = {}) {
     let params = new HttpParams();
     if (filters.ville?.trim()) params = params.set('ville', filters.ville.trim());

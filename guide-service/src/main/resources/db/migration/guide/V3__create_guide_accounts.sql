@@ -1,0 +1,7 @@
+CREATE TABLE guide_account (
+    id BIGSERIAL PRIMARY KEY,
+    guide_id BIGINT NOT NULL UNIQUE
+        REFERENCES guide(id) ON DELETE CASCADE,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL
+);
