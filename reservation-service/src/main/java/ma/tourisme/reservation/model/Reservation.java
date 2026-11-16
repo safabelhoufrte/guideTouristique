@@ -4,30 +4,46 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "reservations")
-@Getter
-@Setter
-@NoArgsConstructor
 public class Reservation {
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
 
-  private Long circuitId;
-  private Long guideId;
-  private LocalDate dateVisite;
-  private int nbPersonnes;
-  private String nom;
-  private String email;
-  private BigDecimal prixTotal;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Enumerated(EnumType.STRING)
-  private StatutReservation statut;
+    @Column(name = "circuit_id", nullable = false)
+    private Long circuitId;
 
-  private LocalDateTime dateCreation;
+    @Column(name = "guide_id", nullable = false)
+    private Long guideId;
+
+    @Column(name = "date_visite", nullable = false)
+    private LocalDate dateVisite;
+
+    @Column(name = "nb_personnes", nullable = false)
+    private Integer nbPersonnes;
+
+    @Column(nullable = false, length = 160)
+    private String nom;
+
+    @Column(nullable = false, length = 160)
+    private String email;
+
+    @Column(name = "prix_total", nullable = false, precision = 10, scale = 2)
+    private BigDecimal prixTotal;
+
+    @Column(nullable = false, length = 20)
+    private String statut;
+
+    @Column(name = "date_creation", nullable = false)
+    private LocalDateTime dateCreation;
+
+    @PrePersist
+    void avantInsertion() {
+        if (dateCreation == null) dateCreation = LocalDateTime.now();
+    }
+
+    // + getters et setters pour tous les champs
 }
