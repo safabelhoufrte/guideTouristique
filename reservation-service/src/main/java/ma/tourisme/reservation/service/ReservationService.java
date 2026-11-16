@@ -1,3 +1,12 @@
+package ma.tourisme.reservation.service;
+
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import ma.tourisme.reservation.model.Reservation;
+import ma.tourisme.reservation.repository.ReservationRepository;
 @Service
 public class ReservationService {
     private final ReservationRepository repository;
