@@ -1,3 +1,6 @@
+import { circuitPhoto } from '../../models/circuit-photo';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AuthService } from '../../auth/auth.service';
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CircuitResume, Reservation } from '../../models/reservation';
@@ -12,6 +15,9 @@ const CODES_PROMO: Record<string, number> = { PROMO10: 10, BIENVENUE: 15 };
   styleUrl: './reservation.component.scss',
 })
 export class ReservationComponent implements OnInit {
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly auth = inject(AuthService);
   private fb = inject(FormBuilder);
   private service = inject(ReservationService);
   private cdr = inject(ChangeDetectorRef);
@@ -39,11 +45,13 @@ export class ReservationComponent implements OnInit {
   });
 
   ngOnInit() {
+    this.form.patchValue({ email: this.auth.email(), nom: this.auth.name() });
     this.service.getCircuits().subscribe({
       next: (c) => {
         this.circuits = c;
         if (c.length) {
-          this.form.patchValue({ circuitId: c[0].id });
+          const demande = Number(this.route.snapshot.queryParamMap.get('circuitId'));
+          this.form.patchValue({ circuitId: c.find((x) => x.id === demande)?.id ?? c[0].id });
           this.chargerGuide();
         }
         this.cdr.detectChanges();
@@ -62,7 +70,7 @@ export class ReservationComponent implements OnInit {
 
   get photoCircuit(): string {
     const c = this.circuitChoisi as any;
-    return c?.image ?? c?.photo ?? '/images/medina.jpg';
+    return c?.image ?? c?.photo ?? circuitPhoto({ titre: c?.titre ?? '', ville: c?.ville ?? null }).src;
   }
 
   get statutAffiche(): string {
@@ -100,16 +108,20 @@ export class ReservationComponent implements OnInit {
   appliquerPromo() {
     const code = this.form.controls.codePromo.value.trim().toUpperCase();
     if (!code) return;
-    const pct = CODES_PROMO[code];
-    if (pct) {
-      this.reduction = pct;
-      this.promoOk = true;
-      this.promoMessage = `Code appliqu\u00e9 : -${pct} %`;
-    } else {
-      this.reduction = 0;
-      this.promoOk = false;
-      this.promoMessage = 'Code promo invalide.';
-    }
+    this.service.verifierPromo(code, this.form.controls.email.value, this.nbPersonnes).subscribe({
+      next: (r) => {
+        this.reduction = r.valide ? r.pourcentage : 0;
+        this.promoOk = r.valide;
+        this.promoMessage = r.message;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.reduction = 0;
+        this.promoOk = false;
+        this.promoMessage = 'Impossible de verifier le code pour le moment.';
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   confirmer() {
@@ -121,7 +133,8 @@ export class ReservationComponent implements OnInit {
       return;
     }
     this.envoiEnCours = true;
-    const { codePromo, ...requete } = this.form.getRawValue();
+    const { codePromo, ...reste } = this.form.getRawValue();
+    const requete = { ...reste, codePromo: this.promoOk ? codePromo.trim().toUpperCase() : undefined };
     this.service.creer(requete).subscribe({
       next: (r) => {
         this.envoiEnCours = false;
@@ -130,13 +143,16 @@ export class ReservationComponent implements OnInit {
         this.soumis = false;
         this.form.patchValue({ dateVisite: '', nom: '', email: '', codePromo: '' });
         this.form.markAsUntouched();
+        this.router.navigate(['/mes-reservations'], {
+          state: { notif: `Réservation n° ${r.id} envoyée : en attente de confirmation du guide.` },
+        });
         this.cdr.detectChanges();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
       error: (e) => {
         this.envoiEnCours = false;
         this.erreur =
-          e.status === 409
+          e.status === 400 ? 'Code promo non valable pour cette reservation (verifiez le nombre de personnes).' : e.status === 409
             ? 'Vous avez d\u00e9j\u00e0 r\u00e9serv\u00e9 ce circuit \u00e0 cette date.'
             : e.status === 503
               ? 'Un service est indisponible, r\u00e9essayez plus tard.'
