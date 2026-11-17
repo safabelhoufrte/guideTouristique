@@ -55,6 +55,16 @@ import { apiError } from '../../services/workspace.service';
             </select>
           </div>
         </div>
+        <div class="photo-field">
+          <label for="c-photo">Photo du circuit (optionnelle)</label>
+          <input id="c-photo" type="file" accept="image/jpeg,image/png,image/webp" (change)="choosePhoto($event)" />
+          @if (form.controls.image.value) {
+            <div class="photo-preview">
+              <img [src]="form.controls.image.value" alt="Apercu de la photo du circuit" style="max-width: 320px; border-radius: 12px; margin-top: 10px" />
+              <button type="button" class="button secondary" (click)="removePhoto()">Retirer la photo</button>
+            </div>
+          }
+        </div>
         @if (submitted() && form.invalid) {
           <p class="form-errors" role="alert">
             Renseignez tous les champs. La durée doit être un nombre entier positif, le prix positif
@@ -96,6 +106,7 @@ export class CircuitEditor {
       ],
     ],
     guideId: [0, [Validators.required, Validators.min(1)]],
+    image: [''],
   });
   constructor() {
     if (this.id !== null && (!Number.isSafeInteger(this.id) || this.id < 1)) {
@@ -117,19 +128,50 @@ export class CircuitEditor {
               description: circuit.description || '',
               ville: circuit.ville || '',
               dureeHeures: circuit.dureeHeures || 1,
+              image: circuit.image || '',
             });
           this.ready.set(true);
         },
         error: (e) => this.error.set(apiError(e)),
       });
   }
+  /** Redimensionne la photo (1000 px max, JPEG) avant envoi pour garder une API legere. */
+  choosePhoto(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      this.error.set('Choisissez un fichier image (JPEG, PNG ou WebP).');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 1000 / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+        this.form.patchValue({ image: canvas.toDataURL('image/jpeg', 0.8) });
+        this.error.set('');
+      };
+      img.onerror = () => this.error.set('Image illisible, essayez un autre fichier.');
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  removePhoto() {
+    this.form.patchValue({ image: '' });
+  }
+
   save() {
     this.submitted.set(true);
     if (this.form.invalid || this.saving()) return;
     this.saving.set(true);
     this.error.set('');
     this.api
-      .save(this.id, this.form.getRawValue())
+      .save(this.id, { ...this.form.getRawValue(), image: this.form.getRawValue().image || null })
       .pipe(finalize(() => this.saving.set(false)))
       .subscribe({
         next: () => void this.router.navigate(['/administration/circuits']),
