@@ -24,7 +24,8 @@ public class CircuitRepository {
         row.getString("ville"),
         row.getObject("duree_heures", Integer.class),
         row.getBigDecimal("prix"),
-        row.getLong("guide_id"));
+        row.getLong("guide_id"),
+        row.getString("image"));
   }
 
   public List<Circuit> findAll(String ville, Long guideId) {
@@ -51,8 +52,8 @@ public class CircuitRepository {
   public Circuit insert(Circuit circuit) {
     return db.queryForObject(
         """
-        INSERT INTO circuit.circuits(titre,description,ville,duree_heures,prix,guide_id,disponible)
-        VALUES (?,?,?,?,?,?,TRUE) RETURNING *
+        INSERT INTO circuit.circuits(titre,description,ville,duree_heures,prix,guide_id,image,disponible)
+        VALUES (?,?,?,?,?,?,?,TRUE) RETURNING *
         """,
         this::map,
         circuit.titre(),
@@ -60,14 +61,15 @@ public class CircuitRepository {
         circuit.ville(),
         circuit.dureeHeures(),
         circuit.prix(),
-        circuit.guideId());
+        circuit.guideId(),
+        circuit.image());
   }
 
   public Optional<Circuit> update(Circuit circuit) {
     return db
         .query(
             """
-            UPDATE circuit.circuits SET titre=?,description=?,ville=?,duree_heures=?,prix=?,guide_id=?
+            UPDATE circuit.circuits SET titre=?,description=?,ville=?,duree_heures=?,prix=?,guide_id=?,image=?
             WHERE id=? AND disponible=TRUE RETURNING *
             """,
             this::map,
@@ -77,6 +79,7 @@ public class CircuitRepository {
             circuit.dureeHeures(),
             circuit.prix(),
             circuit.guideId(),
+            circuit.image(),
             circuit.id())
         .stream()
         .findFirst();

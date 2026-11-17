@@ -36,7 +36,8 @@ public class CircuitService {
         request.ville(),
         request.dureeHeures(),
         request.prix(),
-        request.guideId());
+        request.guideId(),
+        request.image());
   }
 
   public CircuitResponse create(CircuitRequest request) {

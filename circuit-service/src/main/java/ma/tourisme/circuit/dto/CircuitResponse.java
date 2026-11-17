@@ -10,7 +10,8 @@ public record CircuitResponse(
     String ville,
     Integer dureeHeures,
     BigDecimal prix,
-    long guideId) {
+    long guideId,
+    String image) {
   public static CircuitResponse from(Circuit circuit) {
     return new CircuitResponse(
         circuit.id(),
@@ -19,6 +20,7 @@ public record CircuitResponse(
         circuit.ville(),
         circuit.dureeHeures(),
         circuit.prix(),
-        circuit.guideId());
+        circuit.guideId(),
+        circuit.image());
   }
 }
