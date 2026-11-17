@@ -20,7 +20,11 @@ const photos = {
 };
 
 /** Editorial inspiration photos until Circuit API provides its own image metadata. */
-export function circuitPhoto(circuit: Pick<Circuit, 'titre' | 'ville'>) {
+export function circuitPhoto(
+  circuit: Pick<Circuit, 'titre' | 'ville'> & { image?: string | null },
+) {
+  // Photo envoyee par l'admin : prioritaire partout.
+  if (circuit.image) return { src: circuit.image, alt: 'Photo du circuit ' + circuit.titre };
   const title = circuit.titre
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')

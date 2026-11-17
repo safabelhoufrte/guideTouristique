@@ -7,6 +7,7 @@ export interface Circuit {
   dureeHeures: number | null;
   prix: number;
   guideId: number;
+  image?: string | null;
 }
 
 export interface CircuitFilters {
