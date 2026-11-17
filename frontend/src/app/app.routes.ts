@@ -19,11 +19,20 @@ export const routes: Routes = [
     canActivate: [roleGuard],
     data: { roles: ['USER'] },
   },
+    {
+    path: 'mes-reservations',
+    canActivate: [roleGuard],
+    data: { roles: ['USER'] },
+    loadComponent: () =>
+      import('./pages/reservation/mes-reservations').then((m) => m.MesReservations),
+    title: 'Mes réservations | Guide Touristique',
+  },
   {
     path: 'connexion',
     loadComponent: () => import('./auth/login').then((m) => m.Login),
     title: 'Connexion | Guide Touristique',
   },
+
   {
     path: 'acces-refuse',
     loadComponent: () => import('./auth/forbidden').then((m) => m.Forbidden),
@@ -76,6 +85,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/spaces/space-shell').then((m) => m.SpaceShell),
     children: [
       {
+        path: 'promos',
+        loadComponent: () => import('./pages/spaces/admin-promos').then((m) => m.AdminPromos),
+      },
+      {
         path: 'analyses',
         redirectTo: '',
         pathMatch: 'full',
@@ -111,7 +124,8 @@ export const routes: Routes = [
       },
       {
         path: 'reservations',
-        loadComponent: () => import('./pages/spaces/reservations').then((m) => m.SpaceReservations),
+        loadComponent: () =>
+          import('./pages/spaces/admin-reservations').then((m) => m.AdminReservations),
         data: { scope: 'admin' },
       },
       {

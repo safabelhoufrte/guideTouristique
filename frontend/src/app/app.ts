@@ -5,6 +5,7 @@ import { AuthService } from './auth/auth.service';
 import { NavigationEnd, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Router } from '@angular/router';
 import { AuthDialog, AuthDialogService } from './auth/auth-dialog';
+import { OffreBienvenue } from './auth/offre-bienvenue';
 
 /** Personal spaces with their own full-screen layout (sidebar + topbar). */
 function isConsoleUrl(url: string) {
@@ -15,7 +16,7 @@ function isConsoleUrl(url: string) {
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, AuthDialog],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, AuthDialog, OffreBienvenue],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

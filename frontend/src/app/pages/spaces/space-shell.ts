@@ -117,6 +117,7 @@ export class SpaceShell {
           { path: '/administration/circuits', label: 'Circuits', icon: '⌖' },
           { path: '/administration/guides', label: 'Guides', icon: '♙' },
           { path: '/administration/reservations', label: 'Réservations', icon: '▤' },
+          { path: '/administration/promos', label: 'Codes promo', icon: '%' },
           { path: '/administration/avis', label: 'Modération des avis', icon: '☆' },
         ]
       : this.mode === 'guide'

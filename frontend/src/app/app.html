@@ -15,7 +15,7 @@
       >
       <a routerLink="/guides" routerLinkActive="active" ariaCurrentWhenActive="page">Guides</a>
       <a routerLink="/circuits" routerLinkActive="active" ariaCurrentWhenActive="page">Circuits</a>
-      <a routerLink="/reservations" routerLinkActive="active" ariaCurrentWhenActive="page"
+      <a routerLink="/mes-reservations" routerLinkActive="active" ariaCurrentWhenActive="page"
         >Réservations</a
       >
       <a routerLink="/avis" routerLinkActive="active" ariaCurrentWhenActive="page">Avis</a>
@@ -36,6 +36,7 @@
 @if (auth.problem()) {
   <p class="auth-notice" role="status">{{ auth.problem() }}</p>
 }
+<app-offre-bienvenue />
 <div #mainContent id="main-content" tabindex="-1"><router-outlet /></div>
 <app-auth-dialog />
 @if (!consoleSpace()) {
