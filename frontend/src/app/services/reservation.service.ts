@@ -7,10 +7,11 @@ import {
   GuideResume,
   Reservation,
   ReservationRequest,
+  PromoResultat,
 } from '../models/reservation';
 
 // true  = circuits et guides simulés (services de Nada et Safa pas encore prêts)
-const FAUX_CIRCUITS_GUIDES = true;
+const FAUX_CIRCUITS_GUIDES = false;
 // false = vrai appel vers reservation-service (port 8083)
 const FAUSSE_RESERVATION = false;
 
@@ -33,6 +34,11 @@ export class ReservationService {
       return of({ id, nom: 'Youssef Benali' });
     }
     return this.http.get<GuideResume>(`${API.guides}/${id}`);
+  }
+
+  verifierPromo(code: string, email: string, nbPersonnes: number): Observable<PromoResultat> {
+    const params = new HttpParams().set('email', email).set('nbPersonnes', nbPersonnes);
+    return this.http.get<PromoResultat>(`${API.reservations}/promo/${encodeURIComponent(code)}`, { params });
   }
 
   creer(r: ReservationRequest): Observable<Reservation> {

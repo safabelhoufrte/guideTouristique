@@ -20,6 +20,7 @@ export interface ReservationRequest {
   nbPersonnes: number;
   nom: string;
   email: string;
+  codePromo?: string;
 }
 
 export interface Reservation extends ReservationRequest {
@@ -28,4 +29,11 @@ export interface Reservation extends ReservationRequest {
   prixTotal: number;
   statut: StatutReservation;
   dateCreation: string;
+  reductionPct?: number;
+}
+export interface PromoResultat {
+  valide: boolean;
+  code: string;
+  pourcentage: number;
+  message: string;
 }
