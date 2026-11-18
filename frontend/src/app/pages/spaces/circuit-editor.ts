@@ -165,13 +165,23 @@ export class CircuitEditor {
     this.form.patchValue({ image: '' });
   }
 
+  /**
+   * The API returns the photo as a link (/api/circuits/{id}/image).
+   * Send a new photo as a data URL, "" to remove it, and null to keep it unchanged.
+   */
+  private imageToSend(image: string): string | null {
+    if (image.startsWith('data:')) return image;
+    if (image === '') return this.id === null ? null : '';
+    return null;
+  }
+
   save() {
     this.submitted.set(true);
     if (this.form.invalid || this.saving()) return;
     this.saving.set(true);
     this.error.set('');
     this.api
-      .save(this.id, { ...this.form.getRawValue(), image: this.form.getRawValue().image || null })
+      .save(this.id, { ...this.form.getRawValue(), image: this.imageToSend(this.form.getRawValue().image) })
       .pipe(finalize(() => this.saving.set(false)))
       .subscribe({
         next: () => void this.router.navigate(['/administration/circuits']),
