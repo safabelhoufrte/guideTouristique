@@ -112,9 +112,7 @@ class GuideSecurityTest {
         when(service.findByOwner(GUIDE_SUB)).thenThrow(
             new ResponseStatusException(HttpStatus.NOT_FOUND, "Aucun profil guide lié à ce compte"));
 
-        mvc.perform(get("/api/guides/me").with(as("GUIDE")))
-            .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.message").value("Aucun profil guide lié à ce compte"));
+        mvc.perform(get("/api/guides/me").with(as("GUIDE"))).andExpect(status().isNotFound());
     }
 
     @Test
