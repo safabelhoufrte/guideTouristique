@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -21,6 +22,16 @@ public class ApiExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<Map<String, Object>> notFound(NotFoundException e, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, e.getMessage(), request);
+    }
+
+    /**
+     * Errors thrown by the service with an explicit status (404 no linked profile, 409 account
+     * already linked...). Handled here so they are not forwarded to /error.
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> status(ResponseStatusException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.valueOf(e.getStatusCode().value());
+        return build(status, e.getReason() != null ? e.getReason() : status.getReasonPhrase(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

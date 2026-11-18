@@ -37,8 +37,8 @@
               <div class="card-heading"><div><h2>Mes derniers circuits</h2><p class="section-subtitle">Retrouvez vos circuits publiés</p></div><button class="text-action" type="button" (click)="select('circuits')">Voir tout ›</button></div>
               <p *ngIf="circuitsError" class="note">{{circuitsError}}</p>
               <p *ngIf="circuitsLoading" class="hint">Chargement des circuits…</p>
-              <div *ngFor="let c of circuits.slice(0,3); let i=index" class="recent-circuit">
-                <div class="circuit-thumbnail" [class.thumb-two]="i===1" [class.thumb-three]="i===2"></div>
+              <div *ngFor="let c of circuits.slice(0,3)" class="recent-circuit">
+                <div class="circuit-thumbnail" [style.background-image]="photoUrl(c)"></div>
                 <div class="recent-circuit-info"><strong>{{c.titre}}</strong><small>{{c.ville || 'Maroc'}} · {{c.dureeHeures ?? '—'}} h</small></div>
                 <span class="circuit-status">Circuit</span>
               </div>
@@ -160,7 +160,7 @@
 
         </div>
 
-        <section *ngIf="page==='circuits'" class="content-card"><div class="card-heading"><div><h1>Mes circuits</h1><p>Circuits associés à votre identifiant Guide</p></div></div><input class="filter" type="search" placeholder="Rechercher un circuit" [(ngModel)]="circuitFilter" aria-label="Rechercher un circuit"><p *ngIf="circuitsLoading">Chargement des circuits…</p><p *ngIf="circuitsError" class="note">{{circuitsError}}</p><div class="circuit-cards" *ngIf="!circuitsError"><article class="circuit-card" *ngFor="let c of visibleCircuits"><div class="circuit-art"></div><div class="circuit-body"><h3>{{c.titre}}</h3><p>{{c.description || 'Aucune description'}}</p><p>📍 {{c.ville || '—'}} · {{c.dureeHeures ?? '—'}} h</p><strong>{{c.prix}} MAD</strong></div></article></div><p *ngIf="!circuitsLoading && !circuitsError && visibleCircuits.length===0">Aucun circuit trouvé.</p><p class="hint">L'ajout, la modification et la suppression des circuits doivent passer par des endpoints sécurisés du service Circuit.</p></section>
+        <section *ngIf="page==='circuits'" class="content-card"><div class="card-heading"><div><h1>Mes circuits</h1><p>Circuits associés à votre identifiant Guide</p></div></div><input class="filter" type="search" placeholder="Rechercher un circuit" [(ngModel)]="circuitFilter" aria-label="Rechercher un circuit"><p *ngIf="circuitsLoading">Chargement des circuits…</p><p *ngIf="circuitsError" class="note">{{circuitsError}}</p><div class="circuit-cards" *ngIf="!circuitsError"><article class="circuit-card" *ngFor="let c of visibleCircuits"><div class="circuit-art" [style.background-image]="photoUrl(c)" role="img" [attr.aria-label]="photoAlt(c)"></div><div class="circuit-body"><h3>{{c.titre}}</h3><p>{{c.description || 'Aucune description'}}</p><p>📍 {{c.ville || '—'}} · {{c.dureeHeures ?? '—'}} h</p><strong>{{c.prix}} MAD</strong></div></article></div><p *ngIf="!circuitsLoading && !circuitsError && visibleCircuits.length===0">Aucun circuit trouvé.</p><p class="hint">L'ajout, la modification et la suppression des circuits doivent passer par des endpoints sécurisés du service Circuit.</p></section>
 
         <section *ngIf="page==='reservations'" class="content-card"><h1>Mes demandes de réservation</h1><p>Les demandes doivent être fournies par une API authentifiée du service Réservation.</p><div class="note">La gestion « Accepter / Refuser » n'est pas encore activée. Les routes actuellement connues ne garantissent pas l'autorisation par guide. Il faut exposer un endpoint serveur « mes réservations » et vérifier que chaque réservation appartient au guide connecté avant toute décision.</div><p class="hint">Aucune réservation fictive n'est affichée.</p></section>
 
