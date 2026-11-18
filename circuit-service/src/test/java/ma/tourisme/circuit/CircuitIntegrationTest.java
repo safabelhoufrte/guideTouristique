@@ -622,11 +622,12 @@ class CircuitIntegrationTest {
         var row =
             statement.executeQuery(
                 "SELECT count(*), count(*) FILTER (WHERE disponible AND description IS NOT NULL"
-                    + " AND ville IS NOT NULL AND duree_heures > 0 AND image IS NULL),"
+                    + " AND ville IS NOT NULL AND duree_heures > 0"
+                    + " AND image LIKE 'data:image/jpeg;base64,/9j/%' AND length(image) <= 1500000),"
                     + " count(*) FILTER (WHERE guide_id IN (1,2)) FROM circuit.circuits")) {
       assertTrue(row.next());
       assertEquals(5, row.getInt(1));
-      assertEquals(5, row.getInt(2), "complete, available, no photo");
+      assertEquals(5, row.getInt(2), "complete, available, with a valid JPEG photo");
       assertEquals(5, row.getInt(3), "only active guides seeded by guide-service");
     }
   }
