@@ -5,7 +5,15 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Circuit } from '../../../models/circuit';
 import { Avis } from '../../../services/workspace.service';
 import { AuthService } from '../../../auth/auth.service';
-import { GuideProfile, GuideProfileUpdate, GuideWorkspaceService } from '../../../services/guide-workspace.service';
+
+import {
+  GuideProfile,
+  GuideProfileUpdate,
+  GuideReservation,
+  GuideWorkspaceService
+} from '../../../services/guide-workspace.service';
+
+import { CircuitService } from '../../../services/circuit.service';
 
 type Page = 'dashboard' | 'profil' | 'circuits' | 'reservations' | 'avis';
 
@@ -18,6 +26,20 @@ type Page = 'dashboard' | 'profil' | 'circuits' | 'reservations' | 'avis';
 })
 export class GuideDashboard implements OnInit {
   private workspace = inject(GuideWorkspaceService);
+  private circuitService = inject(CircuitService);
+
+  showCircuitForm = false;
+  circuitSaving = false;
+  circuitMessage = '';
+  circuitMessageError = false;
+
+  newCircuit = {
+    titre: '',
+    description: '',
+    ville: '',
+    dureeHeures: 3,
+    prix: 150
+  };
   private auth = inject(AuthService);
   // The app is zoneless: values changed inside subscribe() must be signalled to Angular,
   // otherwise the screen stays on "Chargement de votre profil…" until the next click.
@@ -29,6 +51,9 @@ export class GuideDashboard implements OnInit {
   guide: GuideProfile | null = null;
   circuits: Circuit[] = [];
   avis: Avis[] = [];
+  reservations: GuideReservation[] = [];
+  reservationsLoading = false;
+  reservationsError = '';
   circuitsLoading = false;
   avisLoading = false;
   circuitsError = '';
@@ -102,6 +127,7 @@ export class GuideDashboard implements OnInit {
         this.loading = false;
         this.loadCircuits(guide.id);
         this.loadAvis(guide.id);
+        this.loadReservations();
         this.cdr.markForCheck();
       },
       error: (error: HttpErrorResponse) => {
@@ -127,6 +153,117 @@ export class GuideDashboard implements OnInit {
   }
 
   select(page: Page): void { this.page = page; this.saveMessage = ''; }
+
+  openCircuitForm(): void {
+    this.showCircuitForm = true;
+    this.circuitMessage = '';
+    this.circuitMessageError = false;
+  }
+
+  closeCircuitForm(): void {
+    this.showCircuitForm = false;
+    this.circuitMessage = '';
+  }
+
+  createCircuit(): void {
+    if (!this.guide || this.circuitSaving) return;
+
+    const titre = this.newCircuit.titre.trim();
+    const description = this.newCircuit.description.trim();
+    const ville = this.newCircuit.ville.trim();
+    const dureeHeures = Number(this.newCircuit.dureeHeures);
+    const prix = Number(this.newCircuit.prix);
+
+    if (
+      !titre || !description || !ville ||
+      !Number.isInteger(dureeHeures) || dureeHeures <= 0 ||
+      !Number.isFinite(prix) || prix < 0
+    ) {
+      this.circuitMessage = 'Veuillez remplir correctement les champs.';
+      this.circuitMessageError = true;
+      return;
+    }
+
+    this.circuitSaving = true;
+    this.circuitMessage = '';
+
+    this.circuitService.save(null, {
+      titre,
+      description,
+      ville,
+      dureeHeures,
+      prix,
+      guideId: this.guide.id,
+      image: null
+    }).subscribe({
+      next: () => {
+        this.circuitSaving = false;
+        this.showCircuitForm = false;
+        this.circuitMessageError = false;
+        this.circuitMessage = 'Circuit créé avec succès.';
+
+        this.newCircuit = {
+          titre: '',
+          description: '',
+          ville: '',
+          dureeHeures: 3,
+          prix: 150
+        };
+
+        this.loadCircuits(this.guide!.id);
+        this.cdr.markForCheck();
+      },
+
+      error: (error: HttpErrorResponse) => {
+        this.circuitSaving = false;
+        this.circuitMessageError = true;
+        this.circuitMessage =
+          error.status === 403
+            ? 'Création refusée : vérifiez les droits du guide.'
+            : error.status === 401
+              ? 'Session expirée : reconnectez-vous.'
+              : `Création impossible (HTTP ${error.status || 'réseau'}).`;
+
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  loadReservations(): void {
+    this.reservationsLoading = true;
+    this.reservationsError = '';
+
+    this.workspace.reservationsDuGuide().subscribe({
+      next: (rows) => {
+        this.reservations = rows;
+        this.reservationsLoading = false;
+        this.cdr.markForCheck();
+      },
+
+      error: (error: HttpErrorResponse) => {
+        this.reservationsLoading = false;
+        this.reservations = [];
+
+        if (error.status === 401) {
+          this.reservationsError =
+            'Session expirée ou token invalide.';
+        } else if (error.status === 403) {
+          this.reservationsError =
+            'Accès refusé aux réservations du guide.';
+        } else if (error.status === 404) {
+          this.reservationsError =
+            'Profil Guide introuvable.';
+        } else {
+          this.reservationsError =
+            `Service Réservation indisponible (HTTP ${
+              error.status || 'réseau'
+            }).`;
+        }
+
+        this.cdr.markForCheck();
+      }
+    });
+  }
 
   loadCircuits(guideId: number): void {
     this.circuitsLoading = true; this.circuitsError = '';
@@ -182,6 +319,33 @@ export class GuideDashboard implements OnInit {
       next: g => { this.guide = g; this.saving = false; this.edit = false; this.saveMessage = 'Profil enregistré avec succès.'; this.cdr.markForCheck(); },
       error: (e: HttpErrorResponse) => { this.saving = false; this.saveMessage = `Modification refusée (HTTP ${e.status || 'réseau'}). Vérifiez les champs et l'API.`; this.cdr.markForCheck(); }
     });
+  }
+
+  get reservationsEnAttente(): number {
+    return this.reservations.filter(
+      r => r.statut === 'EN_ATTENTE'
+    ).length;
+  }
+
+  get reservationsConfirmees(): number {
+    return this.reservations.filter(
+      r => r.statut === 'ACCEPTEE'
+    ).length;
+  }
+
+  get demandesRecentes(): GuideReservation[] {
+    return [...this.reservations]
+      .sort((a, b) =>
+        new Date(b.dateCreation).getTime() -
+        new Date(a.dateCreation).getTime()
+      )
+      .slice(0, 3);
+  }
+
+  nomCircuit(circuitId: number): string {
+    return this.circuits.find(
+      c => c.id === circuitId
+    )?.titre ?? `Circuit n° ${circuitId}`;
   }
 
   logout(): void { void this.auth.logout(); }

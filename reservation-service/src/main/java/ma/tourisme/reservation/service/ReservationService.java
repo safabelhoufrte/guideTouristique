@@ -110,4 +110,16 @@ public class ReservationService {
         r.setStatut(nouveauStatut);
         return repository.save(r);
     }
+
+
+    @Transactional(readOnly = true)
+    public List<Reservation> reservationsDuGuide(
+            String accessToken) {
+
+        Long guideId =
+            guideClient.getAuthenticatedGuideId(accessToken);
+
+        return repository
+            .findByGuideIdOrderByDateCreationDesc(guideId);
+    }
 }

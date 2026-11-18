@@ -53,7 +53,14 @@ public class SecurityConfig {
       .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
       .authorizeHttpRequests(auth -> auth
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-        .requestMatchers("/api/reservations/admin/**").hasRole("ADMIN")
+        .requestMatchers(
+            HttpMethod.GET,
+            "/api/reservations/guide"
+        ).hasRole("GUIDE")
+
+        .requestMatchers(
+            "/api/reservations/admin/**"
+        ).hasRole("ADMIN")
         .anyRequest().permitAll())
       .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(converter)))
       .build();

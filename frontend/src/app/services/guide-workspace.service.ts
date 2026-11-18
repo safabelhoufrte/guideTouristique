@@ -26,6 +26,27 @@ export interface GuideProfileUpdate {
   tarifParJour: number;
 }
 
+export type ReservationStatut =
+  | 'EN_ATTENTE'
+  | 'ACCEPTEE'
+  | 'REFUSEE'
+  | 'ANNULEE';
+
+export interface GuideReservation {
+  id: number;
+  circuitId: number;
+  guideId: number;
+  dateVisite: string;
+  nbPersonnes: number;
+  nom: string;
+  email: string;
+  prixTotal: number;
+  statut: ReservationStatut;
+  dateCreation: string;
+  codePromo: string | null;
+  reductionPct: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class GuideWorkspaceService {
   private http = inject(HttpClient);
@@ -39,6 +60,13 @@ export class GuideWorkspaceService {
     return this.http.get<Circuit[]>('/api/circuits', {
       params: new HttpParams().set('guideId', guideId), timeout: 12000
     });
+  }
+
+  reservationsDuGuide(): Observable<GuideReservation[]> {
+    return this.http.get<GuideReservation[]>(
+      '/api/reservations/guide',
+      { timeout: 20000 }
+    );
   }
   // Consultation uniquement : il faut une route sécurisée « mes réservations »
   // côté service Réservation avant de pouvoir afficher des demandes privées.
