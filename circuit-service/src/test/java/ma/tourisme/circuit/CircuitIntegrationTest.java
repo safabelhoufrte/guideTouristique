@@ -595,6 +595,40 @@ class CircuitIntegrationTest {
       assertNull(row.getObject(2));
       assertNull(row.getObject(3));
       assertNull(row.getObject(4));
+      assertFalse(row.next(), "demo circuits are not added to a database that already has circuits");
+    }
+  }
+
+  @Test
+  void freshDatabaseGetsDemoCircuitsForSeededGuides() throws Exception {
+    try (var conn =
+            DriverManager.getConnection(
+                POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+        var statement = conn.createStatement()) {
+      statement.execute("CREATE DATABASE fresh_circuit_test");
+    }
+    String url = databaseUrl("fresh_circuit_test");
+    Flyway.configure()
+        .dataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword())
+        .schemas("circuit")
+        .defaultSchema("circuit")
+        .table("flyway_circuit_history")
+        .locations("classpath:db/migration/circuit")
+        .load()
+        .migrate();
+    try (var conn =
+            DriverManager.getConnection(url, POSTGRES.getUsername(), POSTGRES.getPassword());
+        var statement = conn.createStatement();
+        var row =
+            statement.executeQuery(
+                "SELECT count(*), count(*) FILTER (WHERE disponible AND description IS NOT NULL"
+                    + " AND ville IS NOT NULL AND duree_heures > 0"
+                    + " AND image LIKE 'data:image/jpeg;base64,/9j/%' AND length(image) <= 1500000),"
+                    + " count(*) FILTER (WHERE guide_id IN (1,2)) FROM circuit.circuits")) {
+      assertTrue(row.next());
+      assertEquals(5, row.getInt(1));
+      assertEquals(5, row.getInt(2), "complete, available, with a valid JPEG photo");
+      assertEquals(5, row.getInt(3), "only active guides seeded by guide-service");
     }
   }
 }
