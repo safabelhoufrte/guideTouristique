@@ -10,7 +10,8 @@ public record CircuitRequest(
     @NotNull @Positive Integer dureeHeures,
     @NotNull @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal prix,
     @NotNull @Positive Long guideId,
-    @Size(max = 1500000) @Pattern(regexp = "^data:image/(jpeg|png|webp);base64,.*") String image) {
+    // null = keep the current photo (PUT) / no photo (POST); "" = remove it; else the new photo.
+    @Size(max = 1500000) @Pattern(regexp = "^$|^data:image/(jpeg|png|webp);base64,.*") String image) {
 
   /** Constructeur sans photo. */
   public CircuitRequest(

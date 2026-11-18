@@ -44,7 +44,7 @@ public class SecurityConfig {
       .authorizeHttpRequests(auth -> auth
         .requestMatchers("/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-        .requestMatchers(HttpMethod.GET, "/api/circuits", "/api/circuits/*").permitAll()
+        .requestMatchers(HttpMethod.GET, "/api/circuits", "/api/circuits/*", "/api/circuits/*/image").permitAll()
         // GUIDE writes are further restricted to the caller's own circuits in CircuitService.
         .requestMatchers("/api/circuits/**").hasAnyRole("ADMIN", "GUIDE")
         .anyRequest().denyAll())

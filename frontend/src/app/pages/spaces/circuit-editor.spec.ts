@@ -19,7 +19,10 @@ describe('Circuit admin editor', () => {
     dureeHeures: 3,
     prix: 0,
     guideId: 7,
+    image: '',
   };
+  // What the API receives when the photo was not touched.
+  const sent = { ...body, image: null };
   beforeEach(async () => {
     TestBed.configureTestingModule({
       providers: [
@@ -50,7 +53,7 @@ describe('Circuit admin editor', () => {
     editor.save();
     const req = http.expectOne('/api/circuits');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual(body);
+    expect(req.request.body).toEqual(sent);
     expect(editor.saving()).toBe(true);
     expect(TestBed.inject(Router).url).toContain('/nouveau');
     req.flush({ ...body, id: 12 });
@@ -100,13 +103,30 @@ describe('Circuit admin editor', () => {
   it('updates the existing circuit ID rather than creating another circuit', async () => {
     const editor = await harness.navigateByUrl('/administration/circuits/12', CircuitEditor);
     http.expectOne('/api/guides').flush([{ id: 7, nom: 'Guide test', disponible: true }]);
-    http.expectOne('/api/circuits/12').flush({ ...body, id: 12 });
+    http.expectOne('/api/circuits/12').flush({ ...body, id: 12, image: '/api/circuits/12/image' });
     editor.form.controls.titre.setValue('Kasbah modifiée');
     editor.save();
     const req = http.expectOne('/api/circuits/12');
     expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toEqual({ ...body, titre: 'Kasbah modifiée' });
+    expect(req.request.body).toEqual({ ...sent, titre: 'Kasbah modifiée' });
     req.flush({ ...body, id: 12, titre: 'Kasbah modifiée' });
+    await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/administration/circuits'));
+  });
+
+  it('sends the photo only when it changes: "" removes it, a data URL replaces it', async () => {
+    const editor = await harness.navigateByUrl('/administration/circuits/12', CircuitEditor);
+    http.expectOne('/api/guides').flush([{ id: 7, nom: 'Guide test', disponible: true }]);
+    http.expectOne('/api/circuits/12').flush({ ...body, id: 12, image: '/api/circuits/12/image' });
+    editor.removePhoto();
+    editor.save();
+    const removed = http.expectOne('/api/circuits/12');
+    expect(removed.request.body.image).toBe('');
+    removed.flush({}, { status: 503, statusText: 'Unavailable' });
+    editor.form.patchValue({ image: 'data:image/jpeg;base64,AAAA' });
+    editor.save();
+    const replaced = http.expectOne('/api/circuits/12');
+    expect(replaced.request.body.image).toBe('data:image/jpeg;base64,AAAA');
+    replaced.flush({ ...body, id: 12, image: '/api/circuits/12/image' });
     await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/administration/circuits'));
   });
 });

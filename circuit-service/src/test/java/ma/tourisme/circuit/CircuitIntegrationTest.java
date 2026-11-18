@@ -298,12 +298,54 @@ class CircuitIntegrationTest {
     assertEquals("Tour Agadir", expect("GET", "/api/circuits/" + foreign, null, 200).path("titre").asText());
   }
 
+  // 1x1 PNG, smallest valid photo.
+  static final String PNG_BASE64 =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+  static String withImage(String json, String image) {
+    return json.substring(0, json.length() - 1) + ",\"image\":\"" + image + "\"}";
+  }
+
+  @Test
+  void photosAreServedByLinkAndKeptUnlessChanged() throws Exception {
+    JsonNode created = expect("POST", "/api/circuits",
+        withImage(input(1), "data:image/png;base64," + PNG_BASE64), 201);
+    long id = created.get("id").asLong();
+    String link = "/api/circuits/" + id + "/image";
+    assertEquals(link, created.path("image").asText(), "a link, not the image itself");
+    for (JsonNode row : expect("GET", "/api/circuits", null, 200))
+      if (row.get("id").asLong() == id) assertEquals(link, row.path("image").asText());
+
+    var photo = HTTP.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + link)).GET().build(),
+        HttpResponse.BodyHandlers.ofByteArray());
+    assertEquals(200, photo.statusCode(), "public, no token");
+    assertEquals("image/png", photo.headers().firstValue("Content-Type").orElse(""));
+    assertArrayEquals(java.util.Base64.getDecoder().decode(PNG_BASE64), photo.body());
+    String etag = photo.headers().firstValue("ETag").orElseThrow();
+    var again = HTTP.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + link))
+        .header("If-None-Match", etag).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+    assertEquals(304, again.statusCode(), "unchanged photo is not downloaded again");
+
+    assertEquals(link, expect("PUT", "/api/circuits/" + id, input(1), 200).path("image").asText(),
+        "PUT without image keeps the photo");
+    assertTrue(expect("PUT", "/api/circuits/" + id, withImage(input(1), ""), 200).path("image").isNull(),
+        "empty image removes the photo");
+    expect("GET", link, null, 404);
+
+    expect("POST", "/api/circuits", withImage(input(1), "data:text/html;base64,PGI+"), 400);
+    long archived = expect("POST", "/api/circuits",
+        withImage(input(1), "data:image/png;base64," + PNG_BASE64), 201).get("id").asLong();
+    expect("DELETE", "/api/circuits/" + archived, null, 204);
+    expect("GET", "/api/circuits/" + archived + "/image", null, 404);
+  }
+
   @Test
   void createsAndReadsExactTeamContract() throws Exception {
     long id = create(1);
     JsonNode row = expect("GET", "/api/circuits/" + id, null, 200);
-    assertEquals(7, row.size());
+    assertEquals(8, row.size());
     assertTrue(row.has("description"));
+    assertTrue(row.has("image") && row.path("image").isNull(), "no photo yet");
     assertEquals("Agadir", row.path("ville").asText());
     assertEquals(4, row.path("dureeHeures").asInt());
     assertEquals(1, row.path("guideId").asLong());
