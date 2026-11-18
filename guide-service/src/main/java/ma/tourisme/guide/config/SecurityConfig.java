@@ -75,8 +75,6 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/v3/api-docs/**", "/swagger-ui/**",
                     "/swagger-ui.html").permitAll()
-                // Error responses are already decided by the controller; denyAll would turn them into 403.
-                .requestMatchers("/error").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // /admin and /me before /{id}, otherwise "me" would be read as an id.
                 .requestMatchers(HttpMethod.GET, "/api/guides/admin").hasRole("ADMIN")

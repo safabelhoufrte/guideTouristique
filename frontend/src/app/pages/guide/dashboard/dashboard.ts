@@ -3,7 +3,6 @@ import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Circuit } from '../../../models/circuit';
-import { circuitPhoto } from '../../../models/circuit-photo';
 import { Avis } from '../../../services/workspace.service';
 import { AuthService } from '../../../auth/auth.service';
 import { GuideProfile, GuideProfileUpdate, GuideWorkspaceService } from '../../../services/guide-workspace.service';
@@ -143,15 +142,6 @@ export class GuideDashboard implements OnInit {
       next: rows => { this.avis = rows.filter(a => a.guideId === guideId && a.publie); this.avisLoading = false; this.cdr.markForCheck(); },
       error: () => { this.avisLoading = false; this.avisError = 'Service Avis inaccessible : aucun avis chargé.'; this.cdr.markForCheck(); }
     });
-  }
-
-  /** Photo du circuit (API Circuit), sinon photo par defaut selon le titre et la ville. */
-  photoUrl(c: Circuit): string {
-    return `url("${circuitPhoto(c).src}")`;
-  }
-
-  photoAlt(c: Circuit): string {
-    return circuitPhoto(c).alt;
   }
 
   get visibleCircuits(): Circuit[] {
