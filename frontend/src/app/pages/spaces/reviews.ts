@@ -3,11 +3,9 @@ import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, combineLatest, finalize, forkJoin, map, of, startWith, Subject, switchMap } from 'rxjs';
-import { Avis, AvisMoyenne, extractAvisError } from '../../models/avis';
+import { Avis, AvisMoyenne, extractAvisError, UserEligibility } from '../../models/avis';
 import { AvisService } from '../../services/avis.service';
 import { AuthService } from '../../auth/auth.service';
-import { WorkspaceService } from '../../services/workspace.service';
-import { Reservation } from '../../models/reservation';
 import { ReviewForm } from './review-form';
 
 @Component({
@@ -231,64 +229,31 @@ import { ReviewForm } from './review-form';
                 </div>
               </div>
             } @else {
-              @if (activeReservationId(); as resId) {
+              @if (loadingEligibility()) {
+                <div class="surface login-box">
+                  <h3 class="panel-heading">Donner mon avis</h3>
+                  <p class="muted">Vérification de vos réservations…</p>
+                </div>
+              } @else if (!userEligibility()?.eligible) {
+                <div class="surface login-box">
+                  <h3 class="panel-heading">Donner mon avis</h3>
+                  <p>Vous pouvez publier un avis après une réservation.</p>
+                  <div style="margin-top: 18px;">
+                    <a
+                      class="button primary"
+                      style="width: 100%; display: block; text-align: center; text-decoration: none;"
+                      routerLink="/circuits"
+                    >
+                      Découvrir les circuits
+                    </a>
+                  </div>
+                </div>
+              } @else {
                 <app-review-form
-                  [reservationId]="resId"
+                  [eligibleReservations]="userEligibility()?.reservations || []"
                   [embedded]="true"
                   (reviewCreated)="onReviewCreated()"
                 ></app-review-form>
-                <div style="margin-top: 12px; text-align: center;">
-                  <button
-                    class="button secondary"
-                    style="width: 100%;"
-                    type="button"
-                    (click)="resetReservationSelection()"
-                  >
-                    Choisir une autre réservation
-                  </button>
-                </div>
-              } @else {
-                <div class="surface reservation-panel">
-                  <h3 class="panel-heading">Donner mon avis</h3>
-                  @if (loadingReservations()) {
-                    <p class="muted">Recherche de vos réservations…</p>
-                  } @else if (userReservations().length > 0) {
-                    <p>Sélectionnez la réservation concernée par votre visite :</p>
-                    <div style="margin-bottom: 16px;">
-                      <label for="reservation-select">Réservation terminée</label>
-                      <select id="reservation-select" (change)="onSelectReservation($event)">
-                        <option value="">-- Choisir une réservation --</option>
-                        @for (r of userReservations(); track r.id) {
-                          <option [value]="r.id">
-                            Réservation n° {{ r.id }} (Circuit n° {{ r.circuitId }})
-                          </option>
-                        }
-                      </select>
-                    </div>
-                  } @else {
-                    <p>Aucune réservation n'a été trouvée pour votre compte.</p>
-                  }
-
-                  <div class="manual-id-block">
-                    <label for="manual-res-id">Ou indiquez directement votre n° de réservation :</label>
-                    <div style="display: flex; gap: 8px; margin-top: 6px;">
-                      <input
-                        id="manual-res-id"
-                        type="number"
-                        min="1"
-                        #manualInput
-                        placeholder="Ex: 25"
-                      />
-                      <button
-                        class="button secondary"
-                        type="button"
-                        (click)="setManualReservation(manualInput.value)"
-                      >
-                        Valider
-                      </button>
-                    </div>
-                  </div>
-                </div>
               }
             }
           </aside>
@@ -350,7 +315,7 @@ import { ReviewForm } from './review-form';
 })
 export class Reviews {
   private readonly api = inject(AvisService);
-  private readonly workspaceService = inject(WorkspaceService);
+ 
   readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
 
@@ -361,9 +326,8 @@ export class Reviews {
   readonly error = signal('');
   readonly busy = signal(false);
 
-  readonly activeReservationId = signal<number | null>(null);
-  readonly userReservations = signal<Reservation[]>([]);
-  readonly loadingReservations = signal(false);
+  readonly userEligibility = signal<UserEligibility | null>(null);
+  readonly loadingEligibility = signal(false);
 
   readonly vm = toSignal(
     combineLatest([
@@ -413,14 +377,22 @@ export class Reviews {
 
   constructor() {
     const qpRes = this.route.snapshot.queryParamMap.get('reservationId');
-    if (qpRes) {
-      const num = Number(qpRes);
-      if (Number.isSafeInteger(num) && num > 0) {
-        this.activeReservationId.set(num);
-      }
-    } else if (this.scope === 'public' && this.auth.has('USER')) {
-      this.loadUserReservations();
+    const num = qpRes ? Number(qpRes) : undefined;
+    const resId = Number.isSafeInteger(num) && (num as number) > 0 ? num : undefined;
+    if (this.scope === 'public' && this.auth.has('USER')) {
+      this.checkUserEligibility(resId);
     }
+  }
+
+  checkUserEligibility(reservationId?: number) {
+    this.loadingEligibility.set(true);
+    this.api
+      .getUserEligibility(reservationId)
+      .pipe(finalize(() => this.loadingEligibility.set(false)))
+      .subscribe({
+        next: (res) => this.userEligibility.set(res),
+        error: () => this.userEligibility.set({ eligible: false, reservations: [] }),
+      });
   }
 
   hasFilter(): boolean {
@@ -437,42 +409,11 @@ export class Reviews {
     this.auth.login('/avis');
   }
 
-  loadUserReservations() {
-    this.loadingReservations.set(true);
-    this.workspaceService
-      .reservations('me')
-      .pipe(finalize(() => this.loadingReservations.set(false)))
-      .subscribe({
-        next: (list) => {
-          this.userReservations.set(list || []);
-        },
-        error: () => this.userReservations.set([]),
-      });
-  }
-
-  onSelectReservation(event: Event) {
-    const val = Number((event.target as HTMLSelectElement).value);
-    if (Number.isSafeInteger(val) && val > 0) {
-      this.activeReservationId.set(val);
-    }
-  }
-
-  setManualReservation(val: string) {
-    const num = Number(val);
-    if (Number.isSafeInteger(num) && num > 0) {
-      this.activeReservationId.set(num);
-    }
-  }
-
-  resetReservationSelection() {
-    this.activeReservationId.set(null);
-    if (this.userReservations().length === 0) {
-      this.loadUserReservations();
-    }
-  }
-
   onReviewCreated() {
     this.refresh.next();
+    if (this.scope === 'public' && this.auth.has('USER')) {
+      this.checkUserEligibility();
+    }
   }
 
   toggle(a: Avis) {

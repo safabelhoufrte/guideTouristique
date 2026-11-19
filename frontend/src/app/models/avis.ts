@@ -35,6 +35,17 @@ export interface Eligibility {
   raison: string;
 }
 
+export interface EligibleReservation {
+  reservationId: number;
+  circuitId: number;
+  guideId: number;
+}
+
+export interface UserEligibility {
+  eligible: boolean;
+  reservations: EligibleReservation[];
+}
+
 export function extractAvisError(error: unknown): string {
   if (error instanceof HttpErrorResponse) {
     if (error.status === 401) {

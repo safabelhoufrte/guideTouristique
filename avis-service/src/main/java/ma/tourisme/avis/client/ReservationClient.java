@@ -4,6 +4,9 @@ package ma.tourisme.avis.client;
 // Importation des classes nécessaires pour lire les réponses JSON,
 // configurer les requêtes HTTP, gérer les erreurs et utiliser Spring Security.
 import com.fasterxml.jackson.databind.JsonNode;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -29,6 +32,8 @@ public class ReservationClient {
     // circuitId : identifiant du circuit touristique.
     // guideId   : identifiant du guide touristique.
     public record References(long circuitId, long guideId) {}
+
+    public record ReservationSummary(long id, long circuitId, long guideId, String statut, LocalDate dateVisite) {}
 
 
     // Constructeur de la classe.
@@ -152,10 +157,10 @@ public class ReservationClient {
         // Si eligible vaut false, le client ne peut pas publier un avis.
         if (!response.path("eligible").asBoolean()) {
 
-            // Déclenche une erreur HTTP 409 Conflict.
-            // Un avis est autorisé uniquement après une visite acceptée.
+            // Déclenche une erreur HTTP 403 Forbidden.
+            // Un avis est autorisé uniquement après la date d’une visite acceptée.
             throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
+                    HttpStatus.FORBIDDEN,
                     "Un avis est possible uniquement après la date d’une visite acceptée."
             );
         }
@@ -167,6 +172,45 @@ public class ReservationClient {
                 response.path("circuitId").asLong(),
                 response.path("guideId").asLong()
         );
+    }
+
+    public List<ReservationSummary> findUserReservations(Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+        if (email == null || email.isBlank()) {
+            return List.of();
+        }
+        try {
+            JsonNode response = http.get()
+                    .uri("/api/reservations?email={email}", email)
+                    .header("Authorization", "Bearer " + jwt.getTokenValue())
+                    .retrieve()
+                    .body(JsonNode.class);
+
+            if (response != null && response.isArray()) {
+                List<ReservationSummary> list = new ArrayList<>();
+                for (JsonNode node : response) {
+                    long id = node.path("id").asLong();
+                    long circuitId = node.path("circuitId").asLong();
+                    long guideId = node.path("guideId").asLong();
+                    String statut = node.path("statut").asText();
+                    String dateStr = node.path("dateVisite").asText();
+                    LocalDate dateVisite = null;
+                    if (dateStr != null && !dateStr.isBlank()) {
+                        try {
+                            dateVisite = LocalDate.parse(dateStr.length() >= 10 ? dateStr.substring(0, 10) : dateStr);
+                        } catch (Exception ignored) {
+                        }
+                    }
+                    if (id > 0 && circuitId > 0 && guideId > 0) {
+                        list.add(new ReservationSummary(id, circuitId, guideId, statut, dateVisite));
+                    }
+                }
+                return list;
+            }
+            return List.of();
+        } catch (RestClientException ex) {
+            return List.of();
+        }
     }
 
 

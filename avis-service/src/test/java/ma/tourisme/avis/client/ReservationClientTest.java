@@ -94,10 +94,28 @@ class ReservationClientTest {
   }
 
   @Test
-  void testReservationNonEligibleRenvoie409() {
+  void testReservationNonEligibleRenvoie403() {
     reponse(200, json("false", 25, "10", "7"));
 
-    assertStatus(409, () -> client.requireEligible(25L, jwt));
+    assertStatus(403, () -> client.requireEligible(25L, jwt));
+  }
+
+  @Test
+  void testFindUserReservations() {
+    server.createContext("/api/reservations", exchange -> {
+      byte[] bytes = "[{\"id\":25,\"circuitId\":10,\"guideId\":7,\"statut\":\"ACCEPTEE\",\"dateVisite\":\"2026-11-01\"}]".getBytes(StandardCharsets.UTF_8);
+      exchange.getResponseHeaders().add("Content-Type", "application/json");
+      exchange.sendResponseHeaders(200, bytes.length);
+      try (OutputStream os = exchange.getResponseBody()) {
+        os.write(bytes);
+      }
+      exchange.close();
+    });
+    Jwt jwtWithEmail = Jwt.withTokenValue("token-test").header("alg", "none").subject("user-1").claim("email", "test@test.com").build();
+    var res = client.findUserReservations(jwtWithEmail);
+    assertEquals(1, res.size());
+    assertEquals(25L, res.get(0).id());
+    assertEquals(10L, res.get(0).circuitId());
   }
 
   @Test

@@ -2,7 +2,7 @@ import { Component, EventEmitter, inject, Input, Output, signal } from '@angular
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
-import { Avis, Eligibility, extractAvisError } from '../../models/avis';
+import { Avis, Eligibility, EligibleReservation, extractAvisError } from '../../models/avis';
 import { AvisService } from '../../services/avis.service';
 
 @Component({
@@ -76,7 +76,20 @@ import { AvisService } from '../../services/avis.service';
         }
       } @else {
         <form class="surface" [formGroup]="form" (ngSubmit)="save()">
-          <h4 class="sub-heading">Réservation n° {{ e.reservationId }}</h4>
+          @if (eligibleReservationsList().length > 1) {
+            <div style="margin-bottom: 16px;">
+              <label for="reservation-select">Choisir une réservation</label>
+              <select id="reservation-select" (change)="onSelectReservation($event)">
+                @for (r of eligibleReservationsList(); track r.reservationId) {
+                  <option [value]="r.reservationId" [selected]="r.reservationId === currentId()">
+                    Réservation n° {{ r.reservationId }} (Circuit n° {{ r.circuitId }})
+                  </option>
+                }
+              </select>
+            </div>
+          } @else {
+            <h4 class="sub-heading">Réservation n° {{ e.reservationId }}</h4>
+          }
           <div class="form-grid" style="margin-top:22px">
             <div>
               <label for="note-guide">Votre guide</label>
@@ -134,9 +147,25 @@ export class ReviewForm {
     }
   }
 
+  @Input() set eligibleReservations(list: EligibleReservation[] | null | undefined) {
+    if (list && list.length > 0) {
+      this.eligibleReservationsList.set(list);
+      const first = list[0];
+      this.currentId.set(first.reservationId);
+      this.eligibility.set({
+        reservationId: first.reservationId,
+        circuitId: first.circuitId,
+        guideId: first.guideId,
+        eligible: true,
+        raison: '',
+      });
+    }
+  }
+
   @Input() embedded = false;
   @Output() readonly reviewCreated = new EventEmitter<Avis>();
 
+  readonly eligibleReservationsList = signal<EligibleReservation[]>([]);
   readonly currentId = signal<number | null>(null);
   readonly notes = [5, 4, 3, 2, 1];
   readonly eligibility = signal<Eligibility | null>(null);
@@ -162,6 +191,23 @@ export class ReviewForm {
       }
       this.currentId.set(routeId);
       this.loadEligibility(routeId);
+    }
+  }
+
+  onSelectReservation(event: Event) {
+    const val = Number((event.target as HTMLSelectElement).value);
+    if (Number.isSafeInteger(val) && val > 0) {
+      this.currentId.set(val);
+      const found = this.eligibleReservationsList().find((r) => r.reservationId === val);
+      if (found) {
+        this.eligibility.set({
+          reservationId: found.reservationId,
+          circuitId: found.circuitId,
+          guideId: found.guideId,
+          eligible: true,
+          raison: '',
+        });
+      }
     }
   }
 

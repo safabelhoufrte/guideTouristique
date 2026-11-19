@@ -210,11 +210,77 @@ class AvisServiceTest {
     AvisRequest r = requete();
     Jwt jwt = jwt("Test Tourist");
     when(reservations.requireEligible(25L, jwt))
-        .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Visite non acceptée"));
+        .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Visite non acceptée"));
 
-    assertStatus(409, () -> service.create(r, jwt));
+    assertStatus(403, () -> service.create(r, jwt));
 
     verifyNoInteractions(repo);
+  }
+
+  @Test
+  void testEligibiliteAvecReservationIdEligible() {
+    Jwt jwt = jwt("Test Tourist");
+    when(repo.existsByReservationId(25L)).thenReturn(false);
+    when(reservations.requireEligible(25L, jwt)).thenReturn(REFS);
+
+    var res = service.eligibilite(25L, jwt);
+
+    assertTrue(res.eligible());
+    assertEquals(1, res.reservations().size());
+    assertEquals(25L, res.reservations().get(0).reservationId());
+  }
+
+  @Test
+  void testEligibiliteAvecReservationIdDejaEvaluee() {
+    Jwt jwt = jwt("Test Tourist");
+    when(repo.existsByReservationId(25L)).thenReturn(true);
+
+    var res = service.eligibilite(25L, jwt);
+
+    assertFalse(res.eligible());
+    assertTrue(res.reservations().isEmpty());
+    verify(reservations, never()).requireEligible(anyLong(), any());
+  }
+
+  @Test
+  void testEligibiliteAvecReservationIdIneligible() {
+    Jwt jwt = jwt("Test Tourist");
+    when(repo.existsByReservationId(25L)).thenReturn(false);
+    when(reservations.requireEligible(25L, jwt))
+        .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Non éligible"));
+
+    var res = service.eligibilite(25L, jwt);
+
+    assertFalse(res.eligible());
+    assertTrue(res.reservations().isEmpty());
+  }
+
+  @Test
+  void testEligibiliteGlobaleUtilisateurAvecReservations() {
+    Jwt jwt = jwt("Test Tourist");
+    var item1 = new ReservationClient.ReservationSummary(25L, 10L, 7L, "ACCEPTEE", java.time.LocalDate.now().minusDays(1));
+    var item2 = new ReservationClient.ReservationSummary(26L, 12L, 8L, "EN_ATTENTE", java.time.LocalDate.now().minusDays(1));
+    var item3 = new ReservationClient.ReservationSummary(27L, 15L, 9L, "ACCEPTEE", java.time.LocalDate.now().minusDays(2));
+    when(reservations.findUserReservations(jwt)).thenReturn(List.of(item1, item2, item3));
+    when(repo.findReviewedReservationIds("sub-1")).thenReturn(List.of(27L));
+
+    var res = service.eligibilite(null, jwt);
+
+    assertTrue(res.eligible());
+    assertEquals(1, res.reservations().size());
+    assertEquals(25L, res.reservations().get(0).reservationId());
+  }
+
+  @Test
+  void testEligibiliteGlobaleSansReservationEligible() {
+    Jwt jwt = jwt("Test Tourist");
+    when(reservations.findUserReservations(jwt)).thenReturn(List.of());
+    when(repo.findReviewedReservationIds("sub-1")).thenReturn(List.of());
+
+    var res = service.eligibilite(null, jwt);
+
+    assertFalse(res.eligible());
+    assertTrue(res.reservations().isEmpty());
   }
 
   // ---------- 3.3 Moderation ----------

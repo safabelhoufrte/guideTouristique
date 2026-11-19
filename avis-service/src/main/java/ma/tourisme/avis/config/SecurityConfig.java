@@ -183,10 +183,11 @@ public class SecurityConfig {
                                 "/api/avis/admin"
                         ).hasRole("ADMIN")
 
-                        // Seul un utilisateur USER peut consulter ses propres avis.
+                        // Seul un utilisateur USER peut consulter ses propres avis ou son éligibilité.
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/avis/me"
+                                "/api/avis/me",
+                                "/api/avis/eligibilite"
                         ).hasRole("USER")
 
                         // Tout le monde peut consulter les avis publics.

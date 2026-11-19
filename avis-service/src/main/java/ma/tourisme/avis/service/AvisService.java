@@ -1,10 +1,15 @@
 package ma.tourisme.avis.service;
 
+import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import ma.tourisme.avis.client.ReservationClient;
 import ma.tourisme.avis.dto.AvisRequest;
 import ma.tourisme.avis.dto.AvisResponse;
+import ma.tourisme.avis.dto.EligibleReservationDto;
 import ma.tourisme.avis.dto.MoyenneResponse;
+import ma.tourisme.avis.dto.UserEligibilityResponse;
 import ma.tourisme.avis.repository.AvisRepository;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -37,6 +42,38 @@ public class AvisService {
 
   public List<AvisResponse> mine(Jwt jwt) {
     return repo.mine(jwt.getSubject());
+  }
+
+  public UserEligibilityResponse eligibilite(Long reservationId, Jwt jwt) {
+    if (reservationId != null) {
+      if (repo.existsByReservationId(reservationId)) {
+        return new UserEligibilityResponse(false, List.of());
+      }
+      try {
+        var refs = reservations.requireEligible(reservationId, jwt);
+        return new UserEligibilityResponse(
+            true,
+            List.of(new EligibleReservationDto(reservationId, refs.circuitId(), refs.guideId()))
+        );
+      } catch (ResponseStatusException ex) {
+        return new UserEligibilityResponse(false, List.of());
+      }
+    }
+
+    var userRes = reservations.findUserReservations(jwt);
+    Set<Long> reviewedIds = new HashSet<>(repo.findReviewedReservationIds(jwt.getSubject()));
+    LocalDate now = LocalDate.now();
+
+    List<EligibleReservationDto> eligible = userRes.stream()
+        .filter(r -> !reviewedIds.contains(r.id()))
+        .filter(r -> "ACCEPTEE".equalsIgnoreCase(r.statut())
+            || "CONFIRMEE".equalsIgnoreCase(r.statut())
+            || "TERMINEE".equalsIgnoreCase(r.statut()))
+        .filter(r -> r.dateVisite() == null || !r.dateVisite().isAfter(now))
+        .map(r -> new EligibleReservationDto(r.id(), r.circuitId(), r.guideId()))
+        .toList();
+
+    return new UserEligibilityResponse(!eligible.isEmpty(), eligible);
   }
 
   public AvisResponse create(AvisRequest r, Jwt jwt) {

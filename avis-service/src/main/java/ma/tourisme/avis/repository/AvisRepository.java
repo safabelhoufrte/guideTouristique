@@ -58,6 +58,23 @@ public class AvisRepository {
     );
   }
 
+  public boolean existsByReservationId(long reservationId) {
+    Integer count = jdbc.queryForObject(
+        "SELECT count(*) FROM avis WHERE reservation_id = ?",
+        Integer.class,
+        reservationId
+    );
+    return count != null && count > 0;
+  }
+
+  public List<Long> findReviewedReservationIds(String sub) {
+    return jdbc.query(
+        "SELECT reservation_id FROM avis WHERE user_subject = ?",
+        (rs, rowNum) -> rs.getLong("reservation_id"),
+        sub
+    );
+  }
+
   public AvisResponse insert(AvisRequest r, References refs, String sub, String auteur) {
     return jdbc.queryForObject(
         "INSERT INTO avis(reservation_id, circuit_id, guide_id, user_subject, auteur, note_guide, note_circuit, commentaire) "

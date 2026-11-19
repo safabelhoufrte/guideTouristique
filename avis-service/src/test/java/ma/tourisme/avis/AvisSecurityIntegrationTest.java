@@ -157,6 +157,7 @@ class AvisSecurityIntegrationTest {
   void testSansTokenRenvoie401() throws Exception {
     expect("POST", "/api/avis", request(), null, 401);
     expect("GET", "/api/avis/me", null, null, 401);
+    expect("GET", "/api/avis/eligibilite", null, null, 401);
     expect("GET", "/api/avis/admin", null, null, 401);
     expect("PATCH", "/api/avis/1/publication", "{\"publie\":false}", null, 401);
     expect("DELETE", "/api/avis/1", null, null, 401);
@@ -195,12 +196,12 @@ class AvisSecurityIntegrationTest {
 
   // 4. Visite future, non acceptée ou inexistante refusée
   @Test
-  @DisplayName("4. Visite future, non acceptée (409) ou inexistante (400) refusée")
+  @DisplayName("4. Visite future, non acceptée (403) ou inexistante (400) refusée")
   void testVisiteFutureNonAccepteeOuInexistanteRefusee() throws Exception {
-    // Visite future ou non acceptée -> 409 Conflict
+    // Visite future ou non acceptée -> 403 Forbidden
     when(reservations.requireEligible(eq(88L), any()))
-        .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Un avis est possible uniquement après la date d’une visite acceptée."));
-    expect("POST", "/api/avis", request().replace("25", "88"), "user", 409);
+        .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Un avis est possible uniquement après la date d’une visite acceptée."));
+    expect("POST", "/api/avis", request().replace("25", "88"), "user", 403);
 
     // Réservation inexistante dans reservation-service -> 400 Bad Request
     when(reservations.requireEligible(eq(87L), any()))
@@ -425,5 +426,26 @@ class AvisSecurityIntegrationTest {
     // ADMIN peut supprimer
     call("DELETE", "/api/avis/" + id, null, "admin");
     expect("GET", "/api/avis/" + id, null, "admin", 404);
+  }
+
+  // 13. GET /api/avis/eligibilite
+  @Test
+  @DisplayName("13. GET /api/avis/eligibilite indique si le touriste connecté peut publier")
+  void testEligibiliteEndpoint() throws Exception {
+    // Avec reservationId paramètre
+    var resEligible = expect("GET", "/api/avis/eligibilite?reservationId=25", null, "user", 200);
+    assertTrue(resEligible.path("eligible").asBoolean());
+    assertEquals(25, resEligible.path("reservations").get(0).path("reservationId").asLong());
+
+    // Sans réservation éligible
+    when(reservations.requireEligible(eq(88L), any()))
+        .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Non éligible"));
+    var resIneligible = expect("GET", "/api/avis/eligibilite?reservationId=88", null, "user", 200);
+    assertFalse(resIneligible.path("eligible").asBoolean());
+
+    // Après création d'un avis pour 25, la réservation 25 n'est plus éligible (doublon bloqué)
+    expect("POST", "/api/avis", request(), "user", 201);
+    var resApresAvis = expect("GET", "/api/avis/eligibilite?reservationId=25", null, "user", 200);
+    assertFalse(resApresAvis.path("eligible").asBoolean());
   }
 }

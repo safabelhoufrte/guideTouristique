@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Avis, AvisMoyenne, CreateAvisDto, Eligibility } from '../models/avis';
+import { Avis, AvisMoyenne, CreateAvisDto, Eligibility, UserEligibility } from '../models/avis';
 
 @Injectable({ providedIn: 'root' })
 export class AvisService {
@@ -45,5 +45,13 @@ export class AvisService {
     return this.http.get<Eligibility>(`/api/reservations/${reservationId}/eligibilite`, {
       timeout: 8000,
     });
+  }
+
+  getUserEligibility(reservationId?: number) {
+    let params = new HttpParams();
+    if (reservationId !== undefined && reservationId !== null) {
+      params = params.set('reservationId', reservationId.toString());
+    }
+    return this.http.get<UserEligibility>('/api/avis/eligibilite', { params, timeout: 8000 });
   }
 }

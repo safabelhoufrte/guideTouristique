@@ -6,6 +6,7 @@ import java.util.List;
 import ma.tourisme.avis.dto.AvisRequest;
 import ma.tourisme.avis.dto.AvisResponse;
 import ma.tourisme.avis.dto.MoyenneResponse;
+import ma.tourisme.avis.dto.UserEligibilityResponse;
 import ma.tourisme.avis.service.AvisService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -48,6 +49,13 @@ public class AvisController {
   @GetMapping("/me")
   public List<AvisResponse> mine(@AuthenticationPrincipal Jwt jwt) {
     return service.mine(jwt);
+  }
+
+  @GetMapping("/eligibilite")
+  public UserEligibilityResponse eligibilite(
+      @RequestParam(required = false) Long reservationId,
+      @AuthenticationPrincipal Jwt jwt) {
+    return service.eligibilite(reservationId, jwt);
   }
 
   @GetMapping("/moyenne")
