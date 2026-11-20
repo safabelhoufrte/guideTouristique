@@ -24,21 +24,104 @@
           <div class="welcome-banner"><div><span class="welcome-label">VOTRE ESPACE PERSONNEL</span><h1>Bonjour {{guide.prenom || guide.nom}} !</h1><p>Retrouvez les informations de votre activité.</p></div><div class="welcome-decoration">✦</div></div>
           <section class="stats-grid">
             <article class="stat-card"><div class="stat-icon turquoise">⌖</div><div><span>Circuits actifs</span><h3>{{circuitsLoading ? '…' : (circuitsError ? '—' : circuits.length)}}</h3><small>Circuits associés</small></div></article>
-            <article class="stat-card"><div class="stat-icon amber">◷</div><div><span>Demandes en attente</span><h3>—</h3><small>Service Réservation à connecter</small></div></article>
-            <article class="stat-card"><div class="stat-icon green">✓</div><div><span>Réservations confirmées</span><h3>—</h3><small>Service Réservation à connecter</small></div></article>
+            <article class="stat-card">
+              <div class="stat-icon amber">◷</div>
+
+              <div>
+                <span>Demandes en attente</span>
+
+                <h3>
+                  {{
+                    reservationsLoading || reservationsError
+                      ? '—'
+                      : reservationsEnAttente
+                  }}
+                </h3>
+
+                <small>Réservations à traiter</small>
+              </div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-icon green">✓</div>
+
+              <div>
+                <span>Réservations confirmées</span>
+
+                <h3>
+                  {{
+                    reservationsLoading || reservationsError
+                      ? '—'
+                      : reservationsConfirmees
+                  }}
+                </h3>
+
+                <small>Demandes acceptées</small>
+              </div>
+            </article>
             <article class="stat-card"><div class="stat-icon blue">☆</div><div><span>Note moyenne</span><h3>{{avisLoading || avisError ? '—' : noteMoyenne}}</h3><small>Avis publiés</small></div></article>
           </section>
           <div class="dashboard-panels">
             <section class="content-card request-panel">
               <div class="card-heading"><div><h2>Demandes récentes</h2><p class="section-subtitle">Les dernières demandes de vos voyageurs</p></div><button class="text-action" type="button" (click)="select('reservations')">Voir tout ›</button></div>
-              <div class="empty-state"><span class="empty-icon">▤</span><strong>Demandes non chargées</strong><p>Les demandes apparaîtront ici lorsque le service Réservation fournira une API sécurisée pour ce guide.</p><button type="button" (click)="select('reservations')">Consulter les demandes</button></div>
+              <div *ngIf="reservationsLoading" class="hint">
+                Chargement des demandes…
+              </div>
+
+              <p
+                *ngIf="reservationsError"
+                class="note"
+                role="alert">
+                {{ reservationsError }}
+              </p>
+
+              <div
+                *ngIf="!reservationsLoading &&
+                      !reservationsError &&
+                      demandesRecentes.length === 0"
+                class="empty-state">
+
+                <span class="empty-icon">▤</span>
+                <strong>Aucune demande de réservation</strong>
+                <p>
+                  Vos prochaines réservations apparaîtront ici.
+                </p>
+              </div>
+
+              <div
+                *ngIf="!reservationsLoading && !reservationsError">
+
+                <div
+                  class="reservation-recent"
+                  *ngFor="let r of demandesRecentes">
+
+                  <div>
+                    <strong>{{ r.nom }}</strong>
+
+                    <small>
+                      {{ nomCircuit(r.circuitId) }}
+                      · {{ r.dateVisite | date:'dd/MM/yyyy' }}
+                    </small>
+                  </div>
+
+                  <span
+                    class="reservation-status"
+                    [class.pending]="r.statut === 'EN_ATTENTE'">
+
+                    {{ r.statut.replace('_', ' ') }}
+                  </span>
+                </div>
+
+              </div>
             </section>
             <section class="content-card recent-panel">
               <div class="card-heading"><div><h2>Mes derniers circuits</h2><p class="section-subtitle">Retrouvez vos circuits publiés</p></div><button class="text-action" type="button" (click)="select('circuits')">Voir tout ›</button></div>
               <p *ngIf="circuitsError" class="note">{{circuitsError}}</p>
               <p *ngIf="circuitsLoading" class="hint">Chargement des circuits…</p>
               <div *ngFor="let c of circuits.slice(0,3); let i=index" class="recent-circuit">
-                <div class="circuit-thumbnail" [class.thumb-two]="i===1" [class.thumb-three]="i===2"></div>
+                <div
+                  class="circuit-thumbnail"
+                  [style.background-image]="photoUrl(c)">
+                </div>
                 <div class="recent-circuit-info"><strong>{{c.titre}}</strong><small>{{c.ville || 'Maroc'}} · {{c.dureeHeures ?? '—'}} h</small></div>
                 <span class="circuit-status">Circuit</span>
               </div>
@@ -160,10 +243,338 @@
 
         </div>
 
-        <section *ngIf="page==='circuits'" class="content-card"><div class="card-heading"><div><h1>Mes circuits</h1><p>Circuits associés à votre identifiant Guide</p></div></div><input class="filter" type="search" placeholder="Rechercher un circuit" [(ngModel)]="circuitFilter" aria-label="Rechercher un circuit"><p *ngIf="circuitsLoading">Chargement des circuits…</p><p *ngIf="circuitsError" class="note">{{circuitsError}}</p><div class="circuit-cards" *ngIf="!circuitsError"><article class="circuit-card" *ngFor="let c of visibleCircuits"><div class="circuit-art"></div><div class="circuit-body"><h3>{{c.titre}}</h3><p>{{c.description || 'Aucune description'}}</p><p>📍 {{c.ville || '—'}} · {{c.dureeHeures ?? '—'}} h</p><strong>{{c.prix}} MAD</strong></div></article></div><p *ngIf="!circuitsLoading && !circuitsError && visibleCircuits.length===0">Aucun circuit trouvé.</p><p class="hint">L'ajout, la modification et la suppression des circuits doivent passer par des endpoints sécurisés du service Circuit.</p></section>
 
-        <section *ngIf="page==='reservations'" class="content-card"><h1>Mes demandes de réservation</h1><p>Les demandes doivent être fournies par une API authentifiée du service Réservation.</p><div class="note">La gestion « Accepter / Refuser » n'est pas encore activée. Les routes actuellement connues ne garantissent pas l'autorisation par guide. Il faut exposer un endpoint serveur « mes réservations » et vérifier que chaque réservation appartient au guide connecté avant toute décision.</div><p class="hint">Aucune réservation fictive n'est affichée.</p></section>
+        <section *ngIf="page==='circuits'" class="content-card">
 
+          <div class="card-heading">
+            <div>
+              <h1>Mes circuits</h1>
+              <p>Circuits associés à votre profil Guide</p>
+            </div>
+
+            <button
+              type="button"
+              (click)="openCircuitForm()"
+              *ngIf="!showCircuitForm">
+              + Ajouter un circuit
+            </button>
+          </div>
+
+          <p
+            *ngIf="circuitMessage"
+            class="note"
+            [class.error-message]="circuitMessageError"
+            role="status">
+            {{ circuitMessage }}
+          </p>
+
+          <!-- Formulaire de création -->
+          <form
+            *ngIf="showCircuitForm"
+            class="circuit-form"
+            #circuitForm="ngForm"
+            (ngSubmit)="createCircuit()">
+
+            <h2>Nouveau circuit touristique</h2>
+
+            <div class="circuit-form-grid">
+
+              <div class="full">
+                <label for="circuitTitre">Titre du circuit *</label>
+                <input
+                  id="circuitTitre"
+                  name="circuitTitre"
+                  required
+                  maxlength="160"
+                  [(ngModel)]="newCircuit.titre"
+                  placeholder="Découverte d'Agadir">
+              </div>
+
+              <div class="full">
+                <label for="circuitDescription">Description *</label>
+                <textarea
+                  id="circuitDescription"
+                  name="circuitDescription"
+                  required
+                  maxlength="4000"
+                  rows="4"
+                  [(ngModel)]="newCircuit.description"
+                  placeholder="Décrivez votre circuit...">
+                </textarea>
+              </div>
+
+              <div>
+                <label for="circuitVille">Ville *</label>
+                <input
+                  id="circuitVille"
+                  name="circuitVille"
+                  required
+                  maxlength="120"
+                  [(ngModel)]="newCircuit.ville">
+              </div>
+
+              <div>
+                <label for="circuitDuree">Durée (heures) *</label>
+                <input
+                  id="circuitDuree"
+                  name="circuitDuree"
+                  type="number"
+                  min="1"
+                  step="1"
+                  required
+                  [(ngModel)]="newCircuit.dureeHeures">
+              </div>
+
+              <div>
+                <label for="circuitPrix">Prix (MAD) *</label>
+                <input
+                  id="circuitPrix"
+                  name="circuitPrix"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  [(ngModel)]="newCircuit.prix">
+              </div>
+
+              <div class="guide-owner">
+                <label>Guide responsable</label>
+                <strong>{{ fullName }}</strong>
+                <small>Attribution automatique au guide connecté</small>
+              </div>
+
+            </div>
+
+            <div class="circuit-form-actions">
+              <button
+                type="button"
+                class="secondary"
+                (click)="closeCircuitForm()">
+                Annuler
+              </button>
+
+              <button
+                type="submit"
+                [disabled]="circuitForm.invalid || circuitSaving">
+                {{ circuitSaving ? 'Enregistrement…' : 'Créer le circuit' }}
+              </button>
+            </div>
+          </form>
+
+          <!-- Liste des circuits -->
+          <input
+            class="filter"
+            type="search"
+            placeholder="Rechercher un circuit"
+            [(ngModel)]="circuitFilter"
+            aria-label="Rechercher un circuit">
+
+          <p *ngIf="circuitsLoading">Chargement des circuits…</p>
+          <p *ngIf="circuitsError" class="note">{{ circuitsError }}</p>
+
+          <div class="circuit-cards" *ngIf="!circuitsError">
+            <article
+              class="circuit-card"
+              *ngFor="let c of visibleCircuits">
+              
+              <div
+                class="circuit-art"
+                [style.background-image]="photoUrl(c)"
+                role="img"
+                [attr.aria-label]="photoAlt(c)">
+              </div>
+
+              <div class="circuit-body">
+                <h3>{{ c.titre }}</h3>
+                <p>{{ c.description || 'Aucune description' }}</p>
+                <p>{{ c.ville || '—' }} · {{ c.dureeHeures ?? '—' }} h</p>
+                <strong>{{ c.prix }} MAD</strong>
+              </div>
+
+            </article>
+          </div>
+
+          <p
+            *ngIf="!circuitsLoading && !circuitsError && visibleCircuits.length === 0">
+            Aucun circuit trouvé.
+          </p>
+
+        </section>
+
+        <section
+          *ngIf="page==='reservations'"
+          class="content-card">
+
+          <div class="card-heading">
+            <div>
+              <h1>Mes demandes de réservation</h1>
+              <p>
+                Consultez les réservations de vos circuits.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              (click)="loadReservations()"
+              [disabled]="reservationsLoading">
+              Actualiser
+            </button>
+          </div>
+
+          <p *ngIf="reservationsLoading" class="hint">
+            Chargement des réservations…
+          </p>
+
+          <div
+            *ngIf="reservationsError"
+            class="error-message"
+            role="alert">
+
+            {{ reservationsError }}
+          </div>
+
+          <ng-container
+            *ngIf="!reservationsLoading && !reservationsError">
+
+            <div class="reservations-summary">
+              <strong>
+                {{ reservations.length }} réservation(s)
+              </strong>
+
+              <span>
+                {{ reservationsEnAttente }} en attente
+              </span>
+
+              <span>
+                {{ reservationsConfirmees }} confirmée(s)
+              </span>
+            </div>
+
+            <div
+              *ngIf="reservations.length === 0"
+              class="empty-state">
+
+              <span class="empty-icon">▤</span>
+
+              <strong>Aucune réservation</strong>
+
+              <p>
+                Les réservations effectuées pour vos circuits
+                apparaîtront ici.
+              </p>
+            </div>
+
+          <p
+            *ngIf="reservationActionError"
+            class="error-message"
+            role="alert">
+            {{ reservationActionError }}
+          </p>
+
+            <div
+              class="reservation-list"
+              *ngIf="reservations.length > 0">
+
+              <article
+                class="reservation-card"
+                *ngFor="let r of reservations">
+
+                <div class="reservation-card-header">
+
+                  <div>
+                    <h3>{{ r.nom }}</h3>
+                    <small>
+                      Réservation n° {{ r.id }}
+                    </small>
+                  </div>
+
+                  <span
+                    class="reservation-status"
+                    [class.pending]="r.statut === 'EN_ATTENTE'">
+
+                    {{ r.statut.replace('_', ' ') }}
+                  </span>
+
+                </div>
+
+                <div class="reservation-details">
+
+                  <div>
+                    <span>Circuit</span>
+                    <strong>
+                      {{ nomCircuit(r.circuitId) }}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Date de visite</span>
+                    <strong>
+                      {{ r.dateVisite | date:'dd/MM/yyyy' }}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Participants</span>
+                    <strong>{{ r.nbPersonnes }}</strong>
+                  </div>
+
+                  <div>
+                    <span>Prix total</span>
+                    <strong>{{ r.prixTotal }} MAD</strong>
+                  </div>
+
+                  <div>
+                    <span>Email du touriste</span>
+                    <strong>{{ r.email }}</strong>
+                  </div>
+
+                </div>                
+                <div
+                  class="reservation-actions"
+                  *ngIf="r.statut === 'EN_ATTENTE'">
+
+                  <button
+                    type="button"
+                    class="reservation-accept-btn"
+                    [disabled]="
+                      !reservationActionsReady ||
+                      reservationActionId !== null
+                    "
+                    (click)="traiterReservation(r, 'accepter')">
+
+                    {{
+                      reservationActionId === r.id
+                        ? 'Traitement...'
+                        : '✓ Accepter'
+                    }}
+                  </button>
+
+                  <button
+                    type="button"
+                    class="reservation-refuse-btn"
+                    [disabled]="
+                      !reservationActionsReady ||
+                      reservationActionId !== null
+                    "
+                    (click)="traiterReservation(r, 'refuser')">
+
+                    ✕ Refuser
+                  </button>
+
+                  <small
+                    *ngIf="!reservationActionsReady"
+                    class="hint">
+                    Actions en attente de validation du backend.
+                  </small>
+
+                </div>
+              </article>
+
+            </div>
+
+          </ng-container>
+
+        </section>
         <section *ngIf="page==='avis'" class="content-card"><h1>Mes avis publiés</h1><p>Avis publics correspondant à votre guide.</p><p *ngIf="avisLoading">Chargement des avis…</p><p *ngIf="avisError" class="note">{{avisError}}</p><div class="review" *ngFor="let a of avis"><div class="review-heading"><strong>{{a.auteur}}</strong><span>★ {{a.noteGuide}} / 5</span></div><p>{{a.commentaire || 'Sans commentaire'}}</p><small>{{a.dateCreation | date:'dd/MM/yyyy'}}</small></div><p *ngIf="!avisLoading && !avisError && avis.length===0">Aucun avis publié pour le moment.</p></section>
       </ng-container>
     </section>

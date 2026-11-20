@@ -110,4 +110,65 @@ public class ReservationService {
         r.setStatut(nouveauStatut);
         return repository.save(r);
     }
+
+
+    @Transactional(readOnly = true)
+    public List<Reservation> reservationsDuGuide(
+            String accessToken) {
+
+        Long guideId =
+            guideClient.getAuthenticatedGuideId(accessToken);
+
+        return repository
+            .findByGuideIdOrderByDateCreationDesc(guideId);
+    }
+
+    @Transactional
+    public Reservation accepterPourGuide(
+            Long reservationId,
+            String accessToken) {
+
+        return deciderPourGuide(
+            reservationId,
+            accessToken,
+            ACCEPTEE
+        );
+    }
+
+    @Transactional
+    public Reservation refuserPourGuide(
+            Long reservationId,
+            String accessToken) {
+
+        return deciderPourGuide(
+            reservationId,
+            accessToken,
+            REFUSEE
+        );
+    }
+
+    private Reservation deciderPourGuide(
+            Long reservationId,
+            String accessToken,
+            String nouveauStatut) {
+
+        // Identifier le guide connecté via Keycloak
+        Long guideId =
+            guideClient.getAuthenticatedGuideId(accessToken);
+
+        // Chercher la réservation
+        Reservation reservation = trouver(reservationId);
+
+        // Empêcher un guide de traiter les demandes d'un autre
+        if (!guideId.equals(reservation.getGuideId())) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "Cette reservation appartient a un autre guide"
+            );
+        }
+
+        // Réutiliser la logique métier existante de Mariam
+        return decider(reservationId, nouveauStatut);
+    }
+
 }

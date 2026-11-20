@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+
 import jakarta.validation.Valid;
 import ma.tourisme.reservation.dto.ReservationRequest;
 import ma.tourisme.reservation.model.Reservation;
@@ -44,4 +47,42 @@ public class ReservationController {
 
     @PatchMapping("/{id}/refuser")
     public Reservation refuser(@PathVariable Long id) { return service.refuser(id); }
+
+
+    /**
+     * Réservations du guide authentifié avec Keycloak.
+     */
+    @GetMapping("/guide")
+    public List<Reservation> reservationsGuide(
+            @AuthenticationPrincipal Jwt jwt) {
+
+        return service.reservationsDuGuide(
+            jwt.getTokenValue()
+        );
+    }
+
+
+    @PatchMapping("/guide/{id}/accepter")
+    public Reservation accepterPourGuide(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        return service.accepterPourGuide(
+            id,
+            jwt.getTokenValue()
+        );
+    }
+
+    @PatchMapping("/guide/{id}/refuser")
+    public Reservation refuserPourGuide(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        return service.refuserPourGuide(
+            id,
+            jwt.getTokenValue()
+        );
+    }
+
+    
 }

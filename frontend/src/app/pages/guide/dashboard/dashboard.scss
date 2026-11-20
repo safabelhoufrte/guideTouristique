@@ -1,4 +1,6 @@
-:host{display:block;font-family:Arial,sans-serif;color:#21323b}*{box-sizing:border-box}.guide-layout{min-height:100vh;display:flex;background:#f4f7f8}.sidebar{width:235px;min-width:235px;background:#123b46;color:#fff;padding:22px 14px;display:flex;flex-direction:column;gap:14px}.brand{display:flex;align-items:center;gap:11px;font-size:13px}.brand-icon,.avatar{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#0d7895;color:white;font-weight:700;font-size:20px}.brand small{display:block;font-size:10px;color:#bdcdd1;margin-top:5px}.menu-label{font-size:10px;letter-spacing:1px;color:#9bb6be;margin:20px 7px 0}.navigation{display:flex;flex-direction:column;gap:6px}.nav-item{cursor:pointer;text-align:left;width:100%;border:0;background:transparent;padding:14px;border-radius:7px;color:#e8f0f2;font-weight:600;font-size:12px}.nav-item.active,.nav-item:hover{background:#0d7895}.sidebar-help{background:#1b4e59;padding:14px;border-radius:9px;font-size:12px;margin-top:auto}.sidebar-help p{font-size:11px;color:#d6e4e8;line-height:1.6}.sidebar-footer{font-size:10px;color:#acc6cd;text-align:center}.logout-button{background:transparent;color:white;border:1px solid #77939c;padding:10px;border-radius:8px;cursor:pointer}.main-content{flex:1;min-width:0}.topbar{height:70px;background:white;border-bottom:1px solid #dce5e8;padding:0 26px;display:flex;align-items:center;justify-content:space-between;font-size:13px}.breadcrumb{color:#708398}.user-info{display:flex;align-items:center;gap:10px}.avatar{font-size:14px;border-radius:50%;width:32px;height:32px}.page-content{padding:26px;max-width:1320px;margin:0 auto}.welcome-banner{background:linear-gradient(110deg,#0f5364,#0b8da9);color:white;padding:26px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.welcome-banner h1{margin:8px 0}.welcome-banner p{color:#daeff2}.welcome-label{font-size:11px;letter-spacing:1px}.welcome-decoration{font-size:46px;color:#ffd15a}.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-bottom:20px}.stat-card,.content-card{background:#fff;border:1px solid #e1e9ec;border-radius:11px;padding:21px;box-shadow:0 4px 15px #0c35410a}.stat-card{display:flex;gap:15px;min-height:125px}.stat-card span,.stat-card small{font-size:11px;color:#63778b}.stat-card h3{font-size:22px;margin:10px 0}.stat-icon{width:37px;height:37px;flex:none;border-radius:8px;display:grid;place-items:center;background:#e7f7fa;color:#117c91}.stat-icon.green{background:#e9f9f0;color:#208663}.stat-icon.amber{background:#fff5db;color:#a67d21}.stat-icon.blue{background:#ebf2ff;color:#3d72a4}.content-card{margin-bottom:20px}.card-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.card-heading h1,.content-card h1{font-size:24px;margin:0 0 8px}.card-heading h2{margin:0;font-size:18px}.card-heading p,.content-card>p{color:#617689}.data-row{padding:14px 0;border-top:1px solid #e4eaed;display:flex;align-items:center;justify-content:space-between;gap:12px}.data-row span{color:#657b86}.note,.error-message{background:#fff4e5;border:1px solid #f7d7a2;border-radius:8px;padding:14px;margin:15px 0;color:#764d12}.error-message{background:#fcecec;border-color:#ffcccc;color:#941c1c}.hint{color:#6a7b87;font-size:12px;line-height:1.6;margin-top:20px}button:not(.nav-item):not(.logout-button){background:#0d7895;color:white;border:0;padding:11px 15px;border-radius:7px;font-weight:600;cursor:pointer;margin:4px}button.secondary{background:#edf2f4!important;color:#203d46!important}.profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.profile-grid .full{grid-column:1/-1}.profile-grid label{display:block;color:#63778b;font-size:12px;font-weight:600;margin-bottom:7px}.profile-grid p{padding:9px 0;margin:0;font-weight:500}.profile-grid input,.filter{width:100%;padding:12px;border:1px solid #ccd8dc;border-radius:8px;font:inherit}.filter{max-width:360px;margin:4px 0 20px}.circuit-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.circuit-card{border:1px solid #dfebee;border-radius:10px;overflow:hidden}.circuit-art{height:100px;background:linear-gradient(135deg,#1e7389,#d3e9e8);display:grid;place-items:center;color:white;font-size:36px}.circuit-body{padding:15px}.circuit-body h3{font-size:16px}.circuit-body p{font-size:13px;color:#667d85;line-height:1.5}.review{padding:16px 0;border-bottom:1px solid #e6edef}.review-heading{display:flex;justify-content:space-between}.review-heading span{color:#b17e16}.review small{color:#80909a}@media(max-width:1000px){.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.circuit-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){.guide-layout{display:block}.sidebar{width:100%;min-width:0}.navigation{display:grid;grid-template-columns:repeat(2,1fr)}.sidebar-help,.sidebar-footer{display:none}.page-content{padding:14px}.topbar{padding:0 12px}.stats-grid,.profile-grid,.circuit-cards{grid-template-columns:1fr}.user-info{display:none}}.sidebar{background:#073946;width:222px;min-width:222px}.page-content{max-width:1440px;padding:26px 30px}.welcome-banner{min-height:150px;background:linear-gradient(115deg,#045467,#108ca8)}.dashboard-panels{display:grid;grid-template-columns:1.65fr 1fr;gap:18px;align-items:stretch}.dashboard-panels .content-card{min-height:330px}button.text-action{background:transparent!important;color:#0b7893!important;font-size:12px;padding:5px!important}.empty-state{min-height:215px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;color:#647b85}.empty-icon{background:#e6f6f8;color:#0f91a7;border-radius:50%;width:58px;height:58px;display:grid;place-items:center;font-size:30px}.empty-state p{font-size:12px;max-width:355px;line-height:1.6}.recent-circuit{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid #edf1f2}.circuit-thumbnail{width:66px;height:54px;flex:none;border-radius:6px;background:center/cover url('/images/marrakech-garden.jpg')}.thumb-two{background-image:url('/images/agadir-coast.jpg')}.thumb-three{background-image:url('/images/morocco-kasbah.jpg')}.recent-circuit-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}.recent-circuit-info strong{font-size:11px}.circuit-status{font-size:10px;color:#217b54;background:#e5f6ea;padding:5px 7px;border-radius:5px}button.full-action{width:100%;background:white!important;color:#0a6f84!important;border:1px solid #d8e4e7!important;margin-top:16px!important}.profile-head{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:0 0 17px}.profile-head h1{margin:6px 0;font-size:25px}.profile-cover{overflow:hidden;background:white;border:1px solid #e2ebee;border-radius:11px;margin-bottom:10px}.profile-cover-band{height:50px;background:linear-gradient(112deg,#085768,#08a2b6)}.profile-identity{display:flex;align-items:center;gap:25px;margin-top:-10px;padding:0 35px 20px}.profile-avatar{width:64px;height:64px;border:4px solid white;background:#087d99;color:white;border-radius:12px;display:grid;place-items:center;font-size:29px}.profile-rating{margin-left:auto;color:#bf8a20;padding-top:20px}.profile-columns{display:grid;grid-template-columns:2fr 1fr;gap:18px;align-items:start}.profile-side h2{font-size:16px;margin:0 0 8px}.language-pill{background:#f3f8f9;border:1px solid #e8f0f1;padding:12px;border-radius:6px;margin:7px 0}.secondary-title{margin-top:22px!important}.status-row{display:flex;justify-content:space-between;font-size:12px}.status-row strong{color:#138666}.circuit-art{height:143px;background:center/cover url('/images/marrakech-garden.jpg')}.circuit-card:nth-child(2) .circuit-art{background-image:url('/images/agadir-coast.jpg')}.circuit-card:nth-child(3) .circuit-art{background-image:url('/images/morocco-kasbah.jpg')}@media(max-width:1100px){.dashboard-panels,.profile-columns{grid-template-columns:1fr}}@media(max-width:700px){.sidebar{width:100%}.page-content{padding:15px}.profile-head{flex-direction:column;align-items:flex-start}.profile-identity{padding:0 12px 20px}}
+:host{display:block;font-family:Arial,sans-serif;color:#21323b}*{box-sizing:border-box}.guide-layout{min-height:100vh;display:flex;background:#f4f7f8}.sidebar{width:235px;min-width:235px;background:#123b46;color:#fff;padding:22px 14px;display:flex;flex-direction:column;gap:14px}.brand{display:flex;align-items:center;gap:11px;font-size:13px}.brand-icon,.avatar{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#0d7895;color:white;font-weight:700;font-size:20px}.brand small{display:block;font-size:10px;color:#bdcdd1;margin-top:5px}.menu-label{font-size:10px;letter-spacing:1px;color:#9bb6be;margin:20px 7px 0}.navigation{display:flex;flex-direction:column;gap:6px}.nav-item{cursor:pointer;text-align:left;width:100%;border:0;background:transparent;padding:14px;border-radius:7px;color:#e8f0f2;font-weight:600;font-size:12px}.nav-item.active,.nav-item:hover{background:#0d7895}.sidebar-help{background:#1b4e59;padding:14px;border-radius:9px;font-size:12px;margin-top:auto}.sidebar-help p{font-size:11px;color:#d6e4e8;line-height:1.6}.sidebar-footer{font-size:10px;color:#acc6cd;text-align:center}.logout-button{background:transparent;color:white;border:1px solid #77939c;padding:10px;border-radius:8px;cursor:pointer}.main-content{flex:1;min-width:0}.topbar{height:70px;background:white;border-bottom:1px solid #dce5e8;padding:0 26px;display:flex;align-items:center;justify-content:space-between;font-size:13px}.breadcrumb{color:#708398}.user-info{display:flex;align-items:center;gap:10px}.avatar{font-size:14px;border-radius:50%;width:32px;height:32px}.page-content{padding:26px;max-width:1320px;margin:0 auto}.welcome-banner{background:linear-gradient(110deg,#0f5364,#0b8da9);color:white;padding:26px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.welcome-banner h1{margin:8px 0}.welcome-banner p{color:#daeff2}.welcome-label{font-size:11px;letter-spacing:1px}.welcome-decoration{font-size:46px;color:#ffd15a}.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-bottom:20px}.stat-card,.content-card{background:#fff;border:1px solid #e1e9ec;border-radius:11px;padding:21px;box-shadow:0 4px 15px #0c35410a}.stat-card{display:flex;gap:15px;min-height:125px}.stat-card span,.stat-card small{font-size:11px;color:#63778b}.stat-card h3{font-size:22px;margin:10px 0}.stat-icon{width:37px;height:37px;flex:none;border-radius:8px;display:grid;place-items:center;background:#e7f7fa;color:#117c91}.stat-icon.green{background:#e9f9f0;color:#208663}.stat-icon.amber{background:#fff5db;color:#a67d21}.stat-icon.blue{background:#ebf2ff;color:#3d72a4}.content-card{margin-bottom:20px}.card-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.card-heading h1,.content-card h1{font-size:24px;margin:0 0 8px}.card-heading h2{margin:0;font-size:18px}.card-heading p,.content-card>p{color:#617689}.data-row{padding:14px 0;border-top:1px solid #e4eaed;display:flex;align-items:center;justify-content:space-between;gap:12px}.data-row span{color:#657b86}.note,.error-message{background:#fff4e5;border:1px solid #f7d7a2;border-radius:8px;padding:14px;margin:15px 0;color:#764d12}.error-message{background:#fcecec;border-color:#ffcccc;color:#941c1c}.hint{color:#6a7b87;font-size:12px;line-height:1.6;margin-top:20px}button:not(.nav-item):not(.logout-button){background:#0d7895;color:white;border:0;padding:11px 15px;border-radius:7px;font-weight:600;cursor:pointer;margin:4px}button.secondary{background:#edf2f4!important;color:#203d46!important}.profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.profile-grid .full{grid-column:1/-1}.profile-grid label{display:block;color:#63778b;font-size:12px;font-weight:600;margin-bottom:7px}.profile-grid p{padding:9px 0;margin:0;font-weight:500}.profile-grid input,.filter{width:100%;padding:12px;border:1px solid #ccd8dc;border-radius:8px;font:inherit}.filter{max-width:360px;margin:4px 0 20px}.circuit-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.circuit-card{border:1px solid #dfebee;border-radius:10px;overflow:hidden}.circuit-art{height:100px;background:linear-gradient(135deg,#1e7389,#d3e9e8);display:grid;place-items:center;color:white;font-size:36px}.circuit-body{padding:15px}.circuit-body h3{font-size:16px}.circuit-body p{font-size:13px;color:#667d85;line-height:1.5}.review{padding:16px 0;border-bottom:1px solid #e6edef}.review-heading{display:flex;justify-content:space-between}.review-heading span{color:#b17e16}.review small{color:#80909a}@media(max-width:1000px){.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.circuit-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){.guide-layout{display:block}.sidebar{width:100%;min-width:0}.navigation{display:grid;grid-template-columns:repeat(2,1fr)}.sidebar-help,.sidebar-footer{display:none}.page-content{padding:14px}.topbar{padding:0 12px}.stats-grid,.profile-grid,.circuit-cards{grid-template-columns:1fr}.user-info{display:none}}.sidebar{background:#073946;width:222px;min-width:222px}.page-content{max-width:1440px;padding:26px 30px}.welcome-banner{min-height:150px;background:linear-gradient(115deg,#045467,#108ca8)}.dashboard-panels{display:grid;grid-template-columns:1.65fr 1fr;gap:18px;align-items:stretch}.dashboard-panels .content-card{min-height:330px}button.text-action{background:transparent!important;color:#0b7893!important;font-size:12px;padding:5px!important}.empty-state{min-height:215px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;color:#647b85}.empty-icon{background:#e6f6f8;color:#0f91a7;border-radius:50%;width:58px;height:58px;display:grid;place-items:center;font-size:30px}.empty-state p{font-size:12px;max-width:355px;line-height:1.6}.recent-circuit{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid #edf1f2}.circuit-thumbnail{width:66px;height:54px;flex:none;border-radius:6px;background:center/cover url('/images/marrakech-garden.jpg')}
+.recent-circuit-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}.recent-circuit-info strong{font-size:11px}.circuit-status{font-size:10px;color:#217b54;background:#e5f6ea;padding:5px 7px;border-radius:5px}button.full-action{width:100%;background:white!important;color:#0a6f84!important;border:1px solid #d8e4e7!important;margin-top:16px!important}.profile-head{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:0 0 17px}.profile-head h1{margin:6px 0;font-size:25px}.profile-cover{overflow:hidden;background:white;border:1px solid #e2ebee;border-radius:11px;margin-bottom:10px}.profile-cover-band{height:50px;background:linear-gradient(112deg,#085768,#08a2b6)}.profile-identity{display:flex;align-items:center;gap:25px;margin-top:-10px;padding:0 35px 20px}.profile-avatar{width:64px;height:64px;border:4px solid white;background:#087d99;color:white;border-radius:12px;display:grid;place-items:center;font-size:29px}.profile-rating{margin-left:auto;color:#bf8a20;padding-top:20px}.profile-columns{display:grid;grid-template-columns:2fr 1fr;gap:18px;align-items:start}.profile-side h2{font-size:16px;margin:0 0 8px}.language-pill{background:#f3f8f9;border:1px solid #e8f0f1;padding:12px;border-radius:6px;margin:7px 0}.secondary-title{margin-top:22px!important}.status-row{display:flex;justify-content:space-between;font-size:12px}.status-row strong{color:#138666}.circuit-art{height:143px;background:center/cover url('/images/marrakech-garden.jpg')}
+@media(max-width:1100px){.dashboard-panels,.profile-columns{grid-template-columns:1fr}}@media(max-width:700px){.sidebar{width:100%}.page-content{padding:15px}.profile-head{flex-direction:column;align-items:flex-start}.profile-identity{padding:0 12px 20px}}
 
 
 .language-header {
@@ -69,4 +71,252 @@ button.confirm-language-btn {
 .language-empty {
   font-size: 12px;
   color: #64748b;
+}
+
+
+/* Formulaire d'ajout de circuit */
+
+.circuit-form {
+  margin: 24px 0;
+  padding: 24px;
+  border: 1px solid #dbe7eb;
+  border-radius: 12px;
+  background: #f8fbfc;
+}
+
+.circuit-form h2 {
+  font-size: 19px;
+  color: #073946;
+  margin: 0 0 22px;
+}
+
+.circuit-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.circuit-form-grid .full {
+  grid-column: 1 / -1;
+}
+
+.circuit-form label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  color: #334e5b;
+  margin-bottom: 7px;
+}
+
+.circuit-form input,
+.circuit-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #ccd8dc;
+  border-radius: 8px;
+  padding: 12px;
+  font: inherit;
+  background: white;
+}
+
+.guide-owner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+
+.guide-owner strong {
+  color: #087d99;
+}
+
+.guide-owner small {
+  color: #64748b;
+}
+
+.circuit-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.circuit-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+  .circuit-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .circuit-form-grid .full {
+    grid-column: auto;
+  }
+}
+
+
+/* Réservations Guide */
+
+.reservations-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.reservations-summary span {
+  padding: 9px 13px;
+  background: #edf6f8;
+  color: #17677a;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.reservation-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.reservation-card {
+  border: 1px solid #dce8eb;
+  background: white;
+  border-radius: 11px;
+  padding: 20px;
+}
+
+.reservation-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #edf1f3;
+}
+
+.reservation-card-header h3 {
+  margin: 0 0 7px;
+  color: #073946;
+}
+
+.reservation-card-header small {
+  color: #64748b;
+}
+
+.reservation-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  padding-top: 20px;
+}
+
+.reservation-details div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.reservation-details span {
+  color: #718096;
+  font-size: 12px;
+}
+
+.reservation-details strong {
+  color: #173b46;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.reservation-status {
+  display: inline-block;
+  background: #e8f7ef;
+  color: #16754b;
+  padding: 7px 11px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reservation-status.pending {
+  background: #fff3d8;
+  color: #9a6411;
+}
+
+.reservation-recent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 16px 0;
+  border-bottom: 1px solid #e8eff1;
+}
+
+.reservation-recent strong,
+.reservation-recent small {
+  display: block;
+}
+
+.reservation-recent small {
+  color: #64748b;
+  margin-top: 7px;
+  line-height: 1.5;
+}
+
+.reservation-actions {
+  margin-top: 18px;
+  border-top: 1px solid #edf1f3;
+}
+
+@media (max-width: 700px) {
+  .reservation-details {
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-card-header {
+    flex-direction: column;
+  }
+}
+
+
+.reservation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.reservation-accept-btn,
+.reservation-refuse-btn {
+  padding: 11px 22px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.reservation-accept-btn {
+  background: #168457;
+  color: white;
+  border: 1px solid #168457;
+}
+
+.reservation-refuse-btn {
+  background: white;
+  color: #c0392b;
+  border: 1px solid #c0392b;
+}
+
+.reservation-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reservation-actions .hint {
+  flex-basis: 100%;
+  font-size: 12px;
 }

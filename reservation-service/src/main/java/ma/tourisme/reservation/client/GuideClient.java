@@ -21,6 +21,62 @@ public class GuideClient {
     this.http = RestClient.builder().baseUrl(url).requestFactory(factory).build();
   }
 
+
+/**
+ * Récupère le véritable ID du guide connecté
+ * depuis le service Guide, avec son JWT Keycloak.
+ */
+  public Long getAuthenticatedGuideId(String accessToken) {
+
+    JsonNode response;
+
+    try {
+        response = http.get()
+            .uri("/api/guides/me")
+            .headers(headers ->
+                headers.setBearerAuth(accessToken)
+            )
+            .retrieve()
+            .body(JsonNode.class);
+
+    } catch (RestClientResponseException e) {
+
+        if (e.getStatusCode().value() == 401) {
+            throw new ResponseStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "Token Keycloak invalide"
+            );
+        }
+
+        if (e.getStatusCode().value() == 403) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "Acces Guide refuse"
+            );
+        }
+
+        if (e.getStatusCode().value() == 404) {
+            throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Aucun profil Guide associe"
+            );
+        }
+
+        throw unavailable();
+
+    } catch (RestClientException e) {
+        throw unavailable();
+    }
+
+    if (response == null ||
+        !response.path("id").canConvertToLong()) {
+
+        throw unavailable();
+    }
+
+    return response.path("id").longValue();
+}
+  
   /** Refuse la réservation si le guide n'existe pas ou n'est pas disponible. */
   public void requireAvailable(long guideId) {
     JsonNode guide;

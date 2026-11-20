@@ -1,5 +1,6 @@
 package ma.tourisme.guide.controller;
 
+import org.springframework.web.server.ResponseStatusException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import ma.tourisme.guide.exception.NotFoundException;
@@ -45,5 +46,23 @@ public class ApiExceptionHandler {
         body.put("message", message);
         body.put("path", request.getRequestURI());
         return ResponseEntity.status(status).body(body);
+    }
+
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> status(
+            ResponseStatusException e,
+            HttpServletRequest request) {
+
+        HttpStatus status =
+            HttpStatus.valueOf(e.getStatusCode().value());
+
+        return build(
+            status,
+            e.getReason() != null
+                ? e.getReason()
+                : status.getReasonPhrase(),
+            request
+        );
     }
 }

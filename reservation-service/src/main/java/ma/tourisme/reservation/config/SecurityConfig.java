@@ -52,8 +52,35 @@ public class SecurityConfig {
     return http.cors(cors -> {}).csrf(csrf -> csrf.disable())
       .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
       .authorizeHttpRequests(auth -> auth
-        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-        .requestMatchers("/api/reservations/admin/**").hasRole("ADMIN")
+
+          .requestMatchers(
+              HttpMethod.OPTIONS,
+              "/**"
+          ).permitAll()
+
+          // Consultation des réservations du guide connecté
+          .requestMatchers(
+              HttpMethod.GET,
+              "/api/reservations/guide"
+          ).hasRole("GUIDE")
+
+          // Nouvelles décisions spécifiques au guide
+          .requestMatchers(
+              HttpMethod.PATCH,
+              "/api/reservations/guide/{id}/accepter",
+              "/api/reservations/guide/{id}/refuser"
+          ).hasRole("GUIDE")
+
+          // Anciennes actions : accès réservé à l'administration
+          .requestMatchers(
+              HttpMethod.PATCH,
+              "/api/reservations/{id}/accepter",
+              "/api/reservations/{id}/refuser"
+          ).hasRole("ADMIN")
+
+        .requestMatchers(
+            "/api/reservations/admin/**"
+        ).hasRole("ADMIN")
         .anyRequest().permitAll())
       .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(converter)))
       .build();
