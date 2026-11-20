@@ -118,7 +118,10 @@
               <p *ngIf="circuitsError" class="note">{{circuitsError}}</p>
               <p *ngIf="circuitsLoading" class="hint">Chargement des circuits…</p>
               <div *ngFor="let c of circuits.slice(0,3); let i=index" class="recent-circuit">
-                <div class="circuit-thumbnail" [class.thumb-two]="i===1" [class.thumb-three]="i===2"></div>
+                <div
+                  class="circuit-thumbnail"
+                  [style.background-image]="photoUrl(c)">
+                </div>
                 <div class="recent-circuit-info"><strong>{{c.titre}}</strong><small>{{c.ville || 'Maroc'}} · {{c.dureeHeures ?? '—'}} h</small></div>
                 <span class="circuit-status">Circuit</span>
               </div>
@@ -373,8 +376,13 @@
             <article
               class="circuit-card"
               *ngFor="let c of visibleCircuits">
-
-              <div class="circuit-art"></div>
+              
+              <div
+                class="circuit-art"
+                [style.background-image]="photoUrl(c)"
+                role="img"
+                [attr.aria-label]="photoAlt(c)">
+              </div>
 
               <div class="circuit-body">
                 <h3>{{ c.titre }}</h3>
@@ -456,6 +464,13 @@
               </p>
             </div>
 
+          <p
+            *ngIf="reservationActionError"
+            class="error-message"
+            role="alert">
+            {{ reservationActionError }}
+          </p>
+
             <div
               class="reservation-list"
               *ngIf="reservations.length > 0">
@@ -513,20 +528,46 @@
                     <strong>{{ r.email }}</strong>
                   </div>
 
-                </div>
-
+                </div>                
                 <div
                   class="reservation-actions"
                   *ngIf="r.statut === 'EN_ATTENTE'">
 
-                  <p class="hint">
-                    Les décisions Accepter / Refuser seront
-                    activées après sécurisation des actions
-                    côté serveur.
-                  </p>
+                  <button
+                    type="button"
+                    class="reservation-accept-btn"
+                    [disabled]="
+                      !reservationActionsReady ||
+                      reservationActionId !== null
+                    "
+                    (click)="traiterReservation(r, 'accepter')">
+
+                    {{
+                      reservationActionId === r.id
+                        ? 'Traitement...'
+                        : '✓ Accepter'
+                    }}
+                  </button>
+
+                  <button
+                    type="button"
+                    class="reservation-refuse-btn"
+                    [disabled]="
+                      !reservationActionsReady ||
+                      reservationActionId !== null
+                    "
+                    (click)="traiterReservation(r, 'refuser')">
+
+                    ✕ Refuser
+                  </button>
+
+                  <small
+                    *ngIf="!reservationActionsReady"
+                    class="hint">
+                    Actions en attente de validation du backend.
+                  </small>
 
                 </div>
-
               </article>
 
             </div>

@@ -68,6 +68,24 @@ export class GuideWorkspaceService {
       { timeout: 20000 }
     );
   }
+
+
+  accepterReservation(id: number): Observable<GuideReservation> {
+    return this.http.patch<GuideReservation>(
+      `/api/reservations/guide/${id}/accepter`,
+      {}
+    );
+  }
+
+  refuserReservation(id: number): Observable<GuideReservation> {
+    return this.http.patch<GuideReservation>(
+      `/api/reservations/guide/${id}/refuser`,
+      {}
+    );
+  }
+
+
+
   // Consultation uniquement : il faut une route sécurisée « mes réservations »
   // côté service Réservation avant de pouvoir afficher des demandes privées.
   // Même exigence pour les avis privés ; les avis publics peuvent être affichés.

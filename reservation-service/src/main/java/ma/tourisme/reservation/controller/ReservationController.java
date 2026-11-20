@@ -61,5 +61,28 @@ public class ReservationController {
         );
     }
 
+
+    @PatchMapping("/guide/{id}/accepter")
+    public Reservation accepterPourGuide(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        return service.accepterPourGuide(
+            id,
+            jwt.getTokenValue()
+        );
+    }
+
+    @PatchMapping("/guide/{id}/refuser")
+    public Reservation refuserPourGuide(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        return service.refuserPourGuide(
+            id,
+            jwt.getTokenValue()
+        );
+    }
+
     
 }
