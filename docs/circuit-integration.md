@@ -63,17 +63,15 @@ lancés depuis cette branche :
 docker compose up --build -d circuit-service frontend
 ```
 
-L'existence d'un vrai guide doit être fournie par l'API Guide intégrée. Pour un
-essai explicite avec le simulateur uniquement :
+Circuit vérifie l'existence du guide auprès du vrai service Guide. Pour lancer
+toute l'application avec Keycloak :
 
 ```powershell
-docker compose -f docker-compose.yml -f compose.demo.yaml up --build -d guide-service circuit-service frontend
+docker compose -f docker-compose.yml -f compose.auth.yml up --build -d
 ```
 
-Cette variante simule Guide, pas l'authentification ; Keycloak reste nécessaire
-pour les écritures avec un vrai access token ADMIN. Le catalogue vide et les
-lectures publiques fonctionnent sans connexion Keycloak ; la récupération des
-clés est déclenchée lorsqu'un Bearer token doit être vérifié.
+Le catalogue et les lectures publiques fonctionnent sans connexion ; les
+écritures demandent un access token ADMIN ou GUIDE.
 
 ## Scripts et vérifications
 
