@@ -70,9 +70,8 @@ describe('Reviews component', () => {
     expect(req.request.method).toBe('GET');
     req.flush([sampleReview]);
 
-    const resReq = http.expectOne('/api/reservations/me');
-    resReq.flush([]);
-
+    const eligReq = http.expectOne((r) => r.url === '/api/avis/eligibilite');
+    eligReq.flush({ eligible: false, reservations: [] });
     harness.detectChanges();
 
     const author = harness.routeNativeElement?.querySelector('.review-author');
@@ -98,8 +97,8 @@ describe('Reviews component', () => {
     const moyReq = http.expectOne('/api/avis/moyenne?circuitId=2');
     moyReq.flush({ cibleType: 'CIRCUIT', cibleId: 2, moyenne: 4.5, nombreAvis: 8 });
 
-    const resReq = http.expectOne('/api/reservations/me');
-    resReq.flush([]);
+    const eligReq = http.expectOne((r) => r.url === '/api/avis/eligibilite');
+    eligReq.flush({ eligible: false, reservations: [] });
 
     harness.detectChanges();
 
