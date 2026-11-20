@@ -5,7 +5,10 @@ import java.util.List;
 import ma.tourisme.circuit.dto.CircuitRequest;
 import ma.tourisme.circuit.dto.CircuitResponse;
 import ma.tourisme.circuit.service.CircuitService;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +30,17 @@ public class CircuitController {
   @GetMapping("/{id}")
   public CircuitResponse get(@PathVariable long id) {
     return service.get(id);
+  }
+
+  /** Public photo of a circuit. The ETag lets browsers revalidate instead of downloading again. */
+  @GetMapping("/{id}/image")
+  public ResponseEntity<byte[]> image(@PathVariable long id) {
+    CircuitService.Photo photo = service.photo(id);
+    return ResponseEntity.ok()
+        .contentType(MediaType.parseMediaType(photo.contentType()))
+        .cacheControl(CacheControl.noCache())
+        .eTag(photo.etag())
+        .body(photo.bytes());
   }
 
   @PostMapping

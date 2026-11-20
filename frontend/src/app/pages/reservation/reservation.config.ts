@@ -1,5 +1,7 @@
+// Relative URLs: nginx (Docker) and proxy.conf.cjs (ng serve) route them to each service,
+// whatever its host port, and the auth interceptor only adds the token to /api/ URLs.
 export const API = {
-  guides: 'http://localhost:8081/api/guides',
-  circuits: 'http://localhost:8082/api/circuits',
-  reservations: 'http://localhost:8083/api/reservations',
+  guides: '/api/guides',
+  circuits: '/api/circuits',
+  reservations: '/api/reservations',
 };

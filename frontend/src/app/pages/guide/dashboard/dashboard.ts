@@ -5,7 +5,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Circuit } from '../../../models/circuit';
 import { Avis } from '../../../services/workspace.service';
 import { AuthService } from '../../../auth/auth.service';
-
+import { circuitPhoto } from '../../../models/circuit-photo';
 import {
   GuideProfile,
   GuideProfileUpdate,
@@ -54,6 +54,15 @@ export class GuideDashboard implements OnInit {
   reservations: GuideReservation[] = [];
   reservationsLoading = false;
   reservationsError = '';
+
+  reservationActionId: number | null = null;
+  reservationActionError = '';
+  
+
+  // Reste false tant que les endpoints de Mariam
+  // ne sont pas vérifiés et sécurisés.
+  reservationActionsReady = true;
+
   circuitsLoading = false;
   avisLoading = false;
   circuitsError = '';
@@ -229,6 +238,13 @@ export class GuideDashboard implements OnInit {
     });
   }
 
+  photoUrl(c: Circuit): string {
+    return `url("${circuitPhoto(c).src}")`;
+  }
+
+  photoAlt(c: Circuit): string {
+    return circuitPhoto(c).alt;
+  }
   loadReservations(): void {
     this.reservationsLoading = true;
     this.reservationsError = '';
@@ -264,6 +280,63 @@ export class GuideDashboard implements OnInit {
       }
     });
   }
+
+
+  traiterReservation(
+    reservation: GuideReservation,
+    action: 'accepter' | 'refuser'
+  ): void {
+
+    if (!this.reservationActionsReady) return;
+    if (this.reservationActionId !== null) return;
+    if (reservation.statut !== 'EN_ATTENTE') return;
+
+    const confirmation = window.confirm(
+      `Voulez-vous vraiment ${action} la réservation ` +
+      `n° ${reservation.id} de ${reservation.nom} ?`
+    );
+
+    if (!confirmation) return;
+
+    this.reservationActionId = reservation.id;
+    this.reservationActionError = '';
+
+    const requete = action === 'accepter'
+      ? this.workspace.accepterReservation(reservation.id)
+      : this.workspace.refuserReservation(reservation.id);
+
+    requete.subscribe({
+      next: () => {
+        this.reservationActionId = null;
+
+        // Recharger les données depuis le backend
+        this.loadReservations();
+
+        this.cdr.markForCheck();
+      },
+
+      error: (error: HttpErrorResponse) => {
+        this.reservationActionId = null;
+
+        if (error.status === 403) {
+          this.reservationActionError =
+            'Vous ne pouvez pas traiter cette réservation.';
+        } else if (error.status === 409) {
+          this.reservationActionError =
+            'Cette réservation a déjà été traitée.';
+          this.loadReservations();
+        } else {
+          this.reservationActionError =
+            `Action impossible (HTTP ${
+              error.status || 'réseau'
+            }).`;
+        }
+
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
 
   loadCircuits(guideId: number): void {
     this.circuitsLoading = true; this.circuitsError = '';

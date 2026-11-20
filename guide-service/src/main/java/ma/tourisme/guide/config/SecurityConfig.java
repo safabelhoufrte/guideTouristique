@@ -84,7 +84,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/guides").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/guides/*").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/guides/*").hasRole("ADMIN")
+                .requestMatchers("/error").permitAll()
                 .anyRequest().denyAll())
+                
             .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(realmRoles())))
             .build();
     }

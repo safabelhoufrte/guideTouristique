@@ -52,20 +52,33 @@
   "ville": "Agadir",
   "dureeHeures": 4,
   "prix": 250.0,
-  "guideId": 1
+  "guideId": 1,
+  "image": "/api/circuits/1/image"
 }
 ```
+
+`image` est un lien vers la photo, ou `null` si le circuit n'en a pas. Il
+s'utilise tel quel dans `<img [src]>`. Les listes restent légères : la photo
+n'est jamais incluse dans le JSON.
+
+En écriture (POST et PUT), `image` accepte :
+- une data URL `data:image/(jpeg|png|webp);base64,…` (1 500 000 caractères au plus) : nouvelle photo ;
+- `""` : retire la photo ;
+- `null` ou champ absent : en PUT, garde la photo actuelle ; en POST, pas de photo.
+
+Tout autre format → 400.
 
 ### Endpoints
 | Méthode | URL | Description | Réponse |
 |---|---|---|---|
 | GET | /api/circuits | Liste (filtres : ?ville=, ?guideId=) | 200 |
 | GET | /api/circuits/{id} | Détail | 200 / 404 |
+| GET | /api/circuits/{id}/image | Photo (octets, `Content-Type` image/jpeg, png ou webp ; `ETag`, 304 si inchangée) | 200 / 304 / 404 |
 | POST | /api/circuits | ADMIN ou GUIDE — créer (vérifie que guideId existe) | 201 / 400 / 401 / 403 / 503 |
 | PUT | /api/circuits/{id} | ADMIN ou GUIDE — modifier | 200 / 404 / 401 / 403 / 503 |
 | DELETE | /api/circuits/{id} | ADMIN ou GUIDE — archiver sans effacer l'historique | 204 / 404 / 401 / 403 / 503 |
 
-Les deux routes GET restent publiques. Les écritures exigent un access token signé :
+Les trois routes GET restent publiques. La photo d'un circuit archivé renvoie 404. Les écritures exigent un access token signé :
 émetteur Keycloak attendu, audience `guide-touristique-api`, sujet non vide,
 dates valides et rôle `ADMIN` ou `GUIDE` dans `realm_access.roles`. USER ne peut
 pas écrire. Voir [la configuration Circuit](circuit-integration.md).
