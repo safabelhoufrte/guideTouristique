@@ -1,5 +1,6 @@
 package ma.tourisme.circuit.service;
 
+import java.util.Base64;
 import java.util.List;
 import ma.tourisme.circuit.client.GuideClient;
 import ma.tourisme.circuit.dto.CircuitRequest;
@@ -8,6 +9,7 @@ import ma.tourisme.circuit.model.Circuit;
 import ma.tourisme.circuit.repository.CircuitRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -49,6 +51,20 @@ public class CircuitService {
     get(id);
     guideClient.requireExisting(request.guideId());
     return CircuitResponse.from(repository.update(model(id, request)).orElseThrow(this::notFound));
+  }
+
+  /** Photo of a circuit as bytes, decoded from the stored data URL. */
+  public record Photo(String contentType, byte[] bytes, String etag) {}
+
+  public Photo photo(long id) {
+    String dataUrl =
+        repository
+            .findImage(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Photo introuvable"));
+    int comma = dataUrl.indexOf(',');
+    String contentType = dataUrl.substring("data:".length(), dataUrl.indexOf(';'));
+    byte[] bytes = Base64.getDecoder().decode(dataUrl.substring(comma + 1));
+    return new Photo(contentType, bytes, DigestUtils.md5DigestAsHex(bytes));
   }
 
   public void archive(long id) {
