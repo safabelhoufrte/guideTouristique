@@ -85,6 +85,24 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/guides/*").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/guides/*").hasRole("ADMIN")
                 .requestMatchers("/error").permitAll()
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/guides/*/photo"
+                ).permitAll()
+
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/guides/me/photo"
+                ).hasRole("GUIDE")
+
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/guides/me/photo"
+                ).hasRole("GUIDE")
+                .requestMatchers(
+                    HttpMethod.HEAD,
+                    "/api/guides/*/photo"
+                ).permitAll()
                 .anyRequest().denyAll())
                 
             .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(realmRoles())))

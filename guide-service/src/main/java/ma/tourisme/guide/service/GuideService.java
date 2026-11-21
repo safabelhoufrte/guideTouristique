@@ -17,13 +17,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+
+import ma.tourisme.guide.model.GuidePhoto;
+import ma.tourisme.guide.repository.GuidePhotoRepository;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+
 @Service
 public class GuideService {
 
-    private final GuideRepository repository;
 
-    public GuideService(GuideRepository repository) {
+    private final GuideRepository repository;
+    private final GuidePhotoRepository photoRepository;
+
+    public GuideService(
+            GuideRepository repository,
+            GuidePhotoRepository photoRepository) {
+
         this.repository = repository;
+        this.photoRepository = photoRepository;
     }
 
     @Transactional(readOnly = true)
@@ -158,7 +170,13 @@ public class GuideService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
+
     private GuideResponse toResponse(Guide guide) {
+
+        String photo = photoRepository.existsById(guide.getId())
+            ? "/api/guides/" + guide.getId() + "/photo"
+            : null;
+
         return new GuideResponse(
             guide.getId(),
             guide.getNom(),
@@ -169,7 +187,8 @@ public class GuideService {
             guide.getTelephone(),
             guide.getTarifParJour(),
             guide.isActif(),
-            guide.getNoteMoyenne()
+            guide.getNoteMoyenne(),
+            photo
         );
     }
 
@@ -188,5 +207,101 @@ public class GuideService {
             guide.getOwnerSubject(),
             guide.getNoteMoyenne()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public GuidePhoto photo(Long guideId) {
+        // Vérifier aussi que le guide existe.
+        getOrThrow(guideId);
+
+        return photoRepository.findById(guideId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Photo introuvable"
+            ));
+    }
+
+    @Transactional
+    public void modifierMaPhoto(
+            String subject,
+            MultipartFile file) {
+
+        Guide guide = getByOwnerOrThrow(subject);
+
+        if (file == null || file.isEmpty()
+                || file.getSize() > 1_500_000) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Photo vide ou trop volumineuse"
+            );
+        }
+
+        String type = file.getContentType();
+
+        if (type == null || !List.of(
+                "image/jpeg",
+                "image/png",
+                "image/webp"
+            ).contains(type)) {
+
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Format de photo non autorise"
+            );
+        }
+
+        try {
+            byte[] data = file.getBytes();
+
+            // Vérifier les signatures réelles des images.
+            boolean valide = switch (type) {
+                case "image/jpeg" ->
+                    data.length >= 3 &&
+                    (data[0] & 0xff) == 0xff &&
+                    (data[1] & 0xff) == 0xd8 &&
+                    (data[2] & 0xff) == 0xff;
+
+                case "image/png" ->
+                    data.length >= 8 &&
+                    (data[0] & 0xff) == 0x89 &&
+                    data[1] == 0x50 &&
+                    data[2] == 0x4e &&
+                    data[3] == 0x47;
+
+                case "image/webp" ->
+                    data.length >= 12 &&
+                    new String(data, 0, 4,
+                        java.nio.charset.StandardCharsets.US_ASCII)
+                        .equals("RIFF") &&
+                    new String(data, 8, 4,
+                        java.nio.charset.StandardCharsets.US_ASCII)
+                        .equals("WEBP");
+
+                default -> false;
+            };
+
+            if (!valide) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Le fichier ne correspond pas au format annonce"
+                );
+            }
+
+            photoRepository.save(
+                new GuidePhoto(guide.getId(), type, data)
+            );
+
+        } catch (IOException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Impossible de lire la photo"
+            );
+        }
+    }
+
+    @Transactional
+    public void supprimerMaPhoto(String subject) {
+        Guide guide = getByOwnerOrThrow(subject);
+        photoRepository.deleteById(guide.getId());
     }
 }
