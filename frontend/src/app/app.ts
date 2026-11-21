@@ -6,17 +6,16 @@ import { NavigationEnd, RouterLink, RouterLinkActive, RouterOutlet } from '@angu
 import { Router } from '@angular/router';
 import { AuthDialog, AuthDialogService } from './auth/auth-dialog';
 import { OffreBienvenue } from './auth/offre-bienvenue';
+import { AccountMenu } from './auth/account-menu';
 
 /** Personal spaces with their own full-screen layout (sidebar + topbar). */
 function isConsoleUrl(url: string) {
-  return ['/administration', '/espace-guide'].some((space) =>
-    url.startsWith(space),
-  );
+  return ['/administration', '/espace-guide'].some((space) => url.startsWith(space));
 }
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, AuthDialog, OffreBienvenue],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, AuthDialog, OffreBienvenue, AccountMenu],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
