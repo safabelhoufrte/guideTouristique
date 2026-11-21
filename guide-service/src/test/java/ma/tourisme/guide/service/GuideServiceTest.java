@@ -1,11 +1,12 @@
-
 package ma.tourisme.guide.service;
 
 import ma.tourisme.guide.dto.GuideRequest;
 import ma.tourisme.guide.dto.GuideResponse;
 import ma.tourisme.guide.exception.NotFoundException;
 import ma.tourisme.guide.model.Guide;
+import ma.tourisme.guide.model.GuidePhoto;
 import ma.tourisme.guide.repository.GuideRepository;
+import ma.tourisme.guide.repository.GuidePhotoRepository;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,13 +29,19 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
- 
+
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class GuideServiceTest {
 
+    private static final String SUB =
+        "3f2a1b9c-0d4e-4f5a-8b6c-7d8e9f0a1b2c";
+
     @Mock
     private GuideRepository repository;
+
+    @Mock
+    private GuidePhotoRepository photoRepository;
 
     @InjectMocks
     private GuideService service;
@@ -39,13 +49,12 @@ class GuideServiceTest {
     private Guide benali;
     private Guide alaoui;
 
-    // Création d'un guide pour les tests
     private Guide creerGuide(
             Long id,
             String nom,
             String ville,
-            String... langues
-    ) {
+            String... langues) {
+
         Guide g = new Guide();
 
         ReflectionTestUtils.setField(g, "id", id);
@@ -57,16 +66,15 @@ class GuideServiceTest {
         return g;
     }
 
-    // Préparation d'une requête de test
     private GuideRequest requete(String nom) {
         return new GuideRequest(
-                nom,
-                "Test",
-                "Agadir",
-                List.of("français"),
-                "test@example.com",
-                "0600000000",
-                300.0
+            nom,
+            "Test",
+            "Agadir",
+            List.of("français"),
+            "test@example.com",
+            "0600000000",
+            300.0
         );
     }
 
@@ -74,38 +82,33 @@ class GuideServiceTest {
     void initialiser() {
 
         benali = creerGuide(
-                1L,
-                "Benali",
-                "Agadir",
-                "français",
-                "anglais"
+            1L, "Benali", "Agadir",
+            "français", "anglais"
         );
 
         alaoui = creerGuide(
-                2L,
-                "Alaoui",
-                "Marrakech",
-                "français",
-                "arabe"
+            2L, "Alaoui", "Marrakech",
+            "français", "arabe"
         );
 
-        // Recherche sans filtre
         when(repository.rechercherGuides(null, null))
-                .thenReturn(List.of(benali, alaoui));
+            .thenReturn(List.of(benali, alaoui));
 
-        // Recherche par identifiant
         when(repository.findById(1L))
-                .thenReturn(Optional.of(benali));
+            .thenReturn(Optional.of(benali));
 
         when(repository.findById(2L))
-                .thenReturn(Optional.of(alaoui));
+            .thenReturn(Optional.of(alaoui));
 
         when(repository.findById(99L))
-                .thenReturn(Optional.empty());
+            .thenReturn(Optional.empty());
 
-        // Simulation de l'enregistrement
         when(repository.save(any(Guide.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+            .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Par défaut, les guides n'ont pas de photo.
+        when(photoRepository.existsById(any()))
+            .thenReturn(false);
     }
 
     // ==========================================
@@ -121,14 +124,15 @@ class GuideServiceTest {
         assertEquals("Benali", r.nom());
         assertEquals(1L, r.id());
         assertTrue(r.disponible());
+        assertNull(r.photo());
     }
 
     @Test
     void testRechercherGuideInexistant() {
 
         assertThrows(
-                NotFoundException.class,
-                () -> service.findById(99L)
+            NotFoundException.class,
+            () -> service.findById(99L)
         );
     }
 
@@ -136,7 +140,7 @@ class GuideServiceTest {
     void testNombreDeGuidesVisibles() {
 
         List<GuideResponse> resultats =
-                service.findAll(null, null);
+            service.findAll(null, null);
 
         assertEquals(2, resultats.size());
     }
@@ -145,10 +149,10 @@ class GuideServiceTest {
     void testFiltrerParVille() {
 
         when(repository.rechercherGuides("agadir", null))
-                .thenReturn(List.of(benali));
+            .thenReturn(List.of(benali));
 
         List<GuideResponse> resultats =
-                service.findAll("agadir", null);
+            service.findAll("agadir", null);
 
         assertEquals(1, resultats.size());
         assertEquals("Benali", resultats.get(0).nom());
@@ -160,10 +164,10 @@ class GuideServiceTest {
     void testFiltrerParLangue() {
 
         when(repository.rechercherGuides(null, "anglais"))
-                .thenReturn(List.of(benali));
+            .thenReturn(List.of(benali));
 
         List<GuideResponse> resultats =
-                service.findAll(null, "anglais");
+            service.findAll(null, "anglais");
 
         assertEquals(1, resultats.size());
         assertEquals("Benali", resultats.get(0).nom());
@@ -175,10 +179,10 @@ class GuideServiceTest {
     void testFiltrerParVilleEtLangue() {
 
         when(repository.rechercherGuides("agadir", "anglais"))
-                .thenReturn(List.of(benali));
+            .thenReturn(List.of(benali));
 
         List<GuideResponse> resultats =
-                service.findAll("agadir", "anglais");
+            service.findAll("agadir", "anglais");
 
         assertEquals(1, resultats.size());
         assertEquals("Benali", resultats.get(0).nom());
@@ -190,9 +194,11 @@ class GuideServiceTest {
     void testFiltreSansResultat() {
 
         when(repository.rechercherGuides("Fès", null))
-                .thenReturn(List.of());
+            .thenReturn(List.of());
 
-        assertTrue(service.findAll("Fès", null).isEmpty());
+        assertTrue(
+            service.findAll("Fès", null).isEmpty()
+        );
     }
 
     // ==========================================
@@ -203,20 +209,27 @@ class GuideServiceTest {
     void testModifierGuideExistant() {
 
         GuideRequest req = new GuideRequest(
-                "Benali Modifié",
-                "Youssef",
-                "Agadir",
-                List.of("français"),
-                "youssef@example.com",
-                "0600000000",
-                450.0
+            "Benali Modifié",
+            "Youssef",
+            "Agadir",
+            List.of("français"),
+            "youssef@example.com",
+            "0600000000",
+            450.0
         );
 
         GuideResponse r = service.update(1L, req);
 
         assertEquals("Benali Modifié", r.nom());
-        assertEquals(450.0, benali.getTarifParJour(), 0.001);
-        assertEquals(List.of("français"), r.langues());
+        assertEquals(
+            450.0,
+            benali.getTarifParJour(),
+            0.001
+        );
+        assertEquals(
+            List.of("français"),
+            r.langues()
+        );
 
         verify(repository).save(benali);
     }
@@ -225,8 +238,11 @@ class GuideServiceTest {
     void testModifierGuideInexistant() {
 
         assertThrows(
-                NotFoundException.class,
-                () -> service.update(99L, requete("Inconnu"))
+            NotFoundException.class,
+            () -> service.update(
+                99L,
+                requete("Inconnu")
+            )
         );
     }
 
@@ -237,7 +253,8 @@ class GuideServiceTest {
     @Test
     void testCreerGuide() {
 
-        GuideResponse r = service.create(requete("Nouveau"));
+        GuideResponse r =
+            service.create(requete("Nouveau"));
 
         assertNotNull(r);
         assertEquals("Nouveau", r.nom());
@@ -264,8 +281,8 @@ class GuideServiceTest {
     void testDesactiverGuideInexistant() {
 
         assertThrows(
-                NotFoundException.class,
-                () -> service.desactiver(99L)
+            NotFoundException.class,
+            () -> service.desactiver(99L)
         );
     }
 
@@ -285,13 +302,13 @@ class GuideServiceTest {
     void testGuideSansLangues() {
 
         Guide guide = creerGuide(
-                3L,
-                "Nouveau",
-                "Agadir"
+            3L,
+            "Nouveau",
+            "Agadir"
         );
 
         when(repository.findById(3L))
-                .thenReturn(Optional.of(guide));
+            .thenReturn(Optional.of(guide));
 
         GuideResponse r = service.findById(3L);
 
@@ -299,52 +316,228 @@ class GuideServiceTest {
     }
 
     // ==========================================
-    // TESTS KEYCLOAK (compte lie au profil guide)
+    // TESTS KEYCLOAK
     // ==========================================
-
-    private static final String SUB = "3f2a1b9c-0d4e-4f5a-8b6c-7d8e9f0a1b2c";
 
     @Test
     void testMonProfilTrouveParLeCompteKeycloak() {
-        benali.setOwnerSubject(SUB);
-        when(repository.findByOwnerSubject(SUB)).thenReturn(Optional.of(benali));
 
-        assertEquals(1L, service.findByOwner(SUB).id());
+        benali.setOwnerSubject(SUB);
+
+        when(repository.findByOwnerSubject(SUB))
+            .thenReturn(Optional.of(benali));
+
+        assertEquals(
+            1L,
+            service.findByOwner(SUB).id()
+        );
     }
 
     @Test
     void testMonProfilSansCompteLieRenvoie404() {
-        when(repository.findByOwnerSubject(SUB)).thenReturn(Optional.empty());
 
-        var erreur = assertThrows(org.springframework.web.server.ResponseStatusException.class,
-                () -> service.findByOwner(SUB));
-        assertEquals(404, erreur.getStatusCode().value());
+        when(repository.findByOwnerSubject(SUB))
+            .thenReturn(Optional.empty());
+
+        ResponseStatusException erreur =
+            assertThrows(
+                ResponseStatusException.class,
+                () -> service.findByOwner(SUB)
+            );
+
+        assertEquals(
+            HttpStatus.NOT_FOUND.value(),
+            erreur.getStatusCode().value()
+        );
     }
 
     @Test
     void testCompteDejaLieAUnAutreGuideRenvoie409() {
-        when(repository.existsByOwnerSubject(SUB)).thenReturn(true);
-        GuideRequest req = new GuideRequest("Nouveau", null, "Agadir", List.of("français"),
-                null, null, 300.0, SUB, true);
 
-        var erreur = assertThrows(org.springframework.web.server.ResponseStatusException.class,
-                () -> service.create(req));
-        assertEquals(409, erreur.getStatusCode().value());
-        verify(repository, never()).save(any(Guide.class));
+        when(repository.existsByOwnerSubject(SUB))
+            .thenReturn(true);
+
+        GuideRequest req = new GuideRequest(
+            "Nouveau",
+            null,
+            "Agadir",
+            List.of("français"),
+            null,
+            null,
+            300.0,
+            SUB,
+            true
+        );
+
+        ResponseStatusException erreur =
+            assertThrows(
+                ResponseStatusException.class,
+                () -> service.create(req)
+            );
+
+        assertEquals(
+            HttpStatus.CONFLICT.value(),
+            erreur.getStatusCode().value()
+        );
+
+        verify(repository, never())
+            .save(any(Guide.class));
     }
 
     @Test
     void testLeGuideNePeutPasChangerSonCompteNiSaDisponibilite() {
+
         benali.setOwnerSubject(SUB);
         benali.setActif(true);
-        when(repository.findByOwnerSubject(SUB)).thenReturn(Optional.of(benali));
-        GuideRequest req = new GuideRequest("Benali", "Youssef", "Agadir", List.of("français"),
-                null, null, 500.0, "11111111-2222-3333-4444-555555555555", false);
+
+        when(repository.findByOwnerSubject(SUB))
+            .thenReturn(Optional.of(benali));
+
+        GuideRequest req = new GuideRequest(
+            "Benali",
+            "Youssef",
+            "Agadir",
+            List.of("français"),
+            null,
+            null,
+            500.0,
+            "11111111-2222-3333-4444-555555555555",
+            false
+        );
 
         service.updateMine(SUB, req);
 
-        assertEquals(SUB, benali.getOwnerSubject());
+        assertEquals(
+            SUB,
+            benali.getOwnerSubject()
+        );
+
         assertTrue(benali.isActif());
-        assertEquals(500.0, benali.getTarifParJour(), 0.001);
+
+        assertEquals(
+            500.0,
+            benali.getTarifParJour(),
+            0.001
+        );
+    }
+
+    // ==========================================
+    // NOUVEAUX TESTS DES PHOTOS
+    // ==========================================
+
+    @Test
+    void testGuideAvecPhotoRetourneSonLien() {
+
+        when(photoRepository.existsById(1L))
+            .thenReturn(true);
+
+        GuideResponse r = service.findById(1L);
+
+        assertEquals(
+            "/api/guides/1/photo",
+            r.photo()
+        );
+
+        verify(photoRepository)
+            .existsById(1L);
+    }
+
+    @Test
+    void testLecturePhotoExistante() {
+
+        byte[] data = new byte[] {
+            (byte) 0xFF,
+            (byte) 0xD8,
+            (byte) 0xFF
+        };
+
+        GuidePhoto photo = new GuidePhoto(
+            1L,
+            "image/jpeg",
+            data
+        );
+
+        when(photoRepository.findById(1L))
+            .thenReturn(Optional.of(photo));
+
+        GuidePhoto result = service.photo(1L);
+
+        assertEquals(
+            "image/jpeg",
+            result.getContentType()
+        );
+
+        assertArrayEquals(
+            data,
+            result.getData()
+        );
+    }
+
+    @Test
+    void testLecturePhotoInexistanteRenvoie404() {
+
+        when(photoRepository.findById(1L))
+            .thenReturn(Optional.empty());
+
+        ResponseStatusException erreur =
+            assertThrows(
+                ResponseStatusException.class,
+                () -> service.photo(1L)
+            );
+
+        assertEquals(
+            404,
+            erreur.getStatusCode().value()
+        );
+    }
+
+    @Test
+    void testModificationPhotoDuGuideConnecte() {
+
+        benali.setOwnerSubject(SUB);
+
+        when(repository.findByOwnerSubject(SUB))
+            .thenReturn(Optional.of(benali));
+
+        byte[] image = new byte[] {
+            (byte) 0xFF,
+            (byte) 0xD8,
+            (byte) 0xFF,
+            0x00
+        };
+
+        MockMultipartFile fichier =
+            new MockMultipartFile(
+                "file",
+                "photo.jpg",
+                "image/jpeg",
+                image
+            );
+
+        service.modifierMaPhoto(SUB, fichier);
+
+        verify(photoRepository).save(
+            argThat(photo ->
+                photo.getGuideId().equals(1L) &&
+                photo.getContentType().equals("image/jpeg") &&
+                java.util.Arrays.equals(
+                    photo.getData(),
+                    image
+                )
+            )
+        );
+    }
+
+    @Test
+    void testSuppressionPhotoDuGuideConnecte() {
+
+        benali.setOwnerSubject(SUB);
+
+        when(repository.findByOwnerSubject(SUB))
+            .thenReturn(Optional.of(benali));
+
+        service.supprimerMaPhoto(SUB);
+
+        verify(photoRepository).deleteById(1L);
     }
 }

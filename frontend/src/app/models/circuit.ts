@@ -22,4 +22,6 @@ export interface Guide {
   langues?: string[];
   disponible: boolean;
   tarifParJour?: number;
+  prenom?: string | null;
+  photo?: string | null;
 }

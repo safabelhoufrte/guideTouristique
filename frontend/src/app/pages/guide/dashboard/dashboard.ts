@@ -70,6 +70,113 @@ export class GuideDashboard implements OnInit {
   edit = false;
   saving = false;
   saveMessage = '';
+
+  photoSaving = false;
+  photoMessage = '';
+  photoError = false;
+  photoVersion = 0;
+
+  get maPhotoUrl(): string | null {
+    if (!this.guide?.photo) return null;
+
+    const separator = this.guide.photo.includes('?') ? '&' : '?';
+
+    return `${this.guide.photo}${separator}v=${this.photoVersion}`;
+  }
+
+  choisirMaPhoto(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    // Permet de sélectionner à nouveau le même fichier.
+    input.value = '';
+
+    if (!file || this.photoSaving) return;
+
+    this.photoMessage = '';
+    this.photoError = false;
+
+    const typesAcceptes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp'
+    ];
+
+    if (!typesAcceptes.includes(file.type)) {
+      this.photoMessage = 'Choisissez une image JPG, PNG ou WebP.';
+      this.photoError = true;
+      return;
+    }
+
+    if (file.size > 1_500_000) {
+      this.photoMessage = 'La photo ne doit pas dépasser 1,5 Mo.';
+      this.photoError = true;
+      return;
+    }
+
+    this.photoSaving = true;
+
+    this.workspace.uploadMaPhoto(file).subscribe({
+      next: () => {
+        this.workspace.me().subscribe({
+          next: guide => {
+            this.guide = guide;
+            this.photoVersion++;
+            this.photoSaving = false;
+            this.photoError = false;
+            this.photoMessage = 'Photo modifiée avec succès.';
+            this.cdr.markForCheck();
+          },
+          error: () => {
+            this.photoSaving = false;
+            this.photoError = false;
+            this.photoMessage =
+              'Photo enregistrée. Actualisez la page pour la voir.';
+            this.cdr.markForCheck();
+          }
+        });
+      },
+      error: (e: HttpErrorResponse) => {
+        this.photoSaving = false;
+        this.photoError = true;
+        this.photoMessage =
+          `Impossible de modifier la photo (HTTP ${e.status || 'réseau'}).`;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  supprimerPhotoProfil(): void {
+    if (!this.guide?.photo || this.photoSaving) return;
+
+    if (!window.confirm('Supprimer votre photo de profil ?')) {
+      return;
+    }
+
+    this.photoSaving = true;
+    this.photoMessage = '';
+    this.photoError = false;
+
+    this.workspace.supprimerMaPhoto().subscribe({
+      next: () => {
+        if (this.guide) {
+          this.guide = { ...this.guide, photo: null };
+        }
+
+        this.photoVersion++;
+        this.photoSaving = false;
+        this.photoMessage = 'Photo supprimée avec succès.';
+        this.cdr.markForCheck();
+      },
+      error: (e: HttpErrorResponse) => {
+        this.photoSaving = false;
+        this.photoError = true;
+        this.photoMessage =
+          `Suppression impossible (HTTP ${e.status || 'réseau'}).`;
+        this.cdr.markForCheck();
+      }
+    });
+  }
   form: GuideProfileUpdate = { nom:'', prenom:'', ville:'', langues:[], email:'', telephone:'', tarifParJour:0 };
   
     afficherAjoutLangue = false;
