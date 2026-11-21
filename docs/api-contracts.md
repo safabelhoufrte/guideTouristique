@@ -25,9 +25,14 @@
   "email": "youssef@example.com",
   "telephone": "0600000000",
   "tarifParJour": 400.0,
-  "disponible": true
+  "disponible": true,
+  "noteMoyenne": null,
+  "photo": "/api/guides/1/photo"
 }
 ```
+
+`photo` est un lien vers la photo du guide, ou `null` s'il n'en a pas. Il s'utilise tel quel
+dans `<img [src]>` ; la photo n'est jamais incluse dans le JSON.
 
 ### Endpoints
 | Méthode | URL | Description | Réponse |
@@ -38,6 +43,9 @@
 | PUT | /api/guides/{id} | Modifier | 200 / 404 |
 | DELETE | /api/guides/{id} | Supprimer | 204 / 404 |
 | GET | /api/guides/{id}/disponibilite | Disponibilité | 200 |
+| GET | /api/guides/{id}/photo | Photo (public : octets, `Content-Type` image/jpeg, png ou webp ; `ETag`, 304 si inchangée) | 200 / 304 / 404 |
+| PUT | /api/guides/me/photo | GUIDE — remplacer sa propre photo (multipart, champ `file`, JPEG/PNG/WebP, 1,5 Mo max) | 204 / 400 / 401 / 403 / 404 |
+| DELETE | /api/guides/me/photo | GUIDE — supprimer sa propre photo | 204 / 401 / 403 / 404 |
 
 ---
 

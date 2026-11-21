@@ -13,7 +13,11 @@ describe('Shared public routes without authentication infrastructure', () => {
     });
     http = TestBed.inject(HttpTestingController);
   });
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // Circuit titles for the review cards (CircuitNames): answered empty, titles fall back to "Circuit n° X".
+    http.match('/api/circuits').forEach((req) => req.flush([]));
+    http.verify();
+  });
   it('opens the landing page using public APIs without requesting Keycloak configuration', async () => {
     const harness = await RouterTestingHarness.create('/');
     http.expectOne('/api/circuits').flush([]);
