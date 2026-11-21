@@ -28,7 +28,11 @@ describe('Review eligibility and submission', () => {
     http = TestBed.inject(HttpTestingController);
     harness = await RouterTestingHarness.create();
   });
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // Circuit titles for the review cards (CircuitNames): answered empty, titles fall back to "Circuit n° X".
+    http.match('/api/circuits').forEach((req) => req.flush([]));
+    http.verify();
+  });
   it('explains an ineligible booking without showing a submit form', async () => {
     await harness.navigateByUrl('/avis/25', ReviewForm);
     http

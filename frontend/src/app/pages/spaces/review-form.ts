@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { Avis, Eligibility, EligibleReservation, extractAvisError } from '../../models/avis';
 import { AvisService } from '../../services/avis.service';
+import { CircuitNames } from '../../services/circuit-names';
 
 @Component({
   selector: 'app-review-form',
@@ -82,13 +83,15 @@ import { AvisService } from '../../services/avis.service';
               <select id="reservation-select" (change)="onSelectReservation($event)">
                 @for (r of eligibleReservationsList(); track r.reservationId) {
                   <option [value]="r.reservationId" [selected]="r.reservationId === currentId()">
-                    Réservation n° {{ r.reservationId }} (Circuit n° {{ r.circuitId }})
+                    {{ circuits.name(r.circuitId) }} · réservation n° {{ r.reservationId }}
                   </option>
                 }
               </select>
             </div>
           } @else {
-            <h4 class="sub-heading">Réservation n° {{ e.reservationId }}</h4>
+            <h4 class="sub-heading">
+              {{ circuits.name(e.circuitId) }} · réservation n° {{ e.reservationId }}
+            </h4>
           }
           <div class="form-grid" style="margin-top:22px">
             <div>
@@ -137,6 +140,7 @@ import { AvisService } from '../../services/avis.service';
 })
 export class ReviewForm {
   private readonly api = inject(AvisService);
+  readonly circuits = inject(CircuitNames);
   private readonly route = inject(ActivatedRoute);
 
   @Input() set reservationId(val: number | null | undefined) {

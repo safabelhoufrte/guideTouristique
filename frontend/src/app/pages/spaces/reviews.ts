@@ -2,9 +2,20 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, combineLatest, finalize, forkJoin, map, of, startWith, Subject, switchMap } from 'rxjs';
+import {
+  catchError,
+  combineLatest,
+  finalize,
+  forkJoin,
+  map,
+  of,
+  startWith,
+  Subject,
+  switchMap,
+} from 'rxjs';
 import { Avis, AvisMoyenne, extractAvisError, UserEligibility } from '../../models/avis';
 import { AvisService } from '../../services/avis.service';
+import { CircuitNames } from '../../services/circuit-names';
 import { AuthService } from '../../auth/auth.service';
 import { ReviewForm } from './review-form';
 
@@ -221,7 +232,10 @@ import { ReviewForm } from './review-form';
             @if (!auth.has('USER')) {
               <div class="surface login-box">
                 <h3 class="panel-heading">Donner mon avis</h3>
-                <p>Vous avez participé à l'une de nos visites ? Connectez-vous avec votre compte voyageur pour publier votre avis.</p>
+                <p>
+                  Vous avez participé à l'une de nos visites ? Connectez-vous avec votre compte
+                  voyageur pour publier votre avis.
+                </p>
                 <div style="margin-top: 18px;">
                   <button class="button primary" style="width: 100%;" (click)="login()">
                     Se connecter
@@ -278,7 +292,9 @@ import { ReviewForm } from './review-form';
               <article class="surface review-card">
                 <div class="booking-heading">
                   <strong class="review-author">{{ a.auteur }}</strong>
-                  <span class="badge">{{ a.publie ? 'Publié' : (scope === 'me' ? 'En attente' : 'Masqué') }}</span>
+                  <span class="badge">{{
+                    a.publie ? 'Publié' : scope === 'me' ? 'En attente' : 'Masqué'
+                  }}</span>
                 </div>
                 <div class="review-stars-group">
                   <div class="stars-line">
@@ -296,7 +312,7 @@ import { ReviewForm } from './review-form';
                 </div>
                 <p class="review-text">{{ a.commentaire }}</p>
                 <p class="muted">
-                  Circuit n° {{ a.circuitId }} · {{ a.dateCreation | date: 'dd/MM/yyyy' }}
+                  {{ circuits.name(a.circuitId) }} · {{ a.dateCreation | date: 'dd/MM/yyyy' }}
                 </p>
                 @if (scope === 'admin') {
                   <div class="actions">
@@ -315,12 +331,12 @@ import { ReviewForm } from './review-form';
 })
 export class Reviews {
   private readonly api = inject(AvisService);
- 
+  readonly circuits = inject(CircuitNames);
+
   readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
 
-  readonly scope = (this.route.snapshot.data['scope'] || 'public') as
-    'public' | 'me' | 'admin';
+  readonly scope = (this.route.snapshot.data['scope'] || 'public') as 'public' | 'me' | 'admin';
 
   readonly refresh = new Subject<void>();
   readonly error = signal('');
@@ -330,21 +346,17 @@ export class Reviews {
   readonly loadingEligibility = signal(false);
 
   readonly vm = toSignal(
-    combineLatest([
-      this.refresh.pipe(startWith(undefined)),
-      this.route.queryParamMap,
-    ]).pipe(
+    combineLatest([this.refresh.pipe(startWith(undefined)), this.route.queryParamMap]).pipe(
       switchMap(([_, qp]) => {
         const circuitId = qp.get('circuitId') ? Number(qp.get('circuitId')) : undefined;
         const guideId = qp.get('guideId') ? Number(qp.get('guideId')) : undefined;
-        const filters = (circuitId || guideId) ? { circuitId, guideId } : undefined;
+        const filters = circuitId || guideId ? { circuitId, guideId } : undefined;
 
         const avis$ = this.api.getAvis(this.scope, filters);
-        const moyenne$ = (this.scope === 'public' && (circuitId || guideId))
-          ? this.api.getMoyenne({ circuitId, guideId }).pipe(
-              catchError(() => of(null))
-            )
-          : of(null);
+        const moyenne$ =
+          this.scope === 'public' && (circuitId || guideId)
+            ? this.api.getMoyenne({ circuitId, guideId }).pipe(catchError(() => of(null)))
+            : of(null);
 
         return forkJoin({ rows: avis$, moyenne: moyenne$ }).pipe(
           map(({ rows, moyenne }) => ({ loading: false, rows, moyenne, error: '' })),
