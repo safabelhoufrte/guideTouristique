@@ -112,6 +112,7 @@ class AvisSecurityIntegrationTest {
             .expiresAt(Instant.now().plusSeconds(300))
             .claim("realm_access", Map.of("roles", roles))
             .claim("name", name)
+            .claim("email", token.equals("user") ? "touriste@demo.example" : (token + "@demo.example"))
             .build();
       };
     }
@@ -196,17 +197,17 @@ class AvisSecurityIntegrationTest {
 
   // 4. Visite future, non acceptée ou inexistante refusée
   @Test
-  @DisplayName("4. Visite future, non acceptée (403) ou inexistante (400) refusée")
+  @DisplayName("4. Visite future, non acceptée (403) ou inexistante (403) refusée")
   void testVisiteFutureNonAccepteeOuInexistanteRefusee() throws Exception {
     // Visite future ou non acceptée -> 403 Forbidden
     when(reservations.requireEligible(eq(88L), any()))
         .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Un avis est possible uniquement après la date d’une visite acceptée."));
     expect("POST", "/api/avis", request().replace("25", "88"), "user", 403);
 
-    // Réservation inexistante dans reservation-service -> 400 Bad Request
+    // Réservation inexistante dans reservation-service -> 403 Forbidden
     when(reservations.requireEligible(eq(87L), any()))
-        .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Réservation introuvable."));
-    expect("POST", "/api/avis", request().replace("25", "87"), "user", 400);
+        .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Cette réservation ne vous appartient pas ou est introuvable."));
+    expect("POST", "/api/avis", request().replace("25", "87"), "user", 403);
 
     assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM avis", Integer.class));
   }
@@ -447,5 +448,14 @@ class AvisSecurityIntegrationTest {
     expect("POST", "/api/avis", request(), "user", 201);
     var resApresAvis = expect("GET", "/api/avis/eligibilite?reservationId=25", null, "user", 200);
     assertFalse(resApresAvis.path("eligible").asBoolean());
+  }
+
+  // 14. Email manquant dans le token refusé (403)
+  @Test
+  @DisplayName("14. Token sans email -> 403 Forbidden")
+  void testTokenSansEmailRefuse() throws Exception {
+    when(reservations.requireEligible(eq(25L), any()))
+        .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Email manquant dans le token."));
+    expect("POST", "/api/avis", request(), "user", 403);
   }
 }

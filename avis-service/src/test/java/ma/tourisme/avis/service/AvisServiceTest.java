@@ -50,7 +50,10 @@ class AvisServiceTest {
   }
 
   private static Jwt jwt(String nom) {
-    Jwt.Builder b = Jwt.withTokenValue("token-test").header("alg", "none").subject("sub-1");
+    Jwt.Builder b = Jwt.withTokenValue("token-test")
+        .header("alg", "none")
+        .subject("sub-1")
+        .claim("email", "touriste@demo.example");
     if (nom != null) {
       b.claim("name", nom);
     }
@@ -211,6 +214,54 @@ class AvisServiceTest {
     Jwt jwt = jwt("Test Tourist");
     when(reservations.requireEligible(25L, jwt))
         .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Visite non acceptée"));
+
+    assertStatus(403, () -> service.create(r, jwt));
+
+    verifyNoInteractions(repo);
+  }
+
+  @Test
+  void testCreerReservationServiceEnPanneRenvoie503() {
+    AvisRequest r = requete();
+    Jwt jwt = jwt("Test Tourist");
+    when(reservations.requireEligible(25L, jwt))
+        .thenThrow(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Le service Réservation est momentanément indisponible."));
+
+    assertStatus(503, () -> service.create(r, jwt));
+
+    verifyNoInteractions(repo);
+  }
+
+  @Test
+  void testCreerReservationAutreUtilisateurRenvoie403() {
+    AvisRequest r = requete();
+    Jwt jwt = jwt("Test Tourist");
+    when(reservations.requireEligible(25L, jwt))
+        .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Cette réservation ne vous appartient pas."));
+
+    assertStatus(403, () -> service.create(r, jwt));
+
+    verifyNoInteractions(repo);
+  }
+
+  @Test
+  void testCreerReservationInexistanteRenvoie403() {
+    AvisRequest r = requete();
+    Jwt jwt = jwt("Test Tourist");
+    when(reservations.requireEligible(25L, jwt))
+        .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Cette réservation ne vous appartient pas ou est introuvable."));
+
+    assertStatus(403, () -> service.create(r, jwt));
+
+    verifyNoInteractions(repo);
+  }
+
+  @Test
+  void testCreerEmailManquantDansTokenRenvoie403() {
+    AvisRequest r = requete();
+    Jwt jwt = jwt("Test Tourist");
+    when(reservations.requireEligible(25L, jwt))
+        .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Email manquant dans le token."));
 
     assertStatus(403, () -> service.create(r, jwt));
 

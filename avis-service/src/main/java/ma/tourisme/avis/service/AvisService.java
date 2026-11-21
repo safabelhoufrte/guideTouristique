@@ -1,6 +1,5 @@
 package ma.tourisme.avis.service;
 
-import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -62,14 +61,11 @@ public class AvisService {
 
     var userRes = reservations.findUserReservations(jwt);
     Set<Long> reviewedIds = new HashSet<>(repo.findReviewedReservationIds(jwt.getSubject()));
-    LocalDate now = LocalDate.now();
+    String email = jwt != null ? jwt.getClaimAsString("email") : null;
 
     List<EligibleReservationDto> eligible = userRes.stream()
         .filter(r -> !reviewedIds.contains(r.id()))
-        .filter(r -> "ACCEPTEE".equalsIgnoreCase(r.statut())
-            || "CONFIRMEE".equalsIgnoreCase(r.statut())
-            || "TERMINEE".equalsIgnoreCase(r.statut()))
-        .filter(r -> r.dateVisite() == null || !r.dateVisite().isAfter(now))
+        .filter(r -> ReservationClient.isEligible(r, email))
         .map(r -> new EligibleReservationDto(r.id(), r.circuitId(), r.guideId()))
         .toList();
 
