@@ -15,6 +15,7 @@ export interface GuideProfile {
   tarifParJour: number;
   disponible: boolean;
   noteMoyenne?: number | null;
+  photo?: string | null;
 }
 export interface GuideProfileUpdate {
   nom: string;
@@ -55,6 +56,24 @@ export class GuideWorkspaceService {
   }
   updateMe(body: GuideProfileUpdate): Observable<GuideProfile> {
     return this.http.put<GuideProfile>('/api/guides/me', body, { timeout: 12000 });
+  }
+
+  uploadMaPhoto(file: File): Observable<void> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.put<void>(
+      '/api/guides/me/photo',
+      formData,
+      { timeout: 20000 }
+    );
+  }
+
+  supprimerMaPhoto(): Observable<void> {
+    return this.http.delete<void>(
+      '/api/guides/me/photo',
+      { timeout: 12000 }
+    );
   }
   circuits(guideId: number): Observable<Circuit[]> {
     return this.http.get<Circuit[]>('/api/circuits', {

@@ -1,15 +1,11 @@
 # 🧭 Guide Touristique
 
-> **Branche Circuit :** cette branche reprend le frontend public actuel de `main2`
-> et ajoute le backend Circuit. Les lectures restent publiques ; les créations,
-> modifications et archivages demandent un access token Keycloak avec le rôle ADMIN.
-> Voir [le lancement et la vérification de Circuit](docs/circuit-integration.md).
-> Les autres API et le frontend authentifié restent à intégrer séparément.
-
-> **État actuel de main2 :** frontend public et initialisation PostgreSQL partagés. Lire
-> [le guide de lancement et de compatibilité](docs/shared-frontend.md) avant de suivre le planning initial ci-dessous.
-> L’authentification et les espaces privés sont isolés sur `auth-integration` pour revue d’équipe.
-> Les implémentations des services métier restent sur leurs branches ; elles ne sont pas toutes présentes dans main2.
+> **État de `main2` :** frontend Angular, authentification Keycloak (rôles USER, GUIDE, ADMIN),
+> espaces Touriste, Guide et Administration, et les services Guide, Circuit et Réservation,
+> chacun avec son schéma dans `tourisme_db`. Le service Avis est en cours d'intégration (PR #26).
+> Lancement : [frontend et base partagée](docs/shared-frontend.md),
+> [authentification et administration](docs/auth-admin-integration.md),
+> [Circuit](docs/circuit-integration.md).
 > Pour une base existante, conserver les volumes : `init.sql` sert uniquement à une première installation.
 
 Application web distribuée de **guide touristique**, composée de 4 modules métier autonomes qui communiquent entre eux via des **Web Services REST (JSON)**.

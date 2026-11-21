@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
+import ma.tourisme.guide.model.GuidePhoto;
 import java.util.List;
 import java.util.Map;
 import ma.tourisme.guide.config.SecurityConfig;
@@ -52,10 +52,23 @@ class GuideSecurityTest {
     @Autowired MockMvc mvc;
     @MockitoBean GuideService service;
 
+
     private static GuideResponse guide(long id) {
-        return new GuideResponse(id, "Benali", "Youssef", "Agadir", List.of("français"),
-            "youssef@example.com", "0600000000", 400.0, true, null);
+        return new GuideResponse(
+            id,
+            "Benali",
+            "Youssef",
+            "Agadir",
+            List.of("français"),
+            "youssef@example.com",
+            "0600000000",
+            400.0,
+            true,
+            null,
+            "/api/guides/" + id + "/photo"
+        );
     }
+
 
     private static RequestPostProcessor as(String role) {
         return jwt().jwt(j -> j.subject(GUIDE_SUB))
@@ -76,6 +89,8 @@ class GuideSecurityTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(1))
             .andExpect(jsonPath("$.disponible").value(true))
+            .andExpect(jsonPath("$.photo")
+                .value("/api/guides/1/photo"))
             .andExpect(jsonPath("$.ownerSubject").doesNotExist());
     }
 
@@ -152,5 +167,93 @@ class GuideSecurityTest {
             .jwt(j -> j.subject(GUIDE_SUB).claim("realm_access", Map.of("roles", List.of("offline_access"))))
             .authorities(SecurityConfig::realmAuthorities);
         mvc.perform(get("/api/guides/me").with(unknownOnly)).andExpect(status().isForbidden());
+    }
+
+
+    @Test
+    void publicCanReadGuidePhoto() throws Exception {
+
+        byte[] image = new byte[] {
+            (byte) 0xFF,
+            (byte) 0xD8,
+            (byte) 0xFF
+        };
+
+        when(service.photo(1L)).thenReturn(
+            new GuidePhoto(1L, "image/jpeg", image)
+        );
+
+        mvc.perform(get("/api/guides/1/photo"))
+            .andExpect(status().isOk())
+            .andExpect(org.springframework.test.web.servlet.result
+                .MockMvcResultMatchers.content()
+                .contentType(MediaType.IMAGE_JPEG))
+            .andExpect(org.springframework.test.web.servlet.result
+                .MockMvcResultMatchers.content()
+                .bytes(image));
+    }
+
+
+    @Test
+    void guidePhotoNotFoundReturns404() throws Exception {
+
+        when(service.photo(99L)).thenThrow(
+            new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Photo introuvable"
+            )
+        );
+
+        mvc.perform(get("/api/guides/99/photo"))
+            .andExpect(status().isNotFound());
+    }
+
+
+    @Test
+    void onlyGuideCanUpdateTheirOwnPhoto() throws Exception {
+
+        byte[] image = new byte[] {
+            (byte) 0xFF,
+            (byte) 0xD8,
+            (byte) 0xFF,
+            0x00
+        };
+
+        var file = new org.springframework.mock.web.MockMultipartFile(
+            "file",
+            "photo.jpg",
+            "image/jpeg",
+            image
+        );
+
+        mvc.perform(
+            org.springframework.test.web.servlet.request
+                .MockMvcRequestBuilders.multipart(
+                    "/api/guides/me/photo"
+                )
+                .file(file)
+                .with(request -> {
+                    request.setMethod("PUT");
+                    return request;
+                })
+        ).andExpect(status().isUnauthorized());
+
+        mvc.perform(
+            org.springframework.test.web.servlet.request
+                .MockMvcRequestBuilders.multipart(
+                    "/api/guides/me/photo"
+                )
+                .file(file)
+                .with(request -> {
+                    request.setMethod("PUT");
+                    return request;
+                })
+                .with(as("GUIDE"))
+        ).andExpect(status().isNoContent());
+
+        verify(service).modifierMaPhoto(
+            eq(GUIDE_SUB),
+            any()
+        );
     }
 }

@@ -13,6 +13,14 @@ import ma.tourisme.guide.dto.GuideAdminResponse;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 
+import ma.tourisme.guide.model.GuidePhoto;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.http.CacheControl;
+import org.springframework.util.DigestUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+
 @Validated
 @RestController
 @RequestMapping("/api/guides")
@@ -69,5 +77,40 @@ public class GuideController {
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody GuideRequest request) {
         return service.updateMine(jwt.getSubject(), request);
+    }
+
+    @GetMapping("/{id}/photo")
+    public ResponseEntity<byte[]> photo(
+            @PathVariable Long id) {
+
+        GuidePhoto p = service.photo(id);
+
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(
+                p.getContentType()
+            ))
+            .cacheControl(CacheControl.noCache())
+            .eTag(DigestUtils.md5DigestAsHex(p.getData()))
+            .body(p.getData());
+    }
+
+    @PutMapping(
+        value = "/me/photo",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<Void> modifierMaPhoto(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam("file") MultipartFile file) {
+
+        service.modifierMaPhoto(jwt.getSubject(), file);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/me/photo")
+    public ResponseEntity<Void> supprimerMaPhoto(
+            @AuthenticationPrincipal Jwt jwt) {
+
+        service.supprimerMaPhoto(jwt.getSubject());
+        return ResponseEntity.noContent().build();
     }
 }

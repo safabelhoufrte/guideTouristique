@@ -23,7 +23,7 @@ jobs:
           path: circuit-service/target/surefire-reports/
           if-no-files-found: warn
           retention-days: 14
-      - run: docker compose -f ../docker-compose.yml -f ../compose.demo.yaml config --quiet
+      - run: docker compose -f ../docker-compose.yml config --quiet
         env:
           DB_USER: postgres
           DB_PASSWORD: ci-admin-only

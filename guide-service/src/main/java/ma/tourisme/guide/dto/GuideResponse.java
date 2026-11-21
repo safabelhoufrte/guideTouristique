@@ -1,3 +1,4 @@
+
 package ma.tourisme.guide.dto;
 
 import java.util.List;
@@ -12,5 +13,6 @@ public record GuideResponse(
     String telephone,
     double tarifParJour,
     boolean disponible,
-    Double noteMoyenne
+    Double noteMoyenne,
+    String photo
 ) {}
