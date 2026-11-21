@@ -2,36 +2,45 @@
   >Aller au contenu</a
 >
 @if (!consoleSpace()) {
-<header class="site-header">
-  <div class="header-inner">
-    <a class="brand" routerLink="/">Guide Touristique</a>
-    <nav aria-label="Navigation principale">
-      <a
-        routerLink="/"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        ariaCurrentWhenActive="page"
-        >Accueil</a
-      >
-      <a routerLink="/guides" routerLinkActive="active" ariaCurrentWhenActive="page">Guides</a>
-      <a routerLink="/circuits" routerLinkActive="active" ariaCurrentWhenActive="page">Circuits</a>
-      <a routerLink="/mes-reservations" routerLinkActive="active" ariaCurrentWhenActive="page"
-        >Réservations</a
-      >
-      <a routerLink="/avis" routerLinkActive="active" ariaCurrentWhenActive="page">Avis</a>
-    </nav>
-    <div class="header-account">
-      @if (auth.authenticated()) {
-        <a [routerLink]="auth.home()" routerLinkActive="active">Mon espace</a>
-        <button class="account-button" (click)="auth.logout()">Se déconnecter</button>
-      } @else {
-        <button class="connexion-button" type="button" aria-haspopup="dialog" (click)="openLogin()">
-          Connexion <span aria-hidden="true">→</span>
-        </button>
-      }
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" routerLink="/">Guide Touristique</a>
+      <nav aria-label="Navigation principale">
+        <a
+          routerLink="/"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          ariaCurrentWhenActive="page"
+          >Accueil</a
+        >
+        <a routerLink="/guides" routerLinkActive="active" ariaCurrentWhenActive="page">Guides</a>
+        <a routerLink="/circuits" routerLinkActive="active" ariaCurrentWhenActive="page"
+          >Circuits</a
+        >
+        <a routerLink="/mes-reservations" routerLinkActive="active" ariaCurrentWhenActive="page"
+          >Réservations</a
+        >
+        <a routerLink="/avis" routerLinkActive="active" ariaCurrentWhenActive="page">Avis</a>
+      </nav>
+      <div class="header-account">
+        @if (auth.authenticated() && auth.has('USER') && !auth.has('ADMIN') && !auth.has('GUIDE')) {
+          <app-account-menu />
+        } @else if (auth.authenticated()) {
+          <a [routerLink]="auth.home()" routerLinkActive="active">Mon espace</a>
+          <button class="account-button" (click)="auth.logout()">Se déconnecter</button>
+        } @else {
+          <button
+            class="connexion-button"
+            type="button"
+            aria-haspopup="dialog"
+            (click)="openLogin()"
+          >
+            Connexion <span aria-hidden="true">→</span>
+          </button>
+        }
+      </div>
     </div>
-  </div>
-</header>
+  </header>
 }
 @if (auth.problem()) {
   <p class="auth-notice" role="status">{{ auth.problem() }}</p>

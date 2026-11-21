@@ -19,7 +19,7 @@ export const routes: Routes = [
     canActivate: [roleGuard],
     data: { roles: ['USER'] },
   },
-    {
+  {
     path: 'mes-reservations',
     canActivate: [roleGuard],
     data: { roles: ['USER'] },
@@ -43,15 +43,22 @@ export const routes: Routes = [
     loadComponent: () => import('./auth/login').then((m) => m.Login),
   },
   {
-    // Protected entry point only (role USER). The Reservation team builds the content.
+    // Traveller account pages (role USER), in the public layout: reviews and profile.
+    // Reservations stay at /mes-reservations (Reservation team).
     path: 'espace-touriste',
     canActivate: [roleGuard],
     data: { roles: ['USER'] },
     children: [
       {
+        // Like "Trips" on big travel sites: the traveller's home is their reservations.
         path: '',
-        title: 'Espace Touriste | Guide Touristique',
-        loadComponent: () => import('./pages/spaces/tourist-space').then((m) => m.TouristSpace),
+        pathMatch: 'full',
+        redirectTo: '/mes-reservations',
+      },
+      {
+        path: 'profil',
+        title: 'Mon profil | Guide Touristique',
+        loadComponent: () => import('./pages/spaces/tourist-profile').then((m) => m.TouristProfile),
       },
       {
         path: 'avis',
@@ -69,8 +76,7 @@ export const routes: Routes = [
     path: 'espace-guide',
     canActivate: [roleGuard],
     data: { roles: ['GUIDE'] },
-    loadComponent: () =>
-      import('./pages/guide/dashboard/dashboard').then((m) => m.GuideDashboard),
+    loadComponent: () => import('./pages/guide/dashboard/dashboard').then((m) => m.GuideDashboard),
     title: 'Mon espace Guide | Guide Touristique',
   },
   {

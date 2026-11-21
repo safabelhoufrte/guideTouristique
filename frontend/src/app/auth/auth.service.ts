@@ -14,7 +14,11 @@ export class AuthService {
   readonly roles = signal<Role[]>([]);
   readonly name = signal('');
   readonly email = signal('');
+  /** Account details from the Keycloak token, for the profile pages. */
+  readonly account = signal({ firstName: '', lastName: '', username: '', emailVerified: false });
   readonly problem = signal('');
+  /** Result of the last Keycloak account action (profile or password), shown once by the page. */
+  readonly accountAction = signal<{ action: string; status: string } | null>(null);
 
   async init() {
     try {
@@ -23,6 +27,8 @@ export class AuthService {
       );
       this.keycloak = new Keycloak(config);
       this.keycloak.onAuthLogout = () => this.sync();
+      this.keycloak.onActionUpdate = (status, action) =>
+        this.accountAction.set({ action: action ?? '', status });
       this.keycloak.onAuthRefreshError = () => {
         this.keycloak?.clearToken();
         this.sync();
@@ -49,6 +55,12 @@ export class AuthService {
     this.roles.set(roles.filter((role) => token?.realm_access?.roles.includes(role)));
     this.name.set(token?.['name'] || token?.['preferred_username'] || 'Mon compte');
     this.email.set(token?.['email'] || '');
+    this.account.set({
+      firstName: token?.['given_name'] || '',
+      lastName: token?.['family_name'] || '',
+      username: token?.['preferred_username'] || '',
+      emailVerified: token?.['email_verified'] === true,
+    });
   }
 
   has(role: Role) {
@@ -88,6 +100,16 @@ export class AuthService {
     const safe =
       returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/mon-espace';
     await this.keycloak.register({ redirectUri: location.origin + safe, locale: 'fr' });
+  }
+  /**
+   * Opens a Keycloak account page (themed like the login) and comes back to returnUrl:
+   * UPDATE_PROFILE for first name, last name and e-mail, UPDATE_PASSWORD for the password.
+   */
+  async manageAccount(action: 'UPDATE_PROFILE' | 'UPDATE_PASSWORD', returnUrl: string) {
+    if (!this.keycloak || this.problem()) return;
+    const safe =
+      returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/mon-espace';
+    await this.keycloak.login({ action, redirectUri: location.origin + safe, locale: 'fr' });
   }
   async logout() {
     await this.keycloak?.logout({ redirectUri: location.origin + '/circuits' });
