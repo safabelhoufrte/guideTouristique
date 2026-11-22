@@ -21,6 +21,8 @@ import org.flywaydb.core.api.migration.Context;
  * <p>Photos come from {@code db/demo/circuit/} and are stored as data URLs, like photos uploaded
  * from the admin editor. Sources: docs/landing-photos.md.
  */
+// Flyway requires the name V<version>__<description>, so the Java type naming rule cannot apply.
+@SuppressWarnings("checkstyle:TypeName")
 public class V4__seed_demo_circuits extends BaseJavaMigration {
   record Demo(
       String titre, String description, String ville, int dureeHeures, String prix, long guideId,
@@ -60,7 +62,9 @@ public class V4__seed_demo_circuits extends BaseJavaMigration {
     try (Statement check = connection.createStatement();
         ResultSet existing = check.executeQuery("SELECT EXISTS (SELECT 1 FROM circuit.circuits)")) {
       existing.next();
-      if (existing.getBoolean(1)) return;
+      if (existing.getBoolean(1)) {
+        return;
+      }
     }
     try (PreparedStatement insert =
         connection.prepareStatement(
@@ -84,7 +88,9 @@ public class V4__seed_demo_circuits extends BaseJavaMigration {
   static String photo(String file) throws IOException {
     try (InputStream in =
         V4__seed_demo_circuits.class.getResourceAsStream("/db/demo/circuit/" + file)) {
-      if (in == null) throw new IllegalStateException("Photo de démo manquante : " + file);
+      if (in == null) {
+        throw new IllegalStateException("Photo de démo manquante : " + file);
+      }
       return "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(in.readAllBytes());
     }
   }
