@@ -241,4 +241,29 @@ class CircuitServiceTest {
     assertStatus(404, () -> service.archiveAsGuide(99, "jwt"));
     verifyNoInteractions(guideClient);
   }
+
+  @Test
+  void photoComparesImageContentAndHashesWithSha256() {
+    when(repository.findImage(1)).thenReturn(Optional.of("data:image/png;base64,AQID"));
+    CircuitService.Photo first = service.photo(1);
+    CircuitService.Photo second = service.photo(1);
+
+    assertEquals("image/png", first.contentType());
+    assertArrayEquals(new byte[] {1, 2, 3}, first.bytes());
+    assertEquals(64, first.etag().length(), "SHA-256 in hexadecimal");
+    assertEquals(first, second, "same content, different arrays");
+    assertEquals(first.hashCode(), second.hashCode());
+    assertNotEquals(first, new CircuitService.Photo("image/png", new byte[] {9}, first.etag()));
+    assertNotEquals(first, new CircuitService.Photo("image/jpeg", first.bytes(), first.etag()));
+    assertNotEquals(first, new CircuitService.Photo("image/png", first.bytes(), "other"));
+    Object notAPhoto = "image/png";
+    assertFalse(first.equals(notAPhoto));
+    assertEquals("Photo[image/png, 3 bytes, etag=" + first.etag() + "]", first.toString());
+  }
+
+  @Test
+  void photoIsNotFoundWhenTheCircuitHasNone() {
+    when(repository.findImage(2)).thenReturn(Optional.empty());
+    assertStatus(404, () -> service.photo(2));
+  }
 }
