@@ -1,80 +1,171 @@
 package ma.tourisme.guide.service;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
 import ma.tourisme.guide.dto.GuideAdminResponse;
 import ma.tourisme.guide.dto.GuideRequest;
 import ma.tourisme.guide.dto.GuideResponse;
 import ma.tourisme.guide.exception.NotFoundException;
 import ma.tourisme.guide.model.Guide;
+import ma.tourisme.guide.model.GuidePhoto;
+import ma.tourisme.guide.repository.GuidePhotoRepository;
 import ma.tourisme.guide.repository.GuideRepository;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-
-
-import ma.tourisme.guide.model.GuidePhoto;
-import ma.tourisme.guide.repository.GuidePhotoRepository;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
+import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Service métier responsable de la gestion des guides touristiques.
+ *
+ * <p>Ce service assure les opérations de consultation,
+ * de création, de modification et de désactivation des guides.
+ * Il gère également les profils Keycloak et les photos.
+ */
 @Service
 public class GuideService {
 
+    /** Taille maximale autorisée pour une photo. */
+    private static final long MAX_PHOTO_SIZE = 1_500_000L;
 
+    /** Masque utilisé pour lire un octet non signé. */
+    private static final int BYTE_MASK = 0xFF;
+
+    /** Nombre minimal d'octets pour une image JPEG. */
+    private static final int JPEG_HEADER_SIZE = 3;
+
+    /** Nombre minimal d'octets pour une image PNG. */
+    private static final int PNG_HEADER_SIZE = 8;
+
+    /** Nombre minimal d'octets pour une image WebP. */
+    private static final int WEBP_HEADER_SIZE = 12;
+
+    /** Longueur des signatures RIFF et WEBP. */
+    private static final int WEBP_SIGNATURE_SIZE = 4;
+
+    /** Position de la signature WEBP. */
+    private static final int WEBP_SIGNATURE_OFFSET = 8;
+
+    /** Premier octet de la signature JPEG. */
+    private static final int JPEG_MARKER = 0xFF;
+
+    /** Deuxième octet de la signature JPEG. */
+    private static final int JPEG_START_MARKER = 0xD8;
+
+    /** Premier octet de la signature PNG. */
+    private static final int PNG_FIRST_BYTE = 0x89;
+
+    /** Deuxième octet de la signature PNG. */
+    private static final int PNG_SECOND_BYTE = 0x50;
+
+    /** Troisième octet de la signature PNG. */
+    private static final int PNG_THIRD_BYTE = 0x4E;
+
+    /** Quatrième octet de la signature PNG. */
+    private static final int PNG_FOURTH_BYTE = 0x47;
+
+    /** Repository principal des guides. */
     private final GuideRepository repository;
+
+    /** Repository des photos de guides. */
     private final GuidePhotoRepository photoRepository;
 
+    /**
+     * Initialise le service avec ses repositories.
+     *
+     * @param guideRepository repository des guides
+     * @param guidePhotoRepository repository des photos
+     */
     public GuideService(
-            GuideRepository repository,
-            GuidePhotoRepository photoRepository) {
+            final GuideRepository guideRepository,
+            final GuidePhotoRepository guidePhotoRepository) {
 
-        this.repository = repository;
-        this.photoRepository = photoRepository;
+        this.repository = guideRepository;
+        this.photoRepository = guidePhotoRepository;
     }
 
+    /**
+     * Recherche les guides selon les filtres fournis.
+     *
+     * @param ville ville recherchée
+     * @param langue langue recherchée
+     * @return liste des guides correspondants
+     */
     @Transactional(readOnly = true)
-    public List<GuideResponse> findAll(String ville, String langue) {
+    public List<GuideResponse> findAll(
+            final String ville,
+            final String langue) {
 
         String villeFiltre =
-            (ville == null || ville.isBlank()) ? null : ville.trim();
+                (ville == null || ville.isBlank())
+                        ? null : ville.trim();
 
         String langueFiltre =
-            (langue == null || langue.isBlank()) ? null : langue.trim();
+                (langue == null || langue.isBlank())
+                        ? null : langue.trim();
 
         return repository.rechercherGuides(villeFiltre, langueFiltre)
-            .stream()
-            .map(this::toResponse)
-            .toList();
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
+    /**
+     * Recherche un guide par son identifiant.
+     *
+     * @param id identifiant du guide
+     * @return informations du guide
+     */
     @Transactional(readOnly = true)
-    public GuideResponse findById(Long id) {
+    public GuideResponse findById(final Long id) {
         return toResponse(getOrThrow(id));
     }
 
-    /** ADMIN: creates a guide, optionally linked to a Keycloak account. */
+    /**
+     * Crée un guide depuis l'espace administrateur.
+     *
+     * @param request informations du nouveau guide
+     * @return guide créé
+     */
     @Transactional
-    public GuideResponse create(GuideRequest request) {
+    public GuideResponse create(final GuideRequest request) {
+
         Guide guide = new Guide();
+
         apply(guide, request);
         applyAdminFields(guide, request);
-        guide.setActif(request.disponible() == null || request.disponible());
+
+        guide.setActif(
+                request.disponible() == null || request.disponible()
+        );
 
         return toResponse(repository.save(guide));
     }
 
-    /** ADMIN: updates any guide, including its account link and availability. */
+    /**
+     * Modifie un guide depuis l'espace administrateur.
+     *
+     * @param id identifiant du guide
+     * @param request nouvelles informations
+     * @return guide modifié
+     */
     @Transactional
-    public GuideResponse update(Long id, GuideRequest request) {
+    public GuideResponse update(
+            final Long id,
+            final GuideRequest request) {
+
         Guide guide = getOrThrow(id);
+
         apply(guide, request);
         applyAdminFields(guide, request);
+
         if (request.disponible() != null) {
             guide.setActif(request.disponible());
         }
@@ -82,69 +173,135 @@ public class GuideService {
         return toResponse(repository.save(guide));
     }
 
-    /** ADMIN: every guide, active or not, with its linked account. */
+    /**
+     * Retourne tous les guides pour l'administration.
+     *
+     * @return liste complète des guides
+     */
     @Transactional(readOnly = true)
     public List<GuideAdminResponse> findAllForAdmin() {
+
         return repository.findAll(Sort.by("nom", "id"))
-            .stream()
-            .map(this::toAdminResponse)
-            .toList();
+                .stream()
+                .map(this::toAdminResponse)
+                .toList();
     }
 
-    /** GUIDE: the profile linked to the caller's Keycloak account (token "sub"). */
+    /**
+     * Recherche le profil associé à un compte Keycloak.
+     *
+     * @param subject identifiant Keycloak
+     * @return profil du guide connecté
+     */
     @Transactional(readOnly = true)
-    public GuideResponse findByOwner(String subject) {
+    public GuideResponse findByOwner(final String subject) {
         return toResponse(getByOwnerOrThrow(subject));
     }
 
-    /** GUIDE: edits only the caller's own profile fields; account link and availability stay. */
+    /**
+     * Modifie uniquement le profil du guide connecté.
+     *
+     * @param subject identifiant Keycloak
+     * @param request nouvelles informations du profil
+     * @return profil mis à jour
+     */
     @Transactional
-    public GuideResponse updateMine(String subject, GuideRequest request) {
+    public GuideResponse updateMine(
+            final String subject,
+            final GuideRequest request) {
+
         Guide guide = getByOwnerOrThrow(subject);
+
         apply(guide, request);
 
         return toResponse(repository.save(guide));
     }
 
-    private Guide getByOwnerOrThrow(String subject) {
+    /**
+     * Recherche le guide correspondant à un compte Keycloak.
+     *
+     * @param subject identifiant Keycloak
+     * @return entité du guide
+     */
+    private Guide getByOwnerOrThrow(final String subject) {
+
         return repository.findByOwnerSubject(subject)
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND, "Aucun profil guide lié à ce compte"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Aucun profil guide lié à ce compte"
+                ));
     }
 
-    /** One Keycloak account can own at most one guide profile. */
-    private void applyAdminFields(Guide guide, GuideRequest request) {
+    /**
+     * Applique les informations réservées à l'administrateur.
+     *
+     * @param guide guide à modifier
+     * @param request informations reçues
+     */
+    private void applyAdminFields(
+            final Guide guide,
+            final GuideRequest request) {
+
         String subject = trimOrNull(request.ownerSubject());
+
         if (subject != null) {
             subject = subject.toLowerCase(Locale.ROOT);
+
             boolean taken = guide.getId() == null
-                ? repository.existsByOwnerSubject(subject)
-                : repository.existsByOwnerSubjectAndIdNot(subject, guide.getId());
+                    ? repository.existsByOwnerSubject(subject)
+                    : repository.existsByOwnerSubjectAndIdNot(
+                            subject,
+                            guide.getId()
+                    );
+
             if (taken) {
                 throw new ResponseStatusException(
-                    HttpStatus.CONFLICT, "Ce compte est déjà lié à un autre guide");
+                        HttpStatus.CONFLICT,
+                        "Ce compte est déjà lié à un autre guide"
+                );
             }
         }
+
         guide.setOwnerSubject(subject);
     }
 
+    /**
+     * Désactive un guide sans supprimer son enregistrement.
+     *
+     * @param id identifiant du guide
+     */
     @Transactional
-    public void desactiver(Long id) {
+    public void desactiver(final Long id) {
+
         Guide guide = getOrThrow(id);
+
         guide.setActif(false);
         repository.save(guide);
     }
 
-    private Guide getOrThrow(Long id) {
+    /**
+     * Recherche une entité Guide ou déclenche une exception.
+     *
+     * @param id identifiant du guide
+     * @return entité trouvée
+     */
+    private Guide getOrThrow(final Long id) {
+
         return repository.findById(id)
-            .orElseThrow(() ->
-                new NotFoundException(
-                    "Guide avec id " + id + " introuvable"
-                )
-            );
+                .orElseThrow(() -> new NotFoundException(
+                        "Guide avec id " + id + " introuvable"
+                ));
     }
 
-    private void apply(Guide guide, GuideRequest request) {
+    /**
+     * Applique les informations communes au profil du guide.
+     *
+     * @param guide guide à modifier
+     * @param request données à appliquer
+     */
+    private void apply(
+            final Guide guide,
+            final GuideRequest request) {
 
         guide.setNom(request.nom().trim());
         guide.setPrenom(trimOrNull(request.prenom()));
@@ -157,151 +314,227 @@ public class GuideService {
 
         if (request.langues() != null) {
             guide.getLangues().addAll(
-                request.langues().stream()
-                    .filter(langue -> langue != null && !langue.isBlank())
-                    .map(String::trim)
-                    .distinct()
-                    .toList()
+                    request.langues().stream()
+                            .filter(langue ->
+                                    langue != null
+                                            && !langue.isBlank())
+                            .map(String::trim)
+                            .distinct()
+                            .toList()
             );
         }
     }
 
-    private String trimOrNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
+    /**
+     * Supprime les espaces inutiles d'une chaîne.
+     *
+     * @param value chaîne à normaliser
+     * @return chaîne normalisée ou null
+     */
+    private String trimOrNull(final String value) {
+        return value == null || value.isBlank()
+                ? null : value.trim();
     }
 
-
-    private GuideResponse toResponse(Guide guide) {
+    /**
+     * Convertit une entité Guide en réponse publique.
+     *
+     * @param guide entité à convertir
+     * @return réponse publique du guide
+     */
+    private GuideResponse toResponse(final Guide guide) {
 
         String photo = photoRepository.existsById(guide.getId())
-            ? "/api/guides/" + guide.getId() + "/photo"
-            : null;
+                ? "/api/guides/" + guide.getId() + "/photo"
+                : null;
 
         return new GuideResponse(
-            guide.getId(),
-            guide.getNom(),
-            guide.getPrenom(),
-            guide.getVille(),
-            new ArrayList<>(guide.getLangues()),
-            guide.getEmail(),
-            guide.getTelephone(),
-            guide.getTarifParJour(),
-            guide.isActif(),
-            guide.getNoteMoyenne(),
-            photo
+                guide.getId(),
+                guide.getNom(),
+                guide.getPrenom(),
+                guide.getVille(),
+                new ArrayList<>(guide.getLangues()),
+                guide.getEmail(),
+                guide.getTelephone(),
+                guide.getTarifParJour(),
+                guide.isActif(),
+                guide.getNoteMoyenne(),
+                photo
         );
     }
 
-    private GuideAdminResponse toAdminResponse(Guide guide) {
+    /**
+     * Convertit une entité en réponse administrateur.
+     *
+     * @param guide entité à convertir
+     * @return réponse contenant les informations administratives
+     */
+    private GuideAdminResponse toAdminResponse(
+            final Guide guide) {
+
         return new GuideAdminResponse(
-            guide.getId(),
-            guide.getNom(),
-            guide.getPrenom(),
-            guide.getVille(),
-            new ArrayList<>(guide.getLangues()),
-            guide.getEmail(),
-            guide.getTelephone(),
-            guide.getTarifParJour(),
-            guide.isActif(),
-            guide.isActif(),
-            guide.getOwnerSubject(),
-            guide.getNoteMoyenne()
+                guide.getId(),
+                guide.getNom(),
+                guide.getPrenom(),
+                guide.getVille(),
+                new ArrayList<>(guide.getLangues()),
+                guide.getEmail(),
+                guide.getTelephone(),
+                guide.getTarifParJour(),
+                guide.isActif(),
+                guide.isActif(),
+                guide.getOwnerSubject(),
+                guide.getNoteMoyenne()
         );
     }
 
+    /**
+     * Recherche la photo associée à un guide.
+     *
+     * @param guideId identifiant du guide
+     * @return photo du guide
+     */
     @Transactional(readOnly = true)
-    public GuidePhoto photo(Long guideId) {
-        // Vérifier aussi que le guide existe.
+    public GuidePhoto photo(final Long guideId) {
+
         getOrThrow(guideId);
 
         return photoRepository.findById(guideId)
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "Photo introuvable"
-            ));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Photo introuvable"
+                ));
     }
 
+    /**
+     * Ajoute ou remplace la photo du guide connecté.
+     *
+     * @param subject identifiant Keycloak du guide
+     * @param file fichier image envoyé
+     */
     @Transactional
     public void modifierMaPhoto(
-            String subject,
-            MultipartFile file) {
+            final String subject,
+            final MultipartFile file) {
 
         Guide guide = getByOwnerOrThrow(subject);
 
-        if (file == null || file.isEmpty()
-                || file.getSize() > 1_500_000) {
+        if (file == null
+                || file.isEmpty()
+                || file.getSize() > MAX_PHOTO_SIZE) {
+
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Photo vide ou trop volumineuse"
+                    HttpStatus.BAD_REQUEST,
+                    "Photo vide ou trop volumineuse"
             );
         }
 
         String type = file.getContentType();
 
-        if (type == null || !List.of(
-                "image/jpeg",
-                "image/png",
-                "image/webp"
-            ).contains(type)) {
+        if (type == null
+                || !List.of(
+                        "image/jpeg",
+                        "image/png",
+                        "image/webp"
+                ).contains(type)) {
 
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Format de photo non autorise"
+                    HttpStatus.BAD_REQUEST,
+                    "Format de photo non autorise"
             );
         }
 
         try {
             byte[] data = file.getBytes();
 
-            // Vérifier les signatures réelles des images.
             boolean valide = switch (type) {
-                case "image/jpeg" ->
-                    data.length >= 3 &&
-                    (data[0] & 0xff) == 0xff &&
-                    (data[1] & 0xff) == 0xd8 &&
-                    (data[2] & 0xff) == 0xff;
-
-                case "image/png" ->
-                    data.length >= 8 &&
-                    (data[0] & 0xff) == 0x89 &&
-                    data[1] == 0x50 &&
-                    data[2] == 0x4e &&
-                    data[3] == 0x47;
-
-                case "image/webp" ->
-                    data.length >= 12 &&
-                    new String(data, 0, 4,
-                        java.nio.charset.StandardCharsets.US_ASCII)
-                        .equals("RIFF") &&
-                    new String(data, 8, 4,
-                        java.nio.charset.StandardCharsets.US_ASCII)
-                        .equals("WEBP");
-
+                case "image/jpeg" -> isJpeg(data);
+                case "image/png" -> isPng(data);
+                case "image/webp" -> isWebp(data);
                 default -> false;
             };
 
             if (!valide) {
                 throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Le fichier ne correspond pas au format annonce"
+                        HttpStatus.BAD_REQUEST,
+                        "Le fichier ne correspond pas au format annonce"
                 );
             }
 
             photoRepository.save(
-                new GuidePhoto(guide.getId(), type, data)
+                    new GuidePhoto(guide.getId(), type, data)
             );
 
         } catch (IOException e) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Impossible de lire la photo"
+                    HttpStatus.BAD_REQUEST,
+                    "Impossible de lire la photo"
             );
         }
     }
 
+    /**
+     * Vérifie la signature initiale d'un fichier JPEG.
+     *
+     * @param data contenu binaire du fichier
+     * @return true si la signature correspond
+     */
+    private boolean isJpeg(final byte[] data) {
+
+        return data.length >= JPEG_HEADER_SIZE
+                && (data[0] & BYTE_MASK) == JPEG_MARKER
+                && (data[1] & BYTE_MASK) == JPEG_START_MARKER
+                && (data[2] & BYTE_MASK) == JPEG_MARKER;
+    }
+
+    /**
+     * Vérifie la signature initiale d'un fichier PNG.
+     *
+     * @param data contenu binaire du fichier
+     * @return true si la signature correspond
+     */
+    private boolean isPng(final byte[] data) {
+
+        return data.length >= PNG_HEADER_SIZE
+                && (data[0] & BYTE_MASK) == PNG_FIRST_BYTE
+                && data[1] == PNG_SECOND_BYTE
+                && data[2] == PNG_THIRD_BYTE
+                && data[3] == PNG_FOURTH_BYTE;
+    }
+
+    /**
+     * Vérifie les signatures RIFF et WEBP d'un fichier.
+     *
+     * @param data contenu binaire du fichier
+     * @return true si les signatures correspondent
+     */
+    private boolean isWebp(final byte[] data) {
+
+        return data.length >= WEBP_HEADER_SIZE
+                && new String(
+                        data,
+                        0,
+                        WEBP_SIGNATURE_SIZE,
+                        StandardCharsets.US_ASCII
+                ).equals("RIFF")
+                && new String(
+                        data,
+                        WEBP_SIGNATURE_OFFSET,
+                        WEBP_SIGNATURE_SIZE,
+                        StandardCharsets.US_ASCII
+                ).equals("WEBP");
+    }
+
+    /**
+     * Supprime la photo du guide connecté.
+     *
+     * @param subject identifiant Keycloak du guide
+     */
     @Transactional
-    public void supprimerMaPhoto(String subject) {
+    public void supprimerMaPhoto(final String subject) {
+
         Guide guide = getByOwnerOrThrow(subject);
+
         photoRepository.deleteById(guide.getId());
     }
 }
