@@ -70,7 +70,7 @@ class AvisSecurityIntegrationTest {
   JdbcTemplate jdbc;
 
   final ObjectMapper json = new ObjectMapper();
-  static final HttpClient http = HttpClient.newHttpClient();
+  static final HttpClient HTTP = HttpClient.newHttpClient();
 
   @TestConfiguration
   static class TestJwt {
@@ -124,7 +124,7 @@ class AvisSecurityIntegrationTest {
     if (token != null) {
       req.header("Authorization", "Bearer " + token);
     }
-    return http.send(
+    return HTTP.send(
         req.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(),
         HttpResponse.BodyHandlers.ofString()
     );
@@ -201,7 +201,8 @@ class AvisSecurityIntegrationTest {
   void testVisiteFutureNonAccepteeOuInexistanteRefusee() throws Exception {
     // Visite future ou non acceptée -> 403 Forbidden
     when(reservations.requireEligible(eq(88L), any()))
-        .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Un avis est possible uniquement après la date d’une visite acceptée."));
+        .thenThrow(new ResponseStatusException(
+            HttpStatus.FORBIDDEN, "Un avis est possible uniquement après la date d’une visite acceptée."));
     expect("POST", "/api/avis", request().replace("25", "88"), "user", 403);
 
     // Réservation inexistante dans reservation-service -> 403 Forbidden

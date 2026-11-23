@@ -1,0 +1,555 @@
+{
+  "info": {
+    "_postman_id": "f7d6a5c1-8492-493e-908a-c6031256e481",
+    "name": "avis-service",
+    "description": "Collection de tests Postman pour avis-service (PR #26 vers main2)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8084",
+      "type": "string"
+    },
+    {
+      "key": "keycloakUrl",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clientId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "usernameTouriste",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "passwordTouriste",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "usernameAutre",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "passwordAutre",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenTouriste",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenAutre",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0.1 Obtenir token demo-touriste",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"0.1 Obtenir token demo-touriste -> 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    var data = pm.response.json();",
+              "    pm.expect(data.access_token).to.be.a(\"string\");",
+              "    pm.collectionVariables.set(\"tokenTouriste\", data.access_token);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "password",
+              "type": "text"
+            },
+            {
+              "key": "client_id",
+              "value": "{{clientId}}",
+              "type": "text"
+            },
+            {
+              "key": "username",
+              "value": "{{usernameTouriste}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{passwordTouriste}}",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{keycloakUrl}}/realms/guide-touristique/protocol/openid-connect/token",
+          "host": [
+            "{{keycloakUrl}}"
+          ],
+          "path": [
+            "realms",
+            "guide-touristique",
+            "protocol",
+            "openid-connect",
+            "token"
+          ]
+        }
+      }
+    },
+    {
+      "name": "0.2 Obtenir token demo-autre",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"0.2 Obtenir token demo-autre -> 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    var data = pm.response.json();",
+              "    pm.expect(data.access_token).to.be.a(\"string\");",
+              "    pm.collectionVariables.set(\"tokenAutre\", data.access_token);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "password",
+              "type": "text"
+            },
+            {
+              "key": "client_id",
+              "value": "{{clientId}}",
+              "type": "text"
+            },
+            {
+              "key": "username",
+              "value": "{{usernameAutre}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{passwordAutre}}",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{keycloakUrl}}/realms/guide-touristique/protocol/openid-connect/token",
+          "host": [
+            "{{keycloakUrl}}"
+          ],
+          "path": [
+            "realms",
+            "guide-touristique",
+            "protocol",
+            "openid-connect",
+            "token"
+          ]
+        }
+      }
+    },
+    {
+      "name": "1 GET /api/avis sans token -> 200",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"1 GET /api/avis sans token -> 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json()).to.be.an(\"array\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/avis",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "avis"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2 GET /actuator/health -> 200, status UP",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"2 GET /actuator/health -> 200, status UP\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    var data = pm.response.json();",
+              "    pm.expect(data.status).to.eql(\"UP\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/actuator/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "actuator",
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3 GET /api/avis/eligibilite sans token -> 401",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"3 GET /api/avis/eligibilite sans token -> 401\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/avis/eligibilite",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "avis",
+            "eligibilite"
+          ]
+        }
+      }
+    },
+    {
+      "name": "4 GET /api/avis/eligibilite demo-touriste -> 200, eligible=true",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"4 GET /api/avis/eligibilite demo-touriste -> 200, eligible=true\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    var data = pm.response.json();",
+              "    pm.expect(data.eligible).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenTouriste}}"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/avis/eligibilite",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "avis",
+            "eligibilite"
+          ]
+        }
+      }
+    },
+    {
+      "name": "5 POST /api/avis sans token -> 401",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"5 POST /api/avis sans token -> 401\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reservationId\": 1,\n  \"noteGuide\": 5,\n  \"noteCircuit\": 4,\n  \"commentaire\": \"Visite exceptionnelle avec un excellent guide !\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/avis",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "avis"
+          ]
+        }
+      }
+    },
+    {
+      "name": "6 POST /api/avis demo-touriste (reservationId 1, noteGuide 5, noteCircuit 4, commentaire) -> 201",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"6 POST /api/avis demo-touriste -> 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "    var data = pm.response.json();",
+              "    pm.expect(data.reservationId).to.eql(1);",
+              "    pm.expect(data.noteGuide).to.eql(5);",
+              "    pm.expect(data.noteCircuit).to.eql(4);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenTouriste}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reservationId\": 1,\n  \"noteGuide\": 5,\n  \"noteCircuit\": 4,\n  \"commentaire\": \"Visite exceptionnelle avec un excellent guide !\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/avis",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "avis"
+          ]
+        }
+      }
+    },
+    {
+      "name": "7 même POST -> 409",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"7 même POST -> 409\", function () {",
+              "    pm.response.to.have.status(409);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenTouriste}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reservationId\": 1,\n  \"noteGuide\": 5,\n  \"noteCircuit\": 4,\n  \"commentaire\": \"Visite exceptionnelle avec un excellent guide !\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/avis",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "avis"
+          ]
+        }
+      }
+    },
+    {
+      "name": "8 POST demo-autre -> 403",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"8 POST demo-autre -> 403\", function () {",
+              "    pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenAutre}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reservationId\": 1,\n  \"noteGuide\": 5,\n  \"noteCircuit\": 4,\n  \"commentaire\": \"Tentative avis non autorisée\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/avis",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "avis"
+          ]
+        }
+      }
+    },
+    {
+      "name": "9 POST noteGuide 6 -> 400",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"9 POST noteGuide 6 -> 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenTouriste}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reservationId\": 1,\n  \"noteGuide\": 6,\n  \"noteCircuit\": 4,\n  \"commentaire\": \"Note invalide supérieure au maximum\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/avis",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "avis"
+          ]
+        }
+      }
+    }
+  ]
+}
