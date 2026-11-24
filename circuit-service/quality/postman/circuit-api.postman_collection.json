@@ -1,0 +1,1411 @@
+{
+  "info": {
+    "name": "Guide Touristique - API Circuit",
+    "description": "Tests fonctionnels de l'API Circuit : lecture publique, sécurité Keycloak, écritures ADMIN et règles GUIDE. Les jetons viennent de l'environnement (jamais enregistrés dans le dépôt). Les circuits créés sont archivés à la fin.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Lecture publique",
+      "item": [
+        {
+          "name": "Lister les circuits",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Réponse en moins de 500 ms', () => pm.expect(pm.response.responseTime).to.be.below(500));",
+                  "const list = pm.response.json();",
+                  "pm.test('Tableau non vide', () => pm.expect(list).to.be.an('array').that.is.not.empty);",
+                  "pm.test('Champs du contrat', () => list.forEach(c => pm.expect(c).to.include.all.keys(",
+                  "  'id', 'titre', 'description', 'ville', 'dureeHeures', 'prix', 'guideId')));",
+                  "pm.test('Photo servie par lien, pas incluse', () =>",
+                  "  pm.expect(pm.response.text()).to.not.include('data:image'));",
+                  "pm.collectionVariables.set('circuitId', list[0].id);",
+                  "const withPhoto = list.find(c => c.image);",
+                  "if (withPhoto) pm.collectionVariables.set('photoCircuitId', withPhoto.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtrer par ville",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits?ville=Agadir",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits"
+              ],
+              "query": [
+                {
+                  "key": "ville",
+                  "value": "Agadir"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Seulement Agadir', () => pm.response.json().forEach(c =>",
+                  "  pm.expect(c.ville.toLowerCase()).to.eql('agadir')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Détail d'un circuit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{circuitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{circuitId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Réponse en moins de 500 ms', () => pm.expect(pm.response.responseTime).to.be.below(500));",
+                  "pm.test('Bon identifiant', () =>",
+                  "  pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get('circuitId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Circuit inexistant",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "999999"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Erreur au format ApiError', () => {",
+                  "  const e = pm.response.json();",
+                  "  pm.expect(e.status).to.eql(404);",
+                  "  pm.expect(e).to.have.keys('timestamp', 'status', 'error', 'message', 'path');",
+                  "  pm.expect(e.message).to.eql(\"Circuit introuvable\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Identifiant non numérique",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "abc"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Erreur au format ApiError', () => {",
+                  "  const e = pm.response.json();",
+                  "  pm.expect(e.status).to.eql(400);",
+                  "  pm.expect(e).to.have.keys('timestamp', 'status', 'error', 'message', 'path');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Photo d'un circuit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{photoCircuitId}}/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{photoCircuitId}}",
+                "image"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Type image', () => pm.expect(pm.response.headers.get('Content-Type')).to.match(/^image\\//));",
+                  "pm.test('ETag SHA-256', () => pm.expect(pm.response.headers.get('ETag')).to.match(/^\"[0-9a-f]{64}\"$/));",
+                  "pm.collectionVariables.set('etag', pm.response.headers.get('ETag'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Photo inchangée (cache)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "If-None-Match",
+                "value": "{{etag}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{photoCircuitId}}/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{photoCircuitId}}",
+                "image"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 304 Not Modified', () => pm.response.to.have.status(304));",
+                  "pm.test('Pas de corps renvoyé', () => pm.expect(pm.response.text()).to.eql(''));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Sécurité",
+      "item": [
+        {
+          "name": "Créer sans jeton",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Test Postman - Souss Massa\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 3,\n  \"prix\": 199.5,\n  \"guideId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Créer avec un jeton invalide",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer abc.def.ghi"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Test Postman - Souss Massa\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 3,\n  \"prix\": 199.5,\n  \"guideId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Créer en tant que touriste",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{touristToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Test Postman - Souss Massa\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 3,\n  \"prix\": 199.5,\n  \"guideId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modifier en tant que touriste",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{circuitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{circuitId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{touristToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Test Postman - Souss Massa\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 3,\n  \"prix\": 199.5,\n  \"guideId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Archiver sans jeton",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{circuitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{circuitId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Administrateur",
+      "item": [
+        {
+          "name": "Créer : données invalides",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 0,\n  \"prix\": -1,\n  \"guideId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Erreur au format ApiError', () => {",
+                  "  const e = pm.response.json();",
+                  "  pm.expect(e.status).to.eql(400);",
+                  "  pm.expect(e).to.have.keys('timestamp', 'status', 'error', 'message', 'path');",
+                  "  pm.expect(e.message).to.eql(\"Données du circuit invalides\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Créer : photo au mauvais format",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Test Postman - Souss Massa\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 3,\n  \"prix\": 199.5,\n  \"guideId\": 1,\n  \"image\": \"data:text/plain;base64,aGVsbG8=\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Erreur au format ApiError', () => {",
+                  "  const e = pm.response.json();",
+                  "  pm.expect(e.status).to.eql(400);",
+                  "  pm.expect(e).to.have.keys('timestamp', 'status', 'error', 'message', 'path');",
+                  "  pm.expect(e.message).to.eql(\"Données du circuit invalides\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Créer : guide inconnu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Test Postman - Souss Massa\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 3,\n  \"prix\": 199.5,\n  \"guideId\": 999999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Erreur au format ApiError', () => {",
+                  "  const e = pm.response.json();",
+                  "  pm.expect(e.status).to.eql(400);",
+                  "  pm.expect(e).to.have.keys('timestamp', 'status', 'error', 'message', 'path');",
+                  "  pm.expect(e.message).to.eql(\"Guide introuvable\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Créer un circuit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Test Postman - Souss Massa\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 3,\n  \"prix\": 199.5,\n  \"guideId\": 1,\n  \"image\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('ownerId', 1);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 201', () => pm.response.to.have.status(201));",
+                  "const c = pm.response.json();",
+                  "pm.test('Circuit renvoyé avec un id', () => pm.expect(c.id).to.be.a('number'));",
+                  "pm.test('Photo exposée par lien', () => pm.expect(c.image).to.eql(`/api/circuits/${c.id}/image`));",
+                  "pm.collectionVariables.set('adminCircuitId', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lire le circuit créé",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{adminCircuitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{adminCircuitId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Titre enregistré', () => pm.expect(pm.response.json().titre).to.eql('Test Postman - Souss Massa'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modifier le circuit",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{adminCircuitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{adminCircuitId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Test Postman - Souss Massa\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 3,\n  \"prix\": 249,\n  \"guideId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Prix mis à jour', () => pm.expect(pm.response.json().prix).to.eql(249));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Archiver le circuit",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{adminCircuitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{adminCircuitId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Circuit archivé invisible",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{adminCircuitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{adminCircuitId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Erreur au format ApiError', () => {",
+                  "  const e = pm.response.json();",
+                  "  pm.expect(e.status).to.eql(404);",
+                  "  pm.expect(e).to.have.keys('timestamp', 'status', 'error', 'message', 'path');",
+                  "  pm.expect(e.message).to.eql(\"Circuit introuvable\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Guide (ses propres circuits)",
+      "item": [
+        {
+          "name": "Profil du guide connecté",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{guideApiUrl}}/api/guides/me",
+              "host": [
+                "{{guideApiUrl}}"
+              ],
+              "path": [
+                "api",
+                "guides",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{guideToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 200', () => pm.response.to.have.status(200));",
+                  "const me = pm.response.json();",
+                  "pm.collectionVariables.set('ownGuideId', me.id);",
+                  "pm.collectionVariables.set('ownerId', me.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Trouver un circuit d'un autre guide",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 200', () => pm.response.to.have.status(200));",
+                  "const own = Number(pm.collectionVariables.get('ownGuideId'));",
+                  "const other = pm.response.json().find(c => c.guideId !== own);",
+                  "pm.test('Un circuit d\\'un autre guide existe', () => pm.expect(other).to.exist);",
+                  "pm.collectionVariables.set('otherCircuitId', other.id);",
+                  "pm.collectionVariables.set('otherGuideId', other.guideId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Créer pour un autre guide",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{guideToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Test Postman - Souss Massa\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 3,\n  \"prix\": 199.5,\n  \"guideId\": {{otherGuideId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Erreur au format ApiError', () => {",
+                  "  const e = pm.response.json();",
+                  "  pm.expect(e.status).to.eql(403);",
+                  "  pm.expect(e).to.have.keys('timestamp', 'status', 'error', 'message', 'path');",
+                  "  pm.expect(e.message).to.eql(\"Ce circuit n'appartient pas au guide connecté\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Créer son circuit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{guideToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Test Postman - Souss Massa\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 3,\n  \"prix\": 199.5,\n  \"guideId\": {{ownGuideId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 201', () => pm.response.to.have.status(201));",
+                  "const c = pm.response.json();",
+                  "pm.test('Lié au guide connecté', () =>",
+                  "  pm.expect(c.guideId).to.eql(Number(pm.collectionVariables.get('ownGuideId'))));",
+                  "pm.collectionVariables.set('guideCircuitId', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modifier son circuit",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{guideCircuitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{guideCircuitId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{guideToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Test Postman - Souss Massa\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 5,\n  \"prix\": 199.5,\n  \"guideId\": {{ownGuideId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Durée mise à jour', () => pm.expect(pm.response.json().dureeHeures).to.eql(5));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Donner son circuit à un autre guide",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{guideCircuitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{guideCircuitId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{guideToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Test Postman - Souss Massa\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 3,\n  \"prix\": 199.5,\n  \"guideId\": {{otherGuideId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Erreur au format ApiError', () => {",
+                  "  const e = pm.response.json();",
+                  "  pm.expect(e.status).to.eql(403);",
+                  "  pm.expect(e).to.have.keys('timestamp', 'status', 'error', 'message', 'path');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modifier le circuit d'un autre guide",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{otherCircuitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{otherCircuitId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{guideToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Test Postman - Souss Massa\",\n  \"description\": \"Circuit cree par la collection Postman, archive a la fin du test.\",\n  \"ville\": \"Agadir\",\n  \"dureeHeures\": 3,\n  \"prix\": 199.5,\n  \"guideId\": {{ownGuideId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Erreur au format ApiError', () => {",
+                  "  const e = pm.response.json();",
+                  "  pm.expect(e.status).to.eql(403);",
+                  "  pm.expect(e).to.have.keys('timestamp', 'status', 'error', 'message', 'path');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Archiver le circuit d'un autre guide",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{otherCircuitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{otherCircuitId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{guideToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Erreur au format ApiError', () => {",
+                  "  const e = pm.response.json();",
+                  "  pm.expect(e.status).to.eql(403);",
+                  "  pm.expect(e).to.have.keys('timestamp', 'status', 'error', 'message', 'path');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Archiver son circuit",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/circuits/{{guideCircuitId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "circuits",
+                "{{guideCircuitId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{guideToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Statut 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "circuitId",
+      "value": ""
+    },
+    {
+      "key": "photoCircuitId",
+      "value": ""
+    },
+    {
+      "key": "etag",
+      "value": ""
+    },
+    {
+      "key": "ownerId",
+      "value": ""
+    },
+    {
+      "key": "adminCircuitId",
+      "value": ""
+    },
+    {
+      "key": "ownGuideId",
+      "value": ""
+    },
+    {
+      "key": "otherCircuitId",
+      "value": ""
+    },
+    {
+      "key": "otherGuideId",
+      "value": ""
+    },
+    {
+      "key": "guideCircuitId",
+      "value": ""
+    }
+  ]
+}
