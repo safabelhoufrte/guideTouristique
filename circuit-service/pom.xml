@@ -18,5 +18,30 @@
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-oauth2-resource-server</artifactId></dependency>
     <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-test</artifactId><scope>test</scope></dependency>
 </dependencies>
-  <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
+  <build><plugins>
+    <plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin>
+    <!-- Code coverage: report in target/site/jacoco/index.html after mvn verify (also read by SonarQube). -->
+    <plugin>
+      <groupId>org.jacoco</groupId><artifactId>jacoco-maven-plugin</artifactId><version>0.8.13</version>
+      <executions>
+        <execution><id>prepare-agent</id><goals><goal>prepare-agent</goal></goals></execution>
+        <execution><id>report</id><phase>verify</phase><goals><goal>report</goal></goals></execution>
+      </executions>
+    </plugin>
+    <!-- Code style: Google Java Style (google_checks.xml, built into Checkstyle).
+         Report: mvn checkstyle:checkstyle, then target/site/checkstyle.html. -->
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId><artifactId>maven-checkstyle-plugin</artifactId><version>3.6.0</version>
+      <dependencies>
+        <dependency><groupId>com.puppycrawl.tools</groupId><artifactId>checkstyle</artifactId><version>10.21.4</version></dependency>
+      </dependencies>
+      <configuration>
+        <configLocation>google_checks.xml</configLocation>
+        <consoleOutput>true</consoleOutput>
+        <failOnViolation>false</failOnViolation>
+        <violationSeverity>warning</violationSeverity>
+        <includeTestSourceDirectory>false</includeTestSourceDirectory>
+      </configuration>
+    </plugin>
+  </plugins></build>
 </project>

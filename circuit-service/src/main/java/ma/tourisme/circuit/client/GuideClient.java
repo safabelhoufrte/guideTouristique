@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class GuideClient {
   private final RestClient http;
 
+  /** REST client of the Guide service, with short timeouts (2 s connect, 3 s read). */
   public GuideClient(@Value("${services.guide-url}") String guideUrl) {
     var factory = new SimpleClientHttpRequestFactory();
     factory.setConnectTimeout(2000);
@@ -23,7 +24,10 @@ public class GuideClient {
     this.http = RestClient.builder().baseUrl(guideUrl).requestFactory(factory).build();
   }
 
-  // Read only required wire fields; extra teammate fields are harmless.
+  /**
+   * Checks that the guide exists and is available: 400 if not, 503 if Guide does not answer.
+   * Only the required fields are read; extra fields from the Guide service are ignored.
+   */
   public void requireExisting(long guideId) {
     JsonNode guide;
     try {

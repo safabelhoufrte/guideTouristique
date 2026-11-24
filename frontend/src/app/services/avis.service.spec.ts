@@ -71,10 +71,20 @@ describe('AvisService', () => {
     req.flush({ id: 42, publie: true });
   });
 
-  it('checks eligibility via GET /api/reservations/:id/eligibilite', () => {
-    service.checkEligibility(25).subscribe();
-    const req = http.expectOne('/api/reservations/25/eligibilite');
+  it('checks eligibility via GET /api/avis/eligibilite?reservationId=', () => {
+    let result: unknown;
+    service.checkEligibility(25).subscribe((e) => (result = e));
+    const req = http.expectOne(
+      (r) => r.url === '/api/avis/eligibilite' && r.params.get('reservationId') === '25',
+    );
     expect(req.request.method).toBe('GET');
-    req.flush({ reservationId: 25, circuitId: 1, guideId: 2, eligible: true, raison: '' });
+    req.flush({ eligible: true, reservations: [{ reservationId: 25, circuitId: 1, guideId: 2 }] });
+    expect(result).toEqual({
+      reservationId: 25,
+      circuitId: 1,
+      guideId: 2,
+      eligible: true,
+      raison: '',
+    });
   });
 });

@@ -164,7 +164,8 @@
     padding: 21px;
     box-shadow: 0 4px 15px #0c35410a;
   }
-  .button:not(.secondary) {
+  // Danger buttons (Archiver, Supprimer…) keep their own light red style from spaces.scss.
+  .button:not(.secondary):not(.danger) {
     background: var(--console-accent);
     border-color: var(--console-accent);
   }

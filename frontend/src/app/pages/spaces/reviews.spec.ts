@@ -62,7 +62,11 @@ describe('Reviews component', () => {
     harness = await RouterTestingHarness.create();
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // Circuit titles for the review cards (CircuitNames): answered empty, titles fall back to "Circuit n° X".
+    http.match('/api/circuits').forEach((req) => req.flush([]));
+    http.verify();
+  });
 
   it('renders public reviews list and stars with aria-label', async () => {
     await harness.navigateByUrl('/avis', Reviews);

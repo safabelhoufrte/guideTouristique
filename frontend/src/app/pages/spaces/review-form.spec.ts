@@ -28,27 +28,27 @@ describe('Review eligibility and submission', () => {
     http = TestBed.inject(HttpTestingController);
     harness = await RouterTestingHarness.create();
   });
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // Circuit titles for the review cards (CircuitNames): answered empty, titles fall back to "Circuit n° X".
+    http.match('/api/circuits').forEach((req) => req.flush([]));
+    http.verify();
+  });
   it('explains an ineligible booking without showing a submit form', async () => {
     await harness.navigateByUrl('/avis/25', ReviewForm);
     http
-      .expectOne('/api/reservations/25/eligibilite')
-      .flush({
-        reservationId: 25,
-        circuitId: 10,
-        guideId: 1,
-        eligible: false,
-        raison: 'La visite doit être passée.',
-      });
+      .expectOne((r) => r.url === '/api/avis/eligibilite' && r.params.get('reservationId') === '25')
+      .flush({ eligible: false, reservations: [] });
     harness.detectChanges();
-    expect(harness.routeNativeElement?.textContent).toContain('La visite doit être passée.');
+    expect(harness.routeNativeElement?.textContent).toContain(
+      'après la date d’une visite acceptée',
+    );
     expect(harness.routeNativeElement?.querySelector('form')).toBeNull();
   });
   it('blocks duplicate submissions and sends no client-supplied author or guide', async () => {
     const component = await harness.navigateByUrl('/avis/25', ReviewForm);
     http
-      .expectOne('/api/reservations/25/eligibilite')
-      .flush({ reservationId: 25, circuitId: 10, guideId: 1, eligible: true, raison: '' });
+      .expectOne((r) => r.url === '/api/avis/eligibilite' && r.params.get('reservationId') === '25')
+      .flush({ eligible: true, reservations: [{ reservationId: 25, circuitId: 10, guideId: 1 }] });
     component.form.patchValue({ commentaire: 'Une belle visite !' });
     component.save();
     component.save();
@@ -66,7 +66,7 @@ describe('Review eligibility and submission', () => {
   it('shows a permission failure without fabricating reservation data', async () => {
     await harness.navigateByUrl('/avis/25', ReviewForm);
     http
-      .expectOne('/api/reservations/25/eligibilite')
+      .expectOne((r) => r.url === '/api/avis/eligibilite' && r.params.get('reservationId') === '25')
       .flush({}, { status: 403, statusText: 'Forbidden' });
     harness.detectChanges();
     expect(harness.routeNativeElement?.querySelector('[role="alert"]')?.textContent).toContain(

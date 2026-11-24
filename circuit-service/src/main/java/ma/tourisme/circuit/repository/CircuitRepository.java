@@ -8,6 +8,7 @@ import ma.tourisme.circuit.model.Circuit;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+/** SQL access to circuit.circuits (JdbcTemplate, parameterized queries only). */
 @Repository
 public class CircuitRepository {
   /**
@@ -19,10 +20,12 @@ public class CircuitRepository {
 
   private final JdbcTemplate db;
 
+  /** Creates the repository on the service's own datasource (schema circuit). */
   public CircuitRepository(JdbcTemplate db) {
     this.db = db;
   }
 
+  /** Public link to the photo of circuit {@code id}. */
   public static String imageLink(long id) {
     return "/api/circuits/" + id + "/image";
   }
@@ -40,6 +43,7 @@ public class CircuitRepository {
         row.getBoolean("has_image") ? imageLink(id) : null);
   }
 
+  /** Available circuits, optionally filtered by city and/or guide, ordered by id. */
   public List<Circuit> findAll(String ville, Long guideId) {
     return db.query(
         "SELECT " + COLUMNS + " FROM circuit.circuits WHERE disponible=TRUE"
@@ -52,6 +56,7 @@ public class CircuitRepository {
         guideId);
   }
 
+  /** One available circuit, empty if missing or archived. */
   public Optional<Circuit> findById(long id) {
     return db
         .query(
@@ -66,7 +71,8 @@ public class CircuitRepository {
   public Optional<String> findImage(long id) {
     return db
         .queryForList(
-            "SELECT image FROM circuit.circuits WHERE id=? AND disponible=TRUE AND image IS NOT NULL",
+            "SELECT image FROM circuit.circuits"
+                + " WHERE id=? AND disponible=TRUE AND image IS NOT NULL",
             String.class,
             id)
         .stream()
@@ -77,7 +83,8 @@ public class CircuitRepository {
   public Circuit insert(Circuit circuit) {
     String image = circuit.image() == null || circuit.image().isEmpty() ? null : circuit.image();
     return db.queryForObject(
-        "INSERT INTO circuit.circuits(titre,description,ville,duree_heures,prix,guide_id,image,disponible)"
+        "INSERT INTO circuit.circuits"
+            + "(titre,description,ville,duree_heures,prix,guide_id,image,disponible)"
             + " VALUES (?,?,?,?,?,?,?,TRUE) RETURNING " + COLUMNS,
         this::map,
         circuit.titre(),
@@ -95,7 +102,8 @@ public class CircuitRepository {
   public Optional<Circuit> update(Circuit circuit) {
     return db
         .query(
-            "UPDATE circuit.circuits SET titre=?,description=?,ville=?,duree_heures=?,prix=?,guide_id=?,"
+            "UPDATE circuit.circuits"
+                + " SET titre=?,description=?,ville=?,duree_heures=?,prix=?,guide_id=?,"
                 + " image = CASE WHEN CAST(? AS TEXT) IS NULL THEN image"
                 + " WHEN CAST(? AS TEXT) = '' THEN NULL ELSE CAST(? AS TEXT) END"
                 + " WHERE id=? AND disponible=TRUE RETURNING " + COLUMNS,
@@ -114,7 +122,7 @@ public class CircuitRepository {
         .findFirst();
   }
 
-  // Keep historical records while deleted circuits disappear from the public API.
+  /** Archives a circuit: kept for history, hidden from the public API. */
   public boolean archive(long id) {
     return db.update(
             "UPDATE circuit.circuits SET disponible=FALSE WHERE id=? AND disponible=TRUE", id)
