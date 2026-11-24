@@ -1,5 +1,13 @@
 # 🧭 Guide Touristique
 
+> **État de `main2` :** frontend Angular, authentification Keycloak (rôles USER, GUIDE, ADMIN),
+> espaces Touriste, Guide et Administration, et les services Guide, Circuit et Réservation,
+> chacun avec son schéma dans `tourisme_db`. Le service Avis est en cours d'intégration (PR #26).
+> Lancement : [frontend et base partagée](docs/shared-frontend.md),
+> [authentification et administration](docs/auth-admin-integration.md),
+> [Circuit](docs/circuit-integration.md).
+> Pour une base existante, conserver les volumes : `init.sql` sert uniquement à une première installation.
+
 Application web distribuée de **guide touristique**, composée de 4 modules métier autonomes qui communiquent entre eux via des **Web Services REST (JSON)**.
 
 > Projet Web Services 2026 – Développement collaboratif basé sur les Web Services
@@ -30,7 +38,7 @@ Application web distribuée de **guide touristique**, composée de 4 modules mé
 
 ## 1. Présentation du projet
 
-Le projet consiste à concevoir une application distribuée de guide touristique. Chaque module est **indépendant** : il a son propre code, sa propre base de données, son propre Dockerfile, et il **expose** et **consomme** des Web Services REST.
+Le projet consiste à concevoir une application distribuée de guide touristique. Chaque module est **indépendant** : il a son propre code, son schéma dans la base partagée `tourisme_db`, son propre Dockerfile, et il **expose** et **consomme** des Web Services REST.
 
 | Module | Rôle |
 |---|---|
@@ -55,10 +63,12 @@ Le projet consiste à concevoir une application distribuée de guide touristique
 |---|---|
 | Backend | Java 21, Spring Boot 3 (Spring Web, Spring Data JPA) |
 | Frontend | Angular |
-| Base de données | PostgreSQL 16 (une instance, **une base par service**) |
+| Base de données | PostgreSQL 16 (une instance, **une base partagée `tourisme_db`**) |
 | Conteneurisation | Docker et Docker Compose |
 | Documentation API | Swagger / OpenAPI (springdoc-openapi) |
 | Gestion de code | Git et GitHub (branches, Pull Requests, Projects) |
+
+Voir [la configuration de la base partagée et la migration des données](docs/shared-database.md).
 
 ## 4. Architecture
 
@@ -74,8 +84,9 @@ Le projet consiste à concevoir une application distribuée de guide touristique
   └──────┬───────┘ └──────┬───────┘ └───────┬───────┘ └──────┬───────┘
          │                │                 │                │
          ▼                ▼                 ▼                ▼
-     guide_db        circuit_db      reservation_db       avis_db
-                    └──────────── PostgreSQL :5432 ────────────┘
+       guide            circuit         reservation          avis
+         └─────────────── schémas de tourisme_db ─────────────┘
+                              PostgreSQL :5432
 ```
 
 ### Qui appelle qui (communication REST entre services)
@@ -101,7 +112,7 @@ guideTouristique/
 ├── avis-service/           # Hajar
 ├── frontend/               # Angular (Safa)
 ├── db/
-│   └── init.sql            # Création des 4 bases PostgreSQL
+│   └── init.sql            # Création de tourisme_db et des 4 schémas
 ├── docs/
 │   └── api-contracts.md    # Contrats d'API (à respecter !)
 ├── docker-compose.yml
@@ -180,7 +191,7 @@ Chaque développeuse ajoute **son bloc** en s'inspirant de `guide-service`. Exem
       - "8082:8082"
     environment:
       SERVER_PORT: 8082
-      DB_URL: jdbc:postgresql://postgres:5432/circuit_db
+      DB_URL: jdbc:postgresql://postgres:5432/tourisme_db
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       GUIDE_SERVICE_URL: http://guide-service:8081
@@ -452,7 +463,7 @@ Noms des services : `postgres`, `guide-service`, `circuit-service`, `reservation
 | `Cannot connect to the Docker daemon` | Lancer Docker Desktop et attendre qu'il soit prêt |
 | `port is already allocated` | Un autre programme utilise le port : changer le port de gauche (ex. `"5433:5432"`) |
 | `Connection refused` vers PostgreSQL | Utiliser `postgres` et non `localhost` dans `DB_URL` |
-| `database "xxx_db" does not exist` | `docker compose down -v` puis relancer (le script `init.sql` ne s'exécute qu'à la première création) |
+| `database "xxx_db" does not exist` | Suivre [la transition des données](docs/shared-database.md) ; conserver le volume existant |
 | `pom.xml not found` au build | Le projet Spring Boot doit être à la racine du dossier du service |
 | `Your local changes would be overwritten` | Commiter (`git add .` puis `git commit`) ou `git stash` avant de changer de branche |
 | Erreur CORS dans le navigateur | Autoriser `http://localhost:4200` dans le service Java |

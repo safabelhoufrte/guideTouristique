@@ -1,0 +1,86 @@
+name: guide-touristique-main2
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      GUIDE_DB_PASSWORD: ${GUIDE_DB_PASSWORD:?Set GUIDE_DB_PASSWORD in .env}
+      CIRCUIT_DB_PASSWORD: ${CIRCUIT_DB_PASSWORD:?Set CIRCUIT_DB_PASSWORD in .env}
+      RESERVATION_DB_PASSWORD: ${RESERVATION_DB_PASSWORD:?Set RESERVATION_DB_PASSWORD in .env}
+      AVIS_DB_PASSWORD: ${AVIS_DB_PASSWORD:?Set AVIS_DB_PASSWORD in .env}
+    ports: ["127.0.0.1:${DB_HOST_PORT:-15433}:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -h 127.0.0.1 -U "$$POSTGRES_USER"']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  guide-service:
+    build: ./guide-service
+    ports: ["127.0.0.1:8081:8081"]
+    environment:
+      SERVER_PORT: 8081
+      DB_URL: jdbc:postgresql://postgres:5432/tourisme_db
+      DB_USER: guide
+      SPRING_DATASOURCE_HIKARI_SCHEMA: guide
+      SPRING_FLYWAY_DEFAULT_SCHEMA: guide
+      SPRING_FLYWAY_SCHEMAS: guide
+      DB_PASSWORD: ${GUIDE_DB_PASSWORD:?Set GUIDE_DB_PASSWORD in .env}
+      AUTH_ISSUER_URI: ${AUTH_ISSUER_URI:-http://localhost:8180/realms/guide-touristique}
+      AUTH_JWK_SET_URI: ${AUTH_JWK_SET_URI:-http://keycloak:8080/realms/guide-touristique/protocol/openid-connect/certs}
+    depends_on:
+      postgres: {condition: service_healthy}
+  circuit-service:
+    build: ./circuit-service
+    ports: ["127.0.0.1:${CIRCUIT_HOST_PORT:-8082}:8082"]
+    environment:
+      SERVER_PORT: 8082
+      DB_URL: jdbc:postgresql://postgres:5432/tourisme_db
+      DB_USER: circuit
+      DB_PASSWORD: ${CIRCUIT_DB_PASSWORD:?Set CIRCUIT_DB_PASSWORD in .env}
+      GUIDE_SERVICE_URL: http://guide-service:8081
+      AUTH_ISSUER_URI: ${AUTH_ISSUER_URI:-http://localhost:8180/realms/guide-touristique}
+      AUTH_JWK_SET_URI: ${AUTH_JWK_SET_URI:-http://keycloak:8080/realms/guide-touristique/protocol/openid-connect/certs}
+    depends_on:
+      postgres: {condition: service_healthy}
+  reservation-service:
+    build: ./reservation-service
+    ports: ["127.0.0.1:8083:8083"]
+    environment:
+      SERVER_PORT: 8083
+      DB_URL: jdbc:postgresql://postgres:5432/tourisme_db
+      DB_USER: reservation
+      SPRING_DATASOURCE_HIKARI_SCHEMA: reservation
+      SPRING_FLYWAY_DEFAULT_SCHEMA: reservation
+      SPRING_FLYWAY_SCHEMAS: reservation
+      DB_PASSWORD: ${RESERVATION_DB_PASSWORD:?Set RESERVATION_DB_PASSWORD in .env}
+      GUIDE_SERVICE_URL: http://guide-service:8081
+      CIRCUIT_SERVICE_URL: http://circuit-service:8082
+      AUTH_ISSUER_URI: ${AUTH_ISSUER_URI:-http://localhost:8180/realms/guide-touristique}
+      AUTH_JWK_SET_URI: ${AUTH_JWK_SET_URI:-http://keycloak:8080/realms/guide-touristique/protocol/openid-connect/certs}
+    depends_on:
+      postgres: {condition: service_healthy}
+  avis-service:
+    build: ./avis-service
+    ports: ["127.0.0.1:8084:8084"]
+    environment:
+      SERVER_PORT: 8084
+      DB_URL: jdbc:postgresql://postgres:5432/tourisme_db
+      DB_USER: avis
+      SPRING_DATASOURCE_HIKARI_SCHEMA: avis
+      SPRING_FLYWAY_DEFAULT_SCHEMA: avis
+      SPRING_FLYWAY_SCHEMAS: avis
+      DB_PASSWORD: ${AVIS_DB_PASSWORD:?Set AVIS_DB_PASSWORD in .env}
+      RESERVATION_SERVICE_URL: http://reservation-service:8083
+      AUTH_ISSUER_URI: ${AUTH_ISSUER_URI:-http://localhost:8180/realms/guide-touristique}
+      AUTH_JWK_SET_URI: ${AUTH_JWK_SET_URI:-http://keycloak:8080/realms/guide-touristique/protocol/openid-connect/certs}
+    depends_on:
+      postgres: {condition: service_healthy}
+  frontend:
+    build: ./frontend
+    ports: ["127.0.0.1:${FRONTEND_HOST_PORT:-4200}:80"]
+volumes:
+  pgdata:

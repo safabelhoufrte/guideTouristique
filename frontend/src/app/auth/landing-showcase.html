@@ -1,0 +1,156 @@
+<section class="showcase-section" aria-labelledby="circuits-title">
+  <header class="section-heading">
+    <div>
+      <p class="eyebrow">PRENEZ LA ROUTE, ON VOUS ACCOMPAGNE</p>
+      <h2 id="circuits-title">Un circuit, mille façons de s’émerveiller.</h2>
+    </div>
+    <a class="section-link" routerLink="/circuits"
+      >Tous les circuits <span aria-hidden="true">↗</span></a
+    >
+  </header>
+  @if (circuits().loading) {
+    <p class="section-state" role="status">On prépare vos prochaines découvertes…</p>
+  } @else if (circuits().error) {
+    <div class="section-state" role="status">
+      <p>Les circuits ne sont pas disponibles pour le moment.</p>
+      <button type="button" (click)="reloadCircuits.next()">Réessayer</button>
+    </div>
+  } @else if (!circuits().rows.length) {
+    <p class="section-state">
+      De nouvelles découvertes se préparent. Revenez bientôt découvrir nos circuits.
+    </p>
+  } @else {
+    <div class="circuit-grid">
+      @for (circuit of circuits().rows; track circuit.id) {
+        <article class="circuit-card">
+          <a
+            class="circuit-photo"
+            [routerLink]="['/circuits', circuit.id]"
+            [attr.aria-label]="'Découvrir ' + circuit.titre"
+          >
+            <img
+              [src]="photoFor(circuit).src"
+              [alt]="photoFor(circuit).alt"
+              width="600"
+              height="430"
+              loading="lazy"
+            />
+            @if (circuit.ville) {
+              <span class="city-tag">{{ circuit.ville }}</span>
+            }
+          </a>
+          <div class="circuit-content">
+            <p class="card-kicker">
+              {{
+                circuit.dureeHeures
+                  ? circuit.dureeHeures + ' h de découverte'
+                  : 'Au rythme des rencontres'
+              }}
+            </p>
+            <h3>
+              <a [routerLink]="['/circuits', circuit.id]">{{ circuit.titre }}</a>
+            </h3>
+            <p class="description">
+              {{ circuit.description || 'Une visite à découvrir avec votre guide local.' }}
+            </p>
+            <div class="card-bottom">
+              <p>
+                <strong>{{ circuit.prix | currency: 'MAD' : 'code' : '1.0-2' }}</strong
+                ><span> / personne</span>
+              </p>
+              <a
+                [routerLink]="['/circuits', circuit.id]"
+                [attr.aria-label]="'Voir le circuit ' + circuit.titre"
+                >↗</a
+              >
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+    <p class="photo-note">
+      Photos d’inspiration : consultez chaque fiche pour connaître le programme de la visite.
+    </p>
+  }
+</section>
+
+<section class="showcase-section" aria-labelledby="gallery-title">
+  <header class="section-heading">
+    <div>
+      <p class="eyebrow">UN PETIT CARNET D’AILLEURS</p>
+      <h2 id="gallery-title">Le Maroc, plein les yeux.</h2>
+    </div>
+    <p class="section-intro">
+      Du bleu de l’océan à l’ocre des terres,<br />laissez les couleurs vous guider.
+    </p>
+  </header>
+  <div class="photo-gallery">
+    @for (photo of gallery; track photo.src) {
+      <figure>
+        <img [src]="photo.src" [alt]="photo.alt" width="650" height="500" loading="lazy" />
+        <figcaption>
+          <h3>{{ photo.title }}</h3>
+          <p>{{ photo.caption }}</p>
+        </figcaption>
+      </figure>
+    }
+  </div>
+</section>
+
+<section class="showcase-section reviews-section" aria-labelledby="reviews-title">
+  <header class="section-heading">
+    <div>
+      <p class="eyebrow">LES RENCONTRES LAISSENT DES TRACES</p>
+      <h2 id="reviews-title">Ils ont ramené des souvenirs.</h2>
+    </div>
+    <a class="section-link" routerLink="/avis">Tous les avis <span aria-hidden="true">↗</span></a>
+  </header>
+  @if (avis().loading) {
+    <p class="section-state" role="status">Chargement des récits de voyageurs…</p>
+  } @else if (avis().error) {
+    <div class="section-state" role="status">
+      <p>Les avis sont momentanément indisponibles.</p>
+      <button type="button" (click)="reloadReviews.next()">Réessayer</button>
+    </div>
+  } @else {
+    @if (!avis().rows.length) {
+      <p class="sample-notice">
+        Aucun avis publié pour le moment. Les cartes ci-dessous sont des exemples fictifs pour
+        présenter cet espace.
+      </p>
+    }
+    <div class="reviews-grid">
+      @for (review of reviewCards(); track review.id) {
+        <article class="review-card">
+          <div class="review-top">
+            <span class="quote-mark" aria-hidden="true">“</span
+            ><span class="rating"
+              ><span class="stars" aria-hidden="true"
+                >{{ '★'.repeat(review.noteCircuit) }}{{ '☆'.repeat(5 - review.noteCircuit) }}</span
+              ><span class="sr-only">Note du circuit : {{ review.noteCircuit }} sur 5</span></span
+            >
+          </div>
+          <blockquote>{{ review.commentaire }}</blockquote>
+          <div class="review-author">
+            <span class="avatar" aria-hidden="true">{{ initials(review.auteur) }}</span>
+            <div>
+              <h3>{{ review.auteur }}</h3>
+              <p>
+                @if (!avis().rows.length) {
+                  Exemple fictif
+                } @else {
+                  Voyageur · {{ review.dateCreation | date: 'MMM yyyy' }}
+                }
+              </p>
+            </div>
+          </div>
+          @if (review.circuitId) {
+            <a class="review-circuit" [routerLink]="['/circuits', review.circuitId]"
+              >Découvrir ce circuit <span aria-hidden="true">→</span></a
+            >
+          }
+        </article>
+      }
+    </div>
+  }
+</section>

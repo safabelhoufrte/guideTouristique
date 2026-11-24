@@ -1,0 +1,98 @@
+<main class="page">
+  <p class="eyebrow">Espace personnel</p>
+  <div class="head">
+    <div>
+      <h1>Mes réservations</h1>
+      <p class="sub">Retrouvez et suivez toutes vos réservations de circuits touristiques.</p>
+    </div>
+    <a class="btn-primary" routerLink="/circuits">Réserver un circuit</a>
+  </div>
+
+  <div class="toolbar">
+    <div class="tabs" role="tablist">
+      @for (o of onglets; track o.cle) {
+        <button
+          type="button"
+          role="tab"
+          [class.active]="onglet() === o.cle"
+          [attr.aria-selected]="onglet() === o.cle"
+          (click)="onglet.set(o.cle)"
+        >
+          {{ o.label }} <span class="count">{{ compteurs()[o.cle] }}</span>
+        </button>
+      }
+    </div>
+    <input
+      class="search"
+      type="search"
+      placeholder="Rechercher un circuit ou un guide"
+      [ngModel]="recherche()"
+      (ngModelChange)="recherche.set($event)"
+    />
+  </div>
+
+  @if (info()) {
+    <p class="ok" role="status">{{ info() }}</p>
+  }
+  @if (erreur()) {
+    <p class="err" role="alert">{{ erreur() }}</p>
+  }
+
+  @if (aAnnuler(); as r) {
+    <section class="confirm" role="alertdialog">
+      <strong>Annuler la réservation n° {{ r.id }} ?</strong>
+      <div>
+        <button class="btn-danger" [disabled]="occupe()" (click)="annuler(r)">
+          Oui, annuler
+        </button>
+        <button class="btn-link" [disabled]="occupe()" (click)="aAnnuler.set(null)">
+          Conserver
+        </button>
+      </div>
+    </section>
+  }
+
+  @if (chargement()) {
+    <p class="empty" role="status">Chargement de vos réservations…</p>
+  } @else if (!visibles().length) {
+    <p class="empty">Aucune réservation dans cette catégorie.</p>
+  }
+
+  @for (r of visibles(); track r.id) {
+    <article class="card">
+      <img [src]="photo(r).src" [alt]="photo(r).alt" />
+      <div class="body">
+        <div class="top">
+          <div>
+            <span class="badge" [attr.data-statut]="r.statut">{{ libelles[r.statut] }}</span>
+            <span class="num">Réservation n° {{ r.id }}</span>
+            <h2>{{ titre(r) }}</h2>
+            @if (guideNom(r)) {
+              <p class="guide">Avec <strong>{{ guideNom(r) }}</strong></p>
+            }
+          </div>
+          <div class="price">
+            <span>Prix total</span>
+            <strong>{{ r.prixTotal | currency: 'MAD' : 'code' : '1.0-0' }}</strong>
+          </div>
+        </div>
+        <div class="facts">
+          <div><span>Date de visite</span><strong>{{ r.dateVisite | date: 'dd MMMM yyyy' }}</strong></div>
+          <div>
+            <span>Participants</span
+            ><strong>{{ r.nbPersonnes }} {{ r.nbPersonnes > 1 ? 'personnes' : 'personne' }}</strong>
+          </div>
+        </div>
+        <div class="foot">
+          <span>Réservée le {{ r.dateCreation | date: 'dd MMMM yyyy' }}</span>
+          <span class="actions">
+            @if (peutAnnuler(r)) {
+              <button type="button" class="btn-link" (click)="aAnnuler.set(r)">Annuler</button>
+            }
+            <a class="btn-link strong" [routerLink]="['/circuits', r.circuitId]">Voir détails ›</a>
+          </span>
+        </div>
+      </div>
+    </article>
+  }
+</main>

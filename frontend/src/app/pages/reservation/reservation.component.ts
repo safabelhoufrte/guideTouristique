@@ -1,0 +1,167 @@
+import { circuitPhoto } from '../../models/circuit-photo';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AuthService } from '../../auth/auth.service';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { CircuitResume, Reservation } from '../../models/reservation';
+import { ReservationService } from '../../services/reservation.service';
+
+const CODES_PROMO: Record<string, number> = { PROMO10: 10, BIENVENUE: 15 };
+
+@Component({
+  selector: 'app-reservation',
+  imports: [ReactiveFormsModule],
+  templateUrl: './reservation.component.html',
+  styleUrl: './reservation.component.scss',
+})
+export class ReservationComponent implements OnInit {
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly auth = inject(AuthService);
+  private fb = inject(FormBuilder);
+  private service = inject(ReservationService);
+  private cdr = inject(ChangeDetectorRef);
+
+  circuits: CircuitResume[] = [];
+  nbOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  guideNom = '';
+  statut = 'EN_ATTENTE';
+  erreur = '';
+  soumis = false;
+  envoiEnCours = false;
+  confirmation: Reservation | null = null;
+
+  reduction = 0;
+  promoMessage = '';
+  promoOk = false;
+
+  form = this.fb.nonNullable.group({
+    circuitId: [0, Validators.required],
+    dateVisite: ['', Validators.required],
+    nbPersonnes: [2, [Validators.required, Validators.min(1)]],
+    nom: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
+    codePromo: [''],
+  });
+
+  ngOnInit() {
+    this.form.patchValue({ email: this.auth.email(), nom: this.auth.name() });
+    this.service.getCircuits().subscribe({
+      next: (c) => {
+        this.circuits = c;
+        if (c.length) {
+          const demande = Number(this.route.snapshot.queryParamMap.get('circuitId'));
+          this.form.patchValue({ circuitId: c.find((x) => x.id === demande)?.id ?? c[0].id });
+          this.chargerGuide();
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.erreur = 'Impossible de charger les circuits.';
+        this.cdr.detectChanges();
+      },
+    });
+    this.form.controls.circuitId.valueChanges.subscribe(() => this.chargerGuide());
+  }
+
+  get circuitChoisi(): CircuitResume | undefined {
+    return this.circuits.find((c) => c.id === this.form.controls.circuitId.value);
+  }
+
+  get photoCircuit(): string {
+    const c = this.circuitChoisi as any;
+    return c?.image ?? c?.photo ?? circuitPhoto({ titre: c?.titre ?? '', ville: c?.ville ?? null }).src;
+  }
+
+  get statutAffiche(): string {
+    const s = this.statut.replace('_', ' ').toLowerCase();
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  get nbPersonnes(): number {
+    return Number(this.form.controls.nbPersonnes.value) || 0;
+  }
+
+  get sousTotal(): number {
+    return (this.circuitChoisi?.prix ?? 0) * this.nbPersonnes;
+  }
+
+  get total(): number {
+    return Math.round(this.sousTotal * (1 - this.reduction / 100));
+  }
+
+  chargerGuide() {
+    const c = this.circuitChoisi;
+    if (!c) return;
+    this.service.getGuide(c.guideId).subscribe({
+      next: (g) => {
+        this.guideNom = g.nom;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.guideNom = '-';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  appliquerPromo() {
+    const code = this.form.controls.codePromo.value.trim().toUpperCase();
+    if (!code) return;
+    this.service.verifierPromo(code, this.form.controls.email.value, this.nbPersonnes).subscribe({
+      next: (r) => {
+        this.reduction = r.valide ? r.pourcentage : 0;
+        this.promoOk = r.valide;
+        this.promoMessage = r.message;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.reduction = 0;
+        this.promoOk = false;
+        this.promoMessage = 'Impossible de verifier le code pour le moment.';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  confirmer() {
+    this.soumis = true;
+    this.erreur = '';
+    this.confirmation = null;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    this.envoiEnCours = true;
+    const { codePromo, ...reste } = this.form.getRawValue();
+    const requete = { ...reste, codePromo: this.promoOk ? codePromo.trim().toUpperCase() : undefined };
+    this.service.creer(requete).subscribe({
+      next: (r) => {
+        this.envoiEnCours = false;
+        this.statut = r.statut;
+        this.confirmation = r;
+        this.soumis = false;
+        this.form.patchValue({ dateVisite: '', nom: '', email: '', codePromo: '' });
+        this.form.markAsUntouched();
+        this.router.navigate(['/mes-reservations'], {
+          state: { notif: `Réservation n° ${r.id} envoyée : en attente de confirmation du guide.` },
+        });
+        this.cdr.detectChanges();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+      error: (e) => {
+        this.envoiEnCours = false;
+        this.erreur =
+          e.status === 400 ? 'Code promo non valable pour cette reservation (verifiez le nombre de personnes).' : e.status === 409
+            ? 'Vous avez d\u00e9j\u00e0 r\u00e9serv\u00e9 ce circuit \u00e0 cette date.'
+            : e.status === 503
+              ? 'Un service est indisponible, r\u00e9essayez plus tard.'
+              : e.status === 0
+                ? 'Serveur de r\u00e9servation injoignable.'
+                : 'Impossible de cr\u00e9er la r\u00e9servation.';
+        this.cdr.detectChanges();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+    });
+  }
+}

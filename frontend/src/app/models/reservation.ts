@@ -1,0 +1,39 @@
+export type StatutReservation = 'EN_ATTENTE' | 'ACCEPTEE' | 'REFUSEE' | 'ANNULEE';
+
+// Ce que la page lit des autres services
+export interface CircuitResume {
+  id: number;
+  titre: string;
+  guideId: number;
+  dureeHeures: number;
+  prix: number;
+}
+
+export interface GuideResume {
+  id: number;
+  nom: string;
+}
+
+export interface ReservationRequest {
+  circuitId: number;
+  dateVisite: string;
+  nbPersonnes: number;
+  nom: string;
+  email: string;
+  codePromo?: string;
+}
+
+export interface Reservation extends ReservationRequest {
+  id: number;
+  guideId: number;
+  prixTotal: number;
+  statut: StatutReservation;
+  dateCreation: string;
+  reductionPct?: number;
+}
+export interface PromoResultat {
+  valide: boolean;
+  code: string;
+  pourcentage: number;
+  message: string;
+}

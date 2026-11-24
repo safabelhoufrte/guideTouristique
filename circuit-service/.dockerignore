@@ -1,0 +1,9 @@
+target
+data
+.git
+.env
+*.log
+tmp
+docs
+tools
+__pycache__

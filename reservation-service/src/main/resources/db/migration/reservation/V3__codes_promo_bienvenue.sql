@@ -1,0 +1,2 @@
+ALTER TABLE codes_promo ADD COLUMN bienvenue BOOLEAN NOT NULL DEFAULT FALSE;
+UPDATE codes_promo SET bienvenue = TRUE WHERE code = 'BIENVENUE';
